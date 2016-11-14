@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <linux/limits.h>
 
 #include "libconfigio.h"
 
@@ -86,6 +87,7 @@ char * _proxymanager_getUrlFromConfigFile(char *url, int maxsize) {
   bzero(url, maxsize);
   char *cwd = NULL;
   char buf[1024];
+  char dataFormat[PATH_MAX];
 
   cwd = getcwd(buf, sizeof(buf));
 
@@ -97,27 +99,32 @@ char * _proxymanager_getUrlFromConfigFile(char *url, int maxsize) {
   printf("proxycli_getConfigFilename: (%s)\n", proxycli_getConfigFilename());
 
   if(libconfigio_read(proxycli_getConfigFilename(), CONFIGIO_CLOUD_HOST, url + strlen(url), maxsize - strlen(url)) == -1) {
-    printf("libconfigio_read: fail 1\n");
+    printf("libconfigio_read: HOST fail\n");
     goto fail;
   }
 
-#if 0
   snprintf(url + strlen(url), maxsize - strlen(url), ":");
 
   printf("proxycli_getConfigFilename: (%s)\n", proxycli_getConfigFilename());
   if(libconfigio_read(proxycli_getConfigFilename(), CONFIGIO_CLOUD_PORT, url + strlen(url), maxsize - strlen(url)) == -1) {
-    printf("libconfigio_read: fail 2\n");
+    printf("libconfigio_read: PORT fail\n");
     goto fail;
   }
 
   snprintf(url + strlen(url), maxsize - strlen(url), "/");
 
-  printf("proxycli_getConfigFilename: (%s)\n", proxycli_getConfigFilename());
   if(libconfigio_read(proxycli_getConfigFilename(), CONFIGIO_CLOUD_URI, url + strlen(url), maxsize - strlen(url)) == -1) {
-    printf("libconfigio_read: fail 3\n");
+    printf("libconfigio_read: URI fail\n");
     goto fail;
   }
-#endif
+
+  if( libconfigio_read(proxycli_getConfigFilename(), CONFIGIO_DATA_FORMAT_TOKEN_NAME, dataFormat, sizeof(dataFormat)) == -1 )
+  {
+      printf("libconfigio_read: DATA_FORMAT fail\n");
+      goto fail;
+  }
+
+  snprintf(url + strlen(url), maxsize - strlen(url), (const char*) dataFormat);
 
   return url;
 

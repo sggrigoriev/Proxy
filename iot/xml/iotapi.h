@@ -97,6 +97,7 @@ typedef struct command_t {
   /** Arguments size */
   int argSize;
 
+
 } command_t;
 
 /**

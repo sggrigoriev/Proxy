@@ -10,6 +10,7 @@ LIB_NAME = libiotxml
 SOURCE_NAME = libiotxml
 SOURCES = ../../iot/xml/parser/iotcommandlisteners.c
 SOURCES += ../../iot/xml/parser/iotparser.c
+SOURCES += ../../iot/xml/parser/upgrade.c
 SOURCES += ../../iot/xml/generator/iotxmlgen.c
 SOURCES += ../../iot/eui64/eui64.c
 SOURCES += ../../iot/utils/timestamp.c

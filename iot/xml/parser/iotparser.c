@@ -31,11 +31,13 @@
 
 #include <libxml/parser.h>
 
+#include "iotapi.h"
 #include "ioterror.h"
 #include "iotdebug.h"
 #include "iotcommandlisteners.h"
 #include "iotparser.h"
 #include "eui64.h"
+#include "upgrade.h"
 
 
 /** True if a param tag was found in the command */
@@ -48,10 +50,13 @@ static void _iotparser_xml_endElementHandler(void *ctx, const xmlChar *name);
 
 static void _iotparser_xml_charactersHandler(void *ctx, const xmlChar *ch, int len);
 
+upgrade_t upgrade;
+
 /***************** Public Functions ****************/
 error_t iotxml_parse(const char *xml, int len) {
   command_t command;
   memset(&command, 0x0, sizeof(command));
+  memset(&upgrade, 0x0, sizeof(upgrade));
 
   xmlSAXHandler saxHandler = {
       NULL, // internalSubsetHandler,
@@ -125,6 +130,7 @@ static void _iotparser_xml_startElementHandler(void *ctx, const xmlChar *name, c
     for (i = 0; (atts[i] != NULL); i++) {
       attr = (char *) atts[i++];
       value = (char *) atts[i];
+      SYSLOG_DEBUG("attr: (%s) value: (%s)", attr, value);
 
       if(strcmp(attr, IOTPARSER_ATTR_COMMANDID) == 0) {
         command->commandId = atoi(value);
@@ -197,6 +203,47 @@ static void _iotparser_xml_charactersHandler(void *ctx, const xmlChar *ch, int l
   command_t *command = (command_t *) ctx;
   command->argument = (char *) ch;
   command->argSize = len;
+  if ( strncmp("ppm.", command->commandName, 4) == 0 )
+  {
+      char *less = strstr(command->argument, "<");
+      char *value = NULL;
+
+      if ( less != NULL ) 
+      {
+	  value = strndup(command->argument, less - command->argument);
+      }
+
+      if ( value != NULL )
+      {
+	  if ( strcmp(command->commandName, "ppm.action") == 0 )
+	  {
+	      upgrade.action = strdup(value);
+	  }
+	  else if  ( strcmp(command->commandName, "ppm.url") == 0 )
+	  {
+	      upgrade.url = strdup(value);
+	  }
+	  else if  ( strcmp(command->commandName, "ppm.size") == 0 )
+	  {
+	      upgrade.size = atoll(value);
+	  }
+	  else if  ( strcmp(command->commandName, "ppm.md5") == 0 )
+	  {
+	      upgrade.md5 = strdup(value);
+	  }
+	  else if  ( strcmp(command->commandName, "ppm.name") == 0 )
+	  {
+	      upgrade.name = strdup(value);
+	  }
+
+	  if ( upgrade.action != NULL && upgrade.url != NULL && upgrade.size != 0 && upgrade.md5 != NULL )
+	  {
+	      system_upgrade(&upgrade);
+	  }
+
+	  free(value);
+      }
+  }
 }
 
 
