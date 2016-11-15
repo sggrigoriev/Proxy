@@ -74,6 +74,10 @@ int system_upgrade ( upgrade_t *upgrade )
 	snprintf(command, sizeof(command), "/bin/opkg update %s", upgrade->name);
 	ret = system(command);
     }
+    else if ( strcmp(upgrade->action, "REBOOT") == 0 )
+    {
+	ret = system("/sbin/reboot");
+    }
 
     return ret;
 }
