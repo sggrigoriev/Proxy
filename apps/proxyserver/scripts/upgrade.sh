@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USERNAME=yihua1218@gmail.com
-PASSWORD=wkau3sj
+PASSWORD=********
 
 if [ ! -e .key ] ; then
     echo -n "Username[$USERNAME]: "

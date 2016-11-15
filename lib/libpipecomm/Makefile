@@ -8,7 +8,7 @@ include ../../support/make/Makefile.include
 
 LIB_NAME = libpipecomm
 SOURCES = libpipecomm.c
-RESULT_DIR = ./
+RESULT_DIR = .
 CFLAGS += -I../../include
 
 ifneq ($(HOST), mips-linux)

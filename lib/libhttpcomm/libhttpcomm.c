@@ -1,8 +1,8 @@
 /*
  *  Copyright 2013 People Power Company
- *  
+ *
  *  This code was developed with funding from People Power Company
- *  
+ *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
@@ -520,33 +520,49 @@ int libhttpcomm_postMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 
     if (curlHandle)
     {
-	if ( httpMethod == CURLOPT_POST )
-	{
-	    if ( msgToSendSize > 0 )
-	    {
-		slist = curl_slist_append(slist, "Content-Type: text/xml");
-		snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
-		slist = curl_slist_append(slist, tempString);
-	    }
-	    else if ( msgToSendSize == 0 )
-	    {
-		snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
-		slist = curl_slist_append(slist, tempString);
-	    }
-	}
-	else if ( httpMethod  == CURLOPT_HTTPGET )
-	{
-	    if ( params.password != NULL )
-	    {
-		SYSLOG_ERR("password: %s", params.password);
-		slist = curl_slist_append(slist, params.password);
-	    }
-	    if ( params.key != NULL )
-	    {
-		SYSLOG_ERR("key: %s", params.key);
-		slist = curl_slist_append(slist, params.key);
-	    }
-	}
+        if ( httpMethod == CURLOPT_HTTPPOST )
+        {
+            if ( msgToSendSize > 0 )
+            {
+                slist = curl_slist_append(slist, "Content-Type: text/xml");
+                snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
+                slist = curl_slist_append(slist, tempString);
+            }
+            else if ( msgToSendSize == 0 )
+            {
+                snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
+                slist = curl_slist_append(slist, tempString);
+            }
+        }
+        else
+        if (httpMethod == CURLOPT_POST)
+        {
+            if (msgToSendSize > 0)
+            {
+                slist = curl_slist_append(slist, "Content-Type: application/json");
+                snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
+                slist = curl_slist_append(slist, tempString);
+            }
+            else if (msgToSendSize == 0)
+            {
+                slist = curl_slist_append(slist, "Content-Type: application/json");
+                snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
+                slist = curl_slist_append(slist, tempString);
+            }
+        }
+        else if ( httpMethod  == CURLOPT_HTTPGET )
+        {
+            if ( params.password != NULL )
+            {
+                SYSLOG_ERR("password: %s", params.password);
+                slist = curl_slist_append(slist, params.password);
+            }
+            if ( params.key != NULL )
+            {
+                SYSLOG_ERR("key: %s", params.key);
+                slist = curl_slist_append(slist, params.key);
+            }
+        }
 
         if (_libhttpcomm_configureHttp(curlHandle, shareCurlHandle, slist, httpMethod, url,
                 sslCertPath, authToken, params.timeouts, ProgressCallback) == false)
@@ -566,7 +582,7 @@ int libhttpcomm_postMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
         // CURLOPT_READFUNCTION and CURLOPT_READDATA in this context refers to
         // data to be sent to the server... so curl will read data from us.
         if(msgToSendPtr != NULL)
-        {
+	{
 	    if ( msgToSendSize > 0 )
 	    {
 		curlResult = curl_easy_setopt(curlHandle, CURLOPT_READFUNCTION, read_callback);
@@ -591,12 +607,12 @@ int libhttpcomm_postMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 		    goto out;
 		}
 	    }
-        }
+	}
 
-        // sets maximum size of our internal buffer
-        curlResult = curl_easy_setopt(curlHandle, CURLOPT_BUFFERSIZE, maxRxBufferSize);
-        if (curlResult != CURLE_OK)
-        {
+	// sets maximum size of our internal buffer
+	curlResult = curl_easy_setopt(curlHandle, CURLOPT_BUFFERSIZE, maxRxBufferSize);
+	if (curlResult != CURLE_OK)
+	{
             SYSLOG_ERR("%s CURLOPT_BUFFERSIZE", curl_easy_strerror(curlResult));
             curlErrno = ENOEXEC;
             goto out;
