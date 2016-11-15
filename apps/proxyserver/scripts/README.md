@@ -17,14 +17,23 @@ The update.sh script can send the firmware upgrade command to the target gateway
 4. Send Firmware Upgrade command
 
 > $ ./update.sh
+
 > Username[]: user@email.com
+
 > Password[]: mypassword
+
 > Login Success!!
+
 > Device List:
+
 > 001C4216F35F-32-354
+
 > Send Firmware Upgrade Command to which Device ?[001C4216F35F-32-354]:
+
 > .......
+
 > Send Success!!
+
 
 
 
