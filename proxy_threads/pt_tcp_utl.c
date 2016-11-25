@@ -17,9 +17,18 @@
 #include "pu_logger.h"
 #include "pt_tcp_utl.h"
 
-int server_socket;
 
+//////////////////////////////////////////////////////////////////
 //Server part
+//
+static int server_socket;
+/////////////////////////////////////////////////////////////////
+//pt_tcp_server_connect - establish server connection to the port or re-establish server connection to the port
+//
+//port      - port to connect to
+//sock      - socket to close in case of reconnect
+//reconnect - 0 - make new connection, 1 - close the socket and connect again
+//Return connected socket (>0), -1 if error
 int pt_tcp_server_connect(int port, int sock, int reconnect) {  // returns socket or -1 if error
     if(!reconnect) {
 //Create socket
@@ -101,6 +110,13 @@ int pt_tcp_server_connect(int port, int sock, int reconnect) {  // returns socke
 }
 //////////////////////////////////////////////////
 //Client part
+//
+//////////////////////////////////////////////////
+//pt_tcp_client_connect - establish client onnection to the port or re-establish client connection to the port
+//
+//port  - port to connect to
+//sock  - if sock < 0 - new connect if sock >=0 thean soc is previously opened socket
+//Return connected socket (>0), -1 if error
 int pt_tcp_client_connect(int port, int sock) { // returns socket or -1 if error
 
     int client_socket;
@@ -151,6 +167,12 @@ int pt_tcp_client_connect(int port, int sock) { // returns socket or -1 if error
 }
 /////////////////////////////////////////////////
 //Common part
+//
+/////////////////////////////////////////////////
+//pt_tcp_selector   - wait one of events: READ, WRITE or TIMEOUT
+//
+//sock - socket from we're waiting one of events
+//Return event (see pt_tcp_selector_t in pt_tcp_utl.h) or error.
 pt_tcp_selector_t pt_tcp_selector(int sock) {
     int result;
     fd_set readset;
@@ -179,6 +201,13 @@ pt_tcp_selector_t pt_tcp_selector(int sock) {
     }
     return CU_ERROR;
 }
+/////////////////////////////////////////////////
+//pt_tcp_read   - read data from the socket
+//
+//sock      - socket to read
+//buf       - buffer to copy info from the socket
+//buf_len   - buf capacity
+//Return amount of bytes red; -1 if error
 int pt_tcp_read(int sock, char* buf, unsigned buf_len) { // returns >0 if smth to read, 0 if nothing -1 if reconnect needed
     int ret = read(sock, buf, buf_len);
     if (ret > 0) { //Hurray, we read smth!
@@ -188,6 +217,13 @@ int pt_tcp_read(int sock, char* buf, unsigned buf_len) { // returns >0 if smth t
         return -1;
     }
 }
+/////////////////////////////////////////////////
+//pt_tcp_write   - write data to the socket
+//
+//sock      - socket to write
+//buf       - buffer to copy info to the socket
+//buf_len   - message len
+//Return amount of bytes written; -1 if error
 int pt_tcp_write(int sock, const char* buf, unsigned buf_len) {  // returns >0 if smth to write, 0 if nothing -1 reconnect needed
     int ret = write(sock, buf, buf_len);
     if (ret > 0) { //Hurray, we write smth!
@@ -197,13 +233,24 @@ int pt_tcp_write(int sock, const char* buf, unsigned buf_len) {  // returns >0 i
         return -1;
     }
 }
+/////////////////////////////////////////////////
+//pt_tcp_shutdown   - close the connection
+//
+//sock      - socket to close
 void pt_tcp_shutdown(int sock) {
     if(sock >= 0) {
         shutdown(sock, SHUT_RDWR);
         close(sock);
     }
 }
-
+/////////////////////////////////////////////////
+//pt_tcp_assemble   - assembling message from several tcp parsels if for some reasons the message
+//                  wasn't sent as one piece. The sign of end message is the 0-byte
+//
+//in    - message received
+//len   - message length
+//ab    - assembling bufer
+//Return the 0-terminated message
 const char* pt_tcp_assemble(const char* in, unsigned len, pt_tcp_assembling_buf_t* ab) { // assimbling the full message. Return NULL if nothing oe msg
     unsigned i;
     char* ret = NULL;

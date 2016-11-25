@@ -1,10 +1,7 @@
 The folder contains utulities for Proxy
 
-1. Queues functions & data
-2. Logger functions
-3. TCP open-read-write-close functions
-4. Envelope for cURL
-5...
+1. Queues functions & data  - pu_queue.*
+2. Logger functions         - pu_logger.*
 
 all global objects got preffix pu_
 

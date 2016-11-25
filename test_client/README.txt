@@ -1,0 +1,1 @@
+The folder contains test client, the Agent emulator
