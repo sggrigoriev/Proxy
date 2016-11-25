@@ -7,6 +7,15 @@
 #include "pc_settings.h"
 #include "pf_proxy_activation.h"
 
+////////////////////////////////////////////////////////
+//pf_proxy_activation   - analyze the presence of deviceID and activation token in loaded settings
+//
+// Possible actions:
+//1. Do nothing if activated (both items are found)
+//2. Get activation token from the cloud
+//3. Generate deviceID and get the activation token from the cloud
+//Return 0 if error and 1 if OK
+//
 int pf_proxy_activation() {  //return 0 if proxy was not activated
     switch(pc_calc_activation_type()) {
         case PC_FULL_ACTIVATION: {                    // Create device ID and store it ni file and in memory
