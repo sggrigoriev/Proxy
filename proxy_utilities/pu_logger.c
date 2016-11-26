@@ -16,7 +16,7 @@
 static unsigned long DEFAULT_REC_AMOUNT = 2048;
 
 static FILE* file;
-static fpos_t start_position;
+
 static unsigned long rec_amt;
 static unsigned long max_rec;
 
@@ -87,7 +87,6 @@ void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t l_l
             printf("\nLOGGER: Error opening log file %s : %d, %s\n", file_name, errno, strerror(errno));
             printf("\nLOGGER: gona use stdout stream instead\n");
         }
-        fgetpos(file, &start_position);
 
     pthread_mutex_unlock(&lock);
  }
@@ -127,7 +126,9 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
         va_end(argptr);
 
         if(rec_amt >= max_rec) {
-            if(file) fsetpos(file, &start_position);
+            if(file) {
+                rewind(file);
+             }
             rec_amt = 0;
         }
         rec_amt++;

@@ -38,7 +38,7 @@ static volatile int rt_stops = 1;
 static void* server_read_thread(void* dummy_params);
 static volatile int wt_stops = 1;
 static void* server_write_thread(void* dummy_params);
-static volatile at_stops = 1;
+static volatile int at_stops = 1;
 static void* agent_thread(void *dummy_params);
 
 void static stop_children();
