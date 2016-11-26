@@ -17,9 +17,9 @@
 //      "params": [{"name": "desc","value": "Send a measurement from an existing device, with no timestamp"},{"name": "power","value": "100"}]
 //  ]
 //}
-char wr_src[1000];
-__time_t prev_sec = 0;
-__time_t to = 10;
+static char wr_src[1000];
+static __time_t prev_sec = 0;
+static __time_t to = 10;
 
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",

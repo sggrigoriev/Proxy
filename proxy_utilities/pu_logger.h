@@ -10,7 +10,7 @@
 
 typedef enum {LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
 
-void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t log_level);    //initiate logging utility
+void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t l_level);    //initiate logging utility
 void pu_stop_logger();  // close log file
 void pu_set_log_level(log_level_t ll);
 void pu_log(log_level_t lvl, const char* fmt, ...);

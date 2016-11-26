@@ -121,9 +121,8 @@ void static main_thread_shutdown() {
     pu_stop_logger();
 }
 
-char wr_src[1000];
-__time_t prev_sec = 0;
-__time_t to = 60;
+static __time_t prev_sec = 0;
+static __time_t to = 60;
 void static stop_children() {
     int attempts = 0;
 

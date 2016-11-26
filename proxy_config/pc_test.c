@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
         if (!pc_cli_process_params(argc, argv)) return 1;
 
 //    if(!pc_load_config("/media/sf_GWDrive/Presto_new/build/proxyJSON.test")) return 1;
-        pu_start_logger(NULL, 5000, LL_DEBUG);
+        pu_start_logger(DEFAULT_LOG_NAME, 3, LL_DEBUG);
+        pu_log(LL_WARNING, "1111111111111111111111111111111111111111111111111");
 
         printf("getLogFileName(): %s\n", pc_getLogFileName());
         printf("getLogRecordsAmt(): %d\n", pc_getLogRecordsAmt());
@@ -47,5 +48,8 @@ int main(int argc, char *argv[]) {
         if (!pc_saveDeviceAddress(eui_string)) {
             pu_log(LL_WARNING, "pf_proxy_activation: Unable to store Device ID into configuration file");
         }
+    pu_log(LL_INFO, "22222222222222222222222222222");
+    pu_log(LL_INFO, "333333333333333333333333333333333333");
+
     return 0;
 }

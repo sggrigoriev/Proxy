@@ -348,7 +348,7 @@ static void getStrValue(cJSON* cfg, const char* field_name, char* str_setting, u
     if(obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL)
         fprintf(stderr, "Setting %s is not found. Default will be used instead.\n", field_name);
     else if(strlen(obj->valuestring) > max_size-1) {
-        fprintf(stderr, "Setting %s value > than max size: %d against %d. Default will be used instead.\n", field_name, strlen(field_name), max_size);
+        fprintf(stderr, "Setting %s value > than max size: %lu against %d. Default will be used instead.\n", field_name, strlen(field_name), max_size);
     }
     else {
         strcpy(str_setting, obj->valuestring);
@@ -499,7 +499,7 @@ static int saveStrValue(const char* func_name, const char* field_name, const cha
         return 0;
     }
     if(strlen(new_value)+1 > max_size) {
-        fprintf(stderr, "%s(): new value %s is too big: %d against %d\n", func_name, new_value, strlen(new_value), max_size);
+        fprintf(stderr, "%s(): new value %s is too big: %lu against %d\n", func_name, new_value, strlen(new_value), max_size);
         return 0;
     }
 

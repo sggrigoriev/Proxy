@@ -7,9 +7,13 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <pthread.h>
+#include <limits.h>
 
+#include "pthread.h"
 #include "pu_logger.h"
+
+#define PU_LOG_REC_SIZE     150
+#define PU_END_FILL ' '
 
 ////////////////////////////////////////////////////////////
 //Module data
@@ -57,12 +61,32 @@ static char* getData(char* buf, unsigned max_size) {
 //
 static const char* getLogLevel(log_level_t lvl) {
     switch(lvl) {
-        case LL_DEBUG:      return "DEBUG";
-        case LL_INFO:       return "INFO";
+        case LL_DEBUG:      return "DEBUG  ";
+        case LL_INFO:       return "INFO   ";
         case LL_WARNING:    return "WARNING";
-        case LL_ERROR:      return "ERROR";
-        default:            return "UNDEF";
+        case LL_ERROR:      return "ERROR  ";
+        default:            return "UNDEF  ";
     }
+}
+//Make the output line of PU_LOG_REC_SIZE-1 len. Returns NULL if o info
+//NB! rest initially must set equal to strlen(in) and decreasing after each get_line call
+static char out[PU_LOG_REC_SIZE];
+static const char* get_line(const char* in, unsigned int offset, size_t* rest) {
+    if(*rest < strlen(in)) {
+        memset(out, ' ', offset);
+    }
+    else {
+        offset = 0;
+    }
+    if(*rest > 0) {
+        unsigned int info_size = (((*rest)+offset) > PU_LOG_REC_SIZE-1)?PU_LOG_REC_SIZE-1:((*rest)+offset);
+        strncpy(out+offset, in+strlen(in)-(*rest), info_size);
+        memset(out+info_size, PU_END_FILL, PU_LOG_REC_SIZE-1 - info_size);
+        out[PU_LOG_REC_SIZE-1] = '\0';
+        (*rest) -= (info_size-offset);
+        return out;
+    }
+    return NULL;
 }
 ////////////////////////////////////////////////////////////
 //pu_start_logger - iitiates work of logger utility
@@ -79,9 +103,15 @@ void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t l_l
         log_lvl = l_level;
         file = NULL;
         rec_amt = 0;
-        max_rec = (!rec_amount) ? DEFAULT_REC_AMOUNT : rec_amount;
 
-        if (file_name != NULL) file = fopen(file_name, "w+");
+        if(!file_name) {
+            max_rec = ULONG_MAX;
+            rec_amt = 0;
+        }
+        else {
+            max_rec = (!rec_amount) ? DEFAULT_REC_AMOUNT : rec_amount;
+            file = fopen(file_name, "w+");
+         }
         if (file == NULL) {
             file = stdout;
             printf("\nLOGGER: Error opening log file %s : %d, %s\n", file_name, errno, strerror(errno));
@@ -113,25 +143,34 @@ void pu_set_log_level(log_level_t ll) {
 //
 static char buf[10000]; //to decrease the stack size...Anyway the buf access is under Lock protection
 void pu_log(log_level_t lvl, const char* fmt, ...) {
-    if(log_lvl < lvl) return;   //Suppress the message
+    unsigned int offset;
+     if(log_lvl < lvl) return;   //Suppress the message
 
     pthread_mutex_lock(&lock);
-        char date[30];
+        size_t rest;
 
-        getData(date, sizeof(date));
+        getData(buf, sizeof(buf));
+        snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf)-1, " %s ", getLogLevel(lvl));
+        offset = strlen(buf);
 
         va_list argptr;
         va_start(argptr, fmt);
-        vsnprintf(buf, sizeof(buf), fmt, argptr);
+        vsnprintf(buf+strlen(buf), sizeof(buf)-strlen(buf)-1, fmt, argptr);
         va_end(argptr);
 
-        if(rec_amt >= max_rec) {
-            if(file) {
-                rewind(file);
-             }
-            rec_amt = 0;
+        rest = strlen(buf);
+        while(rest) {
+            if (rec_amt >= max_rec) {
+                if (file) {
+                    rewind(file);
+                }
+                rec_amt = 0;
+            }
+           if (file) {
+                fprintf(file, "%s\n", get_line(buf, offset, &rest));
+                fflush(file);
+            }
+            rec_amt++;
         }
-        rec_amt++;
-        if(file) fprintf(file, "%s %s %s\n", date, getLogLevel(lvl), buf); fflush(file);
     pthread_mutex_unlock(&lock);
 }

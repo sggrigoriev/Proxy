@@ -154,7 +154,7 @@ error_t eui64_toBytes(uint8_t *dest, int destLen) {
     dest[4] = 0xFE;
     memcpy(&dest[5], &(ifr->ifr_hwaddr.sa_data[3]), 3);
     */
-    pu_log(LL_DEBUG, "%s:use interface %s, %02X:%02X:%02X:%02X:%02X:%02X==========\n", __FUNCTION__, buf2, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5]);
+    pu_log(LL_DEBUG, "%s:use interface %s, %02X:%02X:%02X:%02X:%02X:%02X==========", __FUNCTION__, buf2, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5]);
   } else {
     pu_log(LL_ERROR, "Couldn't read MAC dest to seed EUI64");
     return FAIL;
