@@ -68,6 +68,19 @@ static const char* getLogLevel(log_level_t lvl) {
         default:            return "UNDEF  ";
     }
 }
+// count the number of lines in the file called filename
+static unsigned long countlines(const char *filename) {
+    FILE *fp = fopen(filename,"r");
+    int ch;
+    unsigned long lines=0;
+
+    if (fp == NULL) return 0;
+
+    while(!feof(fp)) if(ch = fgetc(fp), ch == '\n') lines++;
+
+    fclose(fp);
+    return lines;
+}
 //Make the output line of PU_LOG_REC_SIZE-1 len. Returns NULL if o info
 //NB! rest initially must set equal to strlen(in) and decreasing after each get_line call
 static char out[PU_LOG_REC_SIZE];
@@ -104,13 +117,15 @@ void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t l_l
         file = NULL;
         rec_amt = 0;
 
+        rec_amt = countlines(file_name);
+
         if(!file_name) {
             max_rec = ULONG_MAX;
-            rec_amt = 0;
-        }
+         }
         else {
             max_rec = (!rec_amount) ? DEFAULT_REC_AMOUNT : rec_amount;
-            file = fopen(file_name, "w+");
+            file = fopen(file_name, "r+");
+            if(file) fseek(file, 0, SEEK_END);
          }
         if (file == NULL) {
             file = stdout;
