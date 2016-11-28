@@ -6,6 +6,7 @@
 #ifndef PRESTO_PC_DEFAULTS_H
 #define PRESTO_PC_DEFAULTS_H
 
+#include "pt_tcp_utl.h"
 #include "libhttpcomm.h"
 #include "eui64.h"
 
@@ -46,8 +47,8 @@
 
 //Global constants for Proxy inner communications and communications with Agent
 #define DEFAULT_AGENT_PORT              8888
-#define DEFAULT_BINDING_ATTEMPTS        1000
-#define DEFAULT_SOCK_SELECT_TO_SEC      1
+#define DEFAULT_BINDING_ATTEMPTS        PT_BINDING_ATTEMPTS
+#define DEFAULT_SOCK_SELECT_TO_SEC      PT_SOCK_SELECT_TO_SEC
 
 #define DEFAULT_TCP_ASSEMBLING_BUF_SIZE 24576
 #define DEFAULT_QUEUE_RECORDS_AMT       1024

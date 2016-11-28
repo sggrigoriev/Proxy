@@ -5,6 +5,9 @@
 #ifndef PT_TCP_UTL_H
 #define PT_TCP_UTL_H
 
+#define PT_BINDING_ATTEMPTS     1000
+#define PT_SOCK_SELECT_TO_SEC   1       //Select timeout in seconds
+
 //Server part
 int pt_tcp_server_connect(int prort, int socket, int reconnect);    //Return connected socket (>0), -1 if error
 //////////////////////////////////////////////////

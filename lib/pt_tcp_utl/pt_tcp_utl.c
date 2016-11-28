@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include "pc_defaults.h"
+//#include "pc_defaults.h"
 #include "pu_logger.h"
 #include "pt_tcp_utl.h"
 
@@ -53,7 +53,7 @@ int pt_tcp_server_connect(int port, int sock, int reconnect) {  // returns socke
         addr_struct.sin_port = htons(port);
 
 //bind socket on repeated mode
-        int rpt = DEFAULT_BINDING_ATTEMPTS;
+        int rpt = PT_BINDING_ATTEMPTS;
         while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
             pu_log(LL_ERROR, "pt_tcp_server_connect: error socket binding %d, %s", errno, strerror(errno));
             sleep(1);
@@ -75,7 +75,7 @@ int pt_tcp_server_connect(int port, int sock, int reconnect) {  // returns socke
     while(!result) {
         FD_ZERO(&readset);
         FD_SET(server_socket, &readset);
-        struct timeval tv = {DEFAULT_SOCK_SELECT_TO_SEC, 0}; // timeout for one second
+        struct timeval tv = {PT_SOCK_SELECT_TO_SEC, 0}; // timeout for one second
         result = select(server_socket + 1, &readset, NULL, NULL, &tv);
         if (result == 0) { // Timeout happens. nothing to read
              continue;
@@ -142,7 +142,7 @@ int pt_tcp_client_connect(int port, int sock) { // returns socket or -1 if error
     addr_struct.sin_port = htons(port);
 
 //And connect to the remote socket
-    unsigned rpt = DEFAULT_BINDING_ATTEMPTS;
+    unsigned rpt = PT_BINDING_ATTEMPTS;
     while(rpt) {
         int ret = connect(client_socket, (struct sockaddr *)&addr_struct, sizeof(addr_struct));
         if (ret < 0) {
@@ -183,7 +183,7 @@ pt_tcp_selector_t pt_tcp_selector(int sock) {
     FD_ZERO(&writeset);
     FD_SET(sock, &readset);
     FD_SET(sock, &writeset);
-    struct timeval tv = {DEFAULT_SOCK_SELECT_TO_SEC, 0}; // timeout for one second
+    struct timeval tv = {PT_SOCK_SELECT_TO_SEC, 0}; // timeout for one second
     result = select(sock + 1, &readset, &writeset, NULL, &tv);
     if (result == 0) { // Timeout happens. nothing to read
         return CU_TIMEOUT;

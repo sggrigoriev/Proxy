@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 project(Presto C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build)
 
 add_definitions( -DPROXY_SEPARATE_RUN )
 add_definitions( -DGIT_FIRMWARE_VERSION=301 )
@@ -20,55 +20,70 @@ set(REQUIRED_LIBRARIES
 
 #all include paths
 include_directories(
-        ${PROJECT_SOURCE_DIR}/proxy_functions
-        ${PROJECT_SOURCE_DIR}/proxy_utilities
-        ${PROJECT_SOURCE_DIR}/proxy_threads
-        ${PROJECT_SOURCE_DIR}/proxy_config
-        ${PROJECT_SOURCE_DIR}/proxy_config/proxy_config_cli
-        ${PROJECT_SOURCE_DIR}/lib/libhttpcomm
-        ${PROJECT_SOURCE_DIR}/lib/json
-        ${PROJECT_SOURCE_DIR}/lib/eui64
+        Proxy/proxy_functions
+        Proxy/proxy_utilities
+        Proxy/proxy_threads
+        Proxy/proxy_config
+        Proxy/proxy_config/proxy_config_cli
+        lib/pt_tcp_utl
+        lib/pu_logger
+        lib/pc_config
+        lib/libhttpcomm
+        lib/json
+        lib/eui64
 
 )
 
 #Presto
 file(GLOB SOURCE_FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/main.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_functions/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_utilities/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_threads/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/pc_settings.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/proxy_config_cli/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libhttpcomm/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/eui64/eui64.c
+        Proxy/main.c
+        Proxy/proxy_functions/*.c
+        Proxy/proxy_utilities/*.c
+        Proxy/proxy_threads/*.c
+        Proxy/proxy_config/pc_settings.c
+        Proxy/proxy_config/proxy_config_cli/*.c
+        lib/pt_tcp_utl/*.c
+        lib/pu_logger/*.c
+        lib/pc_config/*.c
+        lib/libhttpcomm/*.c
+        lib/json/*.c
+        lib/eui64/eui64.c
         )
 
 #Test client
 file(GLOB SOURCE_FILES_TEST_CLIENT
-        ${CMAKE_CURRENT_SOURCE_DIR}/test_client/comm_client.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_utilities/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_threads/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/pc_settings.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libhttpcomm/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/*.c
+        Proxy/test_client/comm_client.c
+        Proxy/proxy_utilities/*.c
+        Proxy/proxy_threads/*.c
+        Proxy/proxy_config/pc_settings.c
+        lib/pt_tcp_utl/*.c
+        lib/pu_logger/*.c
+        lib/pc_config/*.c
+        lib/libhttpcomm/*.c
+        lib/json/*.c
         )
 
 #Test config
 file(GLOB SOURCE_FILES_TEST_CONFIG
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/proxy_config_cli/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_utilities/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/eui64/eui64.c
+        Proxy/proxy_config/*.c
+        Proxy/proxy_config/proxy_config_cli/*.c
+        proxy_utilities/*.c
+        lib/pt_tcp_utl/*.c
+        lib/pu_logger/*.c
+        lib/pc_config/*.c
+        lib/json/*.c
+        lib/eui64/eui64.c
         )
 
 #Test eui
 file(GLOB SOURCE_FILES_TEST_EUI
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/json/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_utilities/*.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/proxy_config/pc_settings.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/eui64/*.c
+        lib/json/*.c
+        Proxy/proxy_utilities/*.c
+        Proxy/proxy_config/pc_settings.c
+        lib/pt_tcp_utl/*.c
+        lib/pu_logger/*.c
+        lib/pc_config/*.c
+        lib/eui64/*.c
         )
 
 
