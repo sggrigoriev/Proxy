@@ -12,7 +12,7 @@
 #include "pthread.h"
 #include "pu_logger.h"
 
-#define PU_LOG_REC_SIZE     150
+#define PU_LOG_REC_SIZE     160
 #define PU_END_FILL ' '
 
 ////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ static const char* get_line(const char* in, unsigned int offset, size_t* rest) {
         offset = 0;
     }
     if(*rest > 0) {
-        unsigned int info_size = (((*rest)+offset) > PU_LOG_REC_SIZE-1)?PU_LOG_REC_SIZE-1:((*rest)+offset);
+        size_t info_size = (((*rest)+offset) > PU_LOG_REC_SIZE-1)?PU_LOG_REC_SIZE-1:((*rest)+offset);
         strncpy(out+offset, in+strlen(in)-(*rest), info_size);
         memset(out+info_size, PU_END_FILL, PU_LOG_REC_SIZE-1 - info_size);
         out[PU_LOG_REC_SIZE-1] = '\0';
@@ -166,7 +166,7 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
 
         getData(buf, sizeof(buf));
         snprintf(buf+strlen(buf), sizeof(buf)-strlen(buf)-1, " %s ", getLogLevel(lvl));
-        offset = strlen(buf);
+        offset = (unsigned int)strlen(buf);
 
         va_list argptr;
         va_start(argptr, fmt);
