@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////
 //Common local data
-static pu_queue_events_set_t ps_all_queues_events_set = NULL;
+static pu_queue_event_t* ps_all_queues_events_set = NULL;
 static pthread_mutex_t ps_all_queues_cond_mutex;            //Common mutex to protect condition set changes
 static pthread_cond_t ps_all_queues_cond;                   //condition event
 static unsigned int PQ_Size;
@@ -65,19 +65,27 @@ void pu_queues_destroy() {
     pthread_mutex_destroy(&ps_all_queues_cond_mutex);
     pthread_cond_destroy(&ps_all_queues_cond);
 }
-pu_queue_events_set_t* pu_add_queue_event(pu_queue_events_set_t* queue_events_mask, pu_queue_event_t event) { //add event to the waiting list
+pu_queue_event_t* pu_create_event_set() {
+    pu_queue_event_t* ret = (pu_queue_event_t* )malloc(PQ_Size*sizeof(pu_queue_event_t));
+    if(ret) memset(ret, (pu_queue_event_t)0, PQ_Size);
+    return ret;
+}
+void pu_delete_event_set(pu_queue_event_t* es) {
+    if(es) free(es);
+}
+pu_queue_event_t* pu_add_queue_event(pu_queue_event_t* queue_events_mask, pu_queue_event_t event) { //add event to the waiting list
     if(!check_ptr(queue_events_mask, "pu_add_queue_event() got NULL \'queue_events_mask\' parameter. Failed.")) return NULL;
     if(event >= PQ_Size) {
         pu_log(LL_ERROR, "pu_add_queue_event: event# exceeds event set size. Failed.");
         return NULL;
     }
-    (*queue_events_mask)[event] = 1;
+    queue_events_mask[event] = 1;
     return queue_events_mask;
 }
-pu_queue_events_set_t* pu_clear_queue_events(pu_queue_events_set_t* queue_events_mask) { //remove all events from the waiting list
+pu_queue_event_t* pu_clear_queue_events(pu_queue_event_t* queue_events_mask) { //remove all events from the waiting list
     if(!check_ptr(queue_events_mask, "pu_clear_queue_event() got NULL \'queue_events_mask\' parameter. Failed.")) return NULL;
     for(pu_queue_event_t i = 0; i < PQ_Size; i++)
-    (*queue_events_mask)[i] = 0;
+    queue_events_mask[i] = 0;
     return queue_events_mask;
 }
 //
@@ -87,7 +95,7 @@ pu_queue_events_set_t* pu_clear_queue_events(pu_queue_events_set_t* queue_events
 //to_sec - timeout in seconds. if to_sec == 0 - wait forever
 //returns the first queue from queue_events_set with data occures
 //
-pu_queue_event_t pu_wait_for_queues(pu_queue_events_set_t* queue_events_set, unsigned int to_sec) { //wait for one or several queue events
+pu_queue_event_t pu_wait_for_queues(pu_queue_event_t* queue_events_set, unsigned int to_sec) { //wait for one or several queue events
     pu_queue_event_t ret;
 
     struct timespec timeToWait;
@@ -114,7 +122,7 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_events_set_t* queue_events_set, uns
 
     ret = PQ_TIMEOUT;
     for(pu_queue_event_t i = PQ_TIMEOUT+1; i < PQ_Size; i++) {
-        if(((*queue_events_set)[i]) && (ps_all_queues_events_set[i] > 0)) {
+        if((queue_events_set[i]) && (ps_all_queues_events_set[i] > 0)) {
             ps_all_queues_events_set[i] = 0;
             ret = i;
         }

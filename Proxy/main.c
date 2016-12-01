@@ -17,12 +17,14 @@ int main(int argc, char* argv[]) {
 
     printf("%s", "Hi, I\'m new Presto!\n");
     
-#ifdef PROXY_SEPARATE_RUN    
-    if(!pc_cli_process_params(argc, argv)) exit(0); //Run from command line
-#else
-    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    //Run w/o input parameters
-#endif
+    if(argc > 1) {
+        if(!pc_cli_process_params(argc, argv)) exit(0); //Run from command line
+    }
+    else {
+        if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    //Run w/o input parameters
+    }
 
+ 
 //Initiation steps:
 // 1. Start logger & cURL
 // 2. Get settings
@@ -33,20 +35,17 @@ int main(int argc, char* argv[]) {
 // 3. Activation step- do be discussed
 // 4. Get permanent URL for work - NB! each time!
 
-    
-
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
 
     if(!pt_http_curl_init()) exit(-1);
 
     if(!pf_proxy_activation()) exit(-1);
+////////
+    if(!pt_main_thread_start()) exit(-1);
 
-
-//Stop everything until the recurring work starts
-    pt_http_curl_stop();
+//cURL stop
+    curl_global_cleanup();
 //Logger stop
     pu_stop_logger();
-
-    if(!pt_main_thread_start()) exit(-1);
     exit(0);
 }

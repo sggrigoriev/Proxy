@@ -25,27 +25,27 @@ int main() {
     }
 //create pid file (var/run/wud.pid
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
-        fprintf(stderr, "Can\'t create PID file for %s. Abort\n", WC_DEFAULT_WUD_NAME);
+        fprintf(stderr, "Can\'t create PID file for %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
         exit(1);
     }
 //read configuration file
     if(!wc_load_config(WD_DEFAULT_CFG_FILE_NAME)) {
-        fprintf(stderr, "Can\'t read configuration file %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME);
+        fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
         exit(1);
     }
 
 //initiate logger
-    pu_start_logger(wc_getLogFileName(), wc_getLogRecordsAmt(), wc_getLogVevel());
+    pu_start_logger(/*wc_getLogFileName()*/NULL, wc_getLogRecordsAmt(), wc_getLogVevel());
 
 //check if download & upload directories are not empty
     wf_set_download_state(wu_dir_empty(wc_getFWDownloadFolder()));
     if(!wf_was_download_empty() && !wu_clear_dir(wc_getFWDownloadFolder())) {
-        pu_log(LL_ERROR, "Can\'t clear %s directory: %d %s. Abort.", wc_getFWDownloadFolder(), errno, strerror(errno));
+        pu_log(LL_ERROR, "Can\'t clear %s : %d %s. Abort.", wc_getFWDownloadFolder(), errno, strerror(errno));
         exit(1);
     }
     wf_set_upgrade_state(wu_dir_empty(wc_getFWUpgradeFolder()));
-    if(!wf_was_upgrade_empty() && !wu_clear_dir(wc_getFWDownloadFolder())) {
-        pu_log(LL_ERROR, "Can\'t clear %s directory: %d %s. Abort.", wc_getFWUpgradeFolder(), errno, strerror(errno));
+    if(!wf_was_upgrade_empty() && !wu_clear_dir(wc_getFWUpgradeFolder())) {
+        pu_log(LL_ERROR, "Can\'t clear %s : %d %s. Abort.", wc_getFWUpgradeFolder(), errno, strerror(errno));
         exit(1);
     }
 
@@ -54,5 +54,8 @@ int main() {
     wm_child_descriptor_t* proxy_cd = wm_create_cd(wc_getProxyProcessName(), wc_getProxyBinaryName(), wc_getProxyWorkingDirectory(), wc_getProxyRunParameters(), 0);
     wa_start_child(agent_cd);
     wa_start_child(proxy_cd);
+
     printf("WUD stop\n");
+
+    return 0;
 }

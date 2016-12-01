@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <zconf.h>
 #include <sys/time.h>
 
 #include "pc_defaults.h"
@@ -43,7 +42,7 @@ const char* write_source() {
 static int finish = 0;
 static int stop = 0;
 
-void* client_thread(void* dummy_param) {
+void* client_proc(void* dummy_param) {
 
     int socket = -1;
     while(socket = pt_tcp_client_connect(pc_getAgentPort(), socket), (socket > 0) && (!finish)) {
@@ -54,7 +53,7 @@ void* client_thread(void* dummy_param) {
             char abuf[DEFAULT_TCP_ASSEMBLING_BUF_SIZE];
             char rbuf[PROXY_MAX_MSG_LEN];
 
-            int ret;
+            ssize_t ret;
 
             pt_tcp_assembling_buf_t as_buf = {abuf, sizeof(abuf), 0, rbuf, sizeof(rbuf)};
 
@@ -63,7 +62,7 @@ void* client_thread(void* dummy_param) {
 // read
                     while(1) {
                         if (ret = pt_tcp_read(socket, rbuf, sizeof(rbuf)), ret > 0) { //read smth
-                            const char * msg = pt_tcp_assemble(rbuf, ret, &as_buf);
+                            const char * msg = pt_tcp_assemble(rbuf, (size_t)ret, &as_buf);
                             if(msg) {
                                 pu_log(LL_INFO, "CLIENT READ: %s", msg);
                                 break;
@@ -109,10 +108,11 @@ void* client_thread(void* dummy_param) {
 };
 
 /** Thread attributes */
-static pthread_t clThreadId;
-static pthread_attr_t clThreadAttr;
 
-int main() {
+int main(int argv, char* argc[]) {
+
+    unsigned int i = 0;
+    while(argc[i]) { printf("argc[%d] = %s\n", i, argc[i]); i++;}
 
     if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) {
         fprintf(stderr, "Client thread exited\n");
@@ -121,17 +121,10 @@ int main() {
 
     pu_start_logger(/*"./COMM_LOG"*/NULL, 5000, LL_INFO );
 
-    pthread_attr_init(&clThreadAttr);
 
-    if (pthread_create(&clThreadId, &clThreadAttr, &client_thread, NULL)) {
-        pu_log(LL_ERROR, "[CLIENT]: Creating write thread failed: %s", strerror(errno));
-        return -1;
-    }
 
-    getchar();
-    finish = 1;
-    void* ret;
-    pthread_join(clThreadId, &ret);
+    client_proc(NULL);
+
 
     pu_log(LL_INFO, "Client Main is finished");
     pu_stop_logger();

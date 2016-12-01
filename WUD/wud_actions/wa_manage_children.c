@@ -3,7 +3,9 @@
 //
 #include <signal.h>
 #include <assert.h>
-#include <zconf.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <wm_childs_info.h>
 
 #include "wc_settings.h"
 #include "wu_utils.h"
@@ -15,6 +17,9 @@ void wa_start_child(wm_child_descriptor_t* descr) {
     char** buf = NULL;
 
     buf = wu_prepare_papams_list(buf, descr->binary_name, descr->start_parameters);
+    unsigned int i = 0;
+    printf("%s start params\n", descr->process_name);
+    while(buf[i]) { printf("param[%d] = %s\n", i, buf[i]); i++;}
     descr->pid = wu_start_process(descr->binary_name, buf, descr->working_directory);
     wu_delete_params_list(buf);
 }

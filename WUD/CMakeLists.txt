@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 project(WUD C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY /media/sf_GWDrive/Presto_new/build)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -22,6 +22,7 @@ include_directories(
         wud_watchdog
         wud_actions
         wud_utils
+        wud_threads
         ../lib/pt_tcp_utl
         ../lib/pu_logger
         ../lib/pc_config
@@ -41,9 +42,10 @@ file(GLOB SOURCE_FILES
         wud_watchdog/*.c
         wud_actions/*.c
         wud_utils/*.c
+        wud_threads/*.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
-        ../lib/pc_config/*.c
+        ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c

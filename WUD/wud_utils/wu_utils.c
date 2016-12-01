@@ -8,6 +8,7 @@
 #include <string.h>
 #include <assert.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 #include "wc_defaults.h"
 #include "wu_utils.h"
@@ -68,13 +69,13 @@ int wu_dir_empty(const char* dir_name) {
 int wu_clear_dir(const char* dir) {
     char path[WC_MAX_PATH];
     char* slash_mask;
-    if(!strlen(dir)) return 1; //Nothing to elete
+    if(!dir || !strlen(dir)) return 1; //Nothing to elete
 
-    slash_mask = (dir[strlen(dir)-1] == '/')?"*":"/*";
+    slash_mask = (dir[strlen(dir)-1] == '/')?"":"/";
 
-    snprintf(path, sizeof(path), dir, slash_mask);
+    snprintf(path, sizeof(path), "%s%s%s%s", "rm -rf ", dir, slash_mask, "*");
 
-    return (remove(path) == 0);
+    return (system(path) == 0);
 }
 
 // return PID of OK 0 if not

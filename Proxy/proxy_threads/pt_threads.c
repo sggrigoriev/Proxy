@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <curl/curl.h>
 #include <unistd.h>
 
 #include "pc_defaults.h"
@@ -15,11 +14,11 @@
 #include "pu_queue.h"
 
 ////////////////////////////////////////////
-// Global params to be set in common configuration
-pu_queue_t* to_server;
-pu_queue_t* from_server;
-pu_queue_t* to_agent;
-pu_queue_t* from_agent;
+// Global params
+static pu_queue_t* to_server;
+static pu_queue_t* from_server;
+static pu_queue_t* to_agent;
+static pu_queue_t* from_agent;
 
 //Total stop
 static volatile int finish = 0;
@@ -43,6 +42,7 @@ static volatile int wt_stops = 1;
 static void* server_write_thread(void* dummy_params);
 static volatile int at_stops = 1;
 static void* agent_thread(void *dummy_params);
+
 //Main thread mgmt functions
 static void stop_children();
 static int main_thread_startup();
@@ -54,19 +54,22 @@ static void main_thread_shutdown();
 //The only main thread's buffer!
 static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];
 int pt_main_thread_start() { //Starts and detach the main thread.
-    pu_queue_events_set_t events;
-    pu_clear_queue_events(&events);
+    pu_queue_event_t* events;
 
-    if(!main_thread_startup()) finish = 1;
 
-    pu_add_queue_event(&events, PS_FromAgentQueue);
-    pu_add_queue_event(&events, PS_FromServerQueue);
+    if(!main_thread_startup()) {
+        pu_log(LL_ERROR, "Main Proxy thread initiation failed. Abort.");
+        return 0;
+    }
+    events = pu_create_event_set();
+    pu_add_queue_event(events, PS_FromAgentQueue);
+    pu_add_queue_event(events, PS_FromServerQueue);
 
     while(!finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
 
-        switch (ev=pu_wait_for_queues(&events, DEFAULT_MAIN_THREAD_TO_SEC)) {
+        switch (ev=pu_wait_for_queues(events, DEFAULT_MAIN_THREAD_TO_SEC)) {
             case PS_Timeout:
                 pu_log(LL_DEBUG, "main_thread: TIMEOUT");
                 break;
@@ -80,7 +83,7 @@ int pt_main_thread_start() { //Starts and detach the main thread.
             case PS_FromAgentQueue:
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
                     pu_queue_push(to_server, mt_msg, len);
-                    pu_log(LL_DEBUG, "maim_thread: msg %s was sent to server_write", mt_msg);
+                    pu_log(LL_DEBUG, "main_thread: msg %s was sent to server_write", mt_msg);
                     len = sizeof(mt_msg);
                 }
                 break;
@@ -91,6 +94,7 @@ int pt_main_thread_start() { //Starts and detach the main thread.
 
     }
     main_thread_shutdown();
+    pu_delete_event_set(events);
     return 0;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,22 +127,21 @@ static void* server_read_thread(void* dummy_params) {
 //THe only write_thread buffer!
 static pu_queue_msg_t wt_msg[PROXY_MAX_MSG_LEN];
 static void* server_write_thread(void* dummy_params) {
-    pu_queue_events_set_t events;
-    pu_clear_queue_events(&events);
-
+    pu_queue_event_t* events;
 
     if(!pt_http_write_init()) {
         pu_log(LL_ERROR, "server_write_thread: Cloud info write initiation failed. Stop.");
         pthread_exit(NULL);
     }
 
-    pu_add_queue_event(&events, PS_ToServerQueue);
+    events = pu_create_event_set();
+    pu_add_queue_event(events, PS_ToServerQueue);
 
     wt_stops = 0;
     //Main write loop
     while(!finish) {
 
-        if(pu_wait_for_queues(&events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
+        if(pu_wait_for_queues(events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
             size_t len = sizeof(wt_msg);
             
              while(pu_queue_pop(to_server, wt_msg, &len)) {
@@ -163,6 +166,7 @@ static void* server_write_thread(void* dummy_params) {
         }
     }
     pt_http_write_destroy();
+    pu_delete_event_set(events);
     wt_stops = 1;
     pthread_exit(NULL);
 }
@@ -173,10 +177,10 @@ static char rbuf[PROXY_MAX_MSG_LEN];
 static void* agent_thread(void *dummy_params) {
     int socket = -1;
     int reconnect = 0;
-    pu_queue_events_set_t events;
-    pu_clear_queue_events(&events);
+    pu_queue_event_t* events;
 
-    pu_add_queue_event(&events, PS_ToAgentQueue);
+    events = pu_create_event_set();
+    pu_add_queue_event(events, PS_ToAgentQueue);
 
     at_stops = 0;
     while(socket = pt_tcp_server_connect(pc_getAgentPort(), socket, reconnect), (socket > 0) && (!finish)) {
@@ -211,7 +215,7 @@ static void* agent_thread(void *dummy_params) {
                 }
                 case CU_WRITE: {
                     //write
-                    if(pu_wait_for_queues(&events, DEFAULT_AGENT_THREAD_TO_SEC)) {
+                    if(pu_wait_for_queues(events, DEFAULT_AGENT_THREAD_TO_SEC)) {
                         size_t len = sizeof(rbuf);
                         while(pu_queue_pop(to_agent, rbuf, &len)) {
                             if(ret = pt_tcp_write(socket, rbuf, strlen(rbuf)+1), ret > 0) { //write smth
@@ -242,23 +246,11 @@ static void* agent_thread(void *dummy_params) {
     pu_log(LL_INFO, "Server Thread is finished");
     pt_tcp_shutdown(socket);
     at_stops = 1;
+    pu_delete_event_set(events);
     pthread_exit(NULL);
 }
 //Main thread mgmt functions
 static int main_thread_startup() {
-
-#ifdef PROXY_SEPARATE_RUN
-    if(daemon(0, 0) < 0) {
-        fprintf(stderr, "Proxy main thread: Daemonization failed. Err=%d, %s\n", errno, strerror(errno));
-        return 0;
-    }
-#endif
-
-    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) return 0;
-
-    pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
-
-    if(!pt_http_curl_init()) return 0;
 
     //Queues initiation
     pu_queues_init(PS_Size);
@@ -316,12 +308,6 @@ static void main_thread_shutdown() {
     pu_queues_destroy();
 
     pu_log(LL_INFO, "Server Main is finished");
-
-//cURL stop
-    curl_global_cleanup();
-
-//Logger stop
-    pu_stop_logger();
 }
 static void stop_children() {
     int attempts = 0;

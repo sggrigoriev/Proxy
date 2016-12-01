@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 project(Proxy C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY /media/sf_GWDrive/Presto_new/build)
 
 add_definitions( -DPROXY_SEPARATE_RUN )
 #ifdef PROXY_SEPARATE_RUN - the proxy reads parameters from command line first
@@ -42,7 +42,7 @@ file(GLOB SOURCE_FILES
         proxy_eui64/eui64.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
-        ../lib/pc_config/*.c
+        ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
@@ -55,7 +55,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         proxy_config/pc_settings.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
-        ../lib/pc_config/*.c
+        ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
@@ -68,7 +68,7 @@ file(GLOB SOURCE_FILES_TEST_CONFIG
         proxy_eui64/eui64.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
-        ../lib/pc_config/*.c
+        ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
         ../lib/json/*.c
         )
@@ -81,7 +81,7 @@ file(GLOB SOURCE_FILES_TEST_EUI
         ../lib/pu_queues/*.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
-        ../lib/pc_config/*.c
+        ../lib/pc_config/pc_config.c
         )
 
 

@@ -7,8 +7,9 @@
 
 #define WC_MAX_PATH     4097
 #define WC_MAX_PROCESS_NAME_LEN 30
+#define WC_MAX_MSG_LEN  1000
 
-#define WD_DEFAULT_CFG_FILE_NAME   "/media/sf_GWDrive/Presto_new/build/wud.conf"
+#define WD_DEFAULT_CFG_FILE_NAME   "/media/sf_GWDrive/Presto_new/WUD/wud.conf"
 
 //Common defaults
 #define WC_DEFAULT_LOG_NAME        "/media/sf_GWDrive/Presto_new/build/WUD_LOG"

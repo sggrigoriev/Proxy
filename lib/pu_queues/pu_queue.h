@@ -15,15 +15,18 @@
 ////////////////////////////////////////////////////
 // Common part, concerning all queues
 typedef unsigned int pu_queue_event_t;
-typedef unsigned long* pu_queue_events_set_t;
 
 ///////////////////////////////////////////////////
 // Common funtcions
 int pu_queues_init(unsigned int queues_amount);       // returns 0 if initiation fails
 void pu_queues_destroy();
-pu_queue_events_set_t* pu_add_queue_event(pu_queue_events_set_t* queue_events_mask, pu_queue_event_t event); //add event to the waiting list
-pu_queue_events_set_t* pu_clear_queue_events(pu_queue_events_set_t* queue_events_mask); //remove all events from the waiting list
-pu_queue_event_t pu_wait_for_queues(pu_queue_events_set_t* queue_events_mask, unsigned int to_sec); //wait for one or several queue events
+
+pu_queue_event_t* pu_create_event_set();
+void pu_delete_event_set(pu_queue_event_t* es);
+
+pu_queue_event_t* pu_add_queue_event(pu_queue_event_t* queue_events_mask, pu_queue_event_t event); //add event to the waiting list
+pu_queue_event_t* pu_clear_queue_events(pu_queue_event_t* queue_events_mask); //remove all events from the waiting list
+pu_queue_event_t pu_wait_for_queues(pu_queue_event_t* queue_events_mask, unsigned int to_sec); //wait for one or several queue events
 ///////////////////////////////////////////////////
 // Single queue types & funcrions
 
