@@ -3,9 +3,9 @@
 //
 
 #include <curl/curl.h>
-#include <zconf.h>
 #include <memory.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "cJSON.h"
 #include "libhttpcomm.h"
@@ -140,7 +140,7 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
             unsigned long command_id = get_command_id(msgFromServer);
             if(command_id) send_responce_to_command(command_id);
         }
-            ret = strlen(msgFromServer)+1;
+            ret = (int)strlen(msgFromServer)+1;
         *buf = msgFromServer;
     }
     else if(ret == ETIMEDOUT) ret = 0;
@@ -157,7 +157,7 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
 // resp - the addres of the string with responce. NB! do not free this memory outside!!
 // resp_len - length of response
 // return 0 if error and 1 if OK
-int pt_http_write(char* buf, unsigned int len, char** resp, unsigned int* resp_len) { //Returns 0 if timeout or error, 1 if OK
+int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Returns 0 if timeout or error, 1 if OK
     bool serverRetry = false;
     char url[PATH_MAX];
     char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
@@ -187,7 +187,7 @@ int pt_http_write(char* buf, unsigned int len, char** resp, unsigned int* resp_l
         pc_getActivationToken(activation_token, sizeof(activation_token));
         if (libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url,
                                 pc_getSertificatePath(), activation_token, outBuf,
-                                len, response, sizeof(response), params, NULL) == 0) {
+                                (int)len, response, sizeof(response), params, NULL) == 0) {
 
             serverRetry = (strlen(response) == 0) || (strstr(response, "ERR") != NULL) || (strstr(response, "ACK") == NULL);
 
@@ -244,7 +244,7 @@ static unsigned long get_command_id(const char* json_string) {
         cJSON_Delete(val);
         return 0;
     }
-    unsigned long command_id = cJSON_GetObjectItem(cmd_body,"commandId")->valueint;
+    unsigned long command_id = (unsigned long)cJSON_GetObjectItem(cmd_body,"commandId")->valueint;
     cJSON_Delete(val);
 
     return command_id;
@@ -312,7 +312,7 @@ static void send_responce_to_command(unsigned long command_id) {
         make_json_answer(outBuf, sizeof(outBuf), command_id);
         pc_getActivationToken(activation_token, sizeof(activation_token));
         if(libhttpcomm_postMsg(curlReadHandle, CURLOPT_POST, url, pc_getSertificatePath(), activation_token,
-                               outBuf, strlen(outBuf), response, sizeof(response), params, NULL) == 0) {
+                               outBuf, (int)strlen(outBuf), response, sizeof(response), params, NULL) == 0) {
 
             serverRetry = (strlen(response) == 0) || (strstr(response, "ERR") != NULL) || (strstr(response, "ACK") == NULL);
 

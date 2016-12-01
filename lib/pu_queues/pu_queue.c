@@ -10,6 +10,12 @@
 #include "pu_logger.h"
 #include "pu_queue.h"
 
+////////////////////////////////////////////////////
+//Common local data
+static pu_queue_events_set_t ps_all_queues_events_set = NULL;
+static pthread_mutex_t ps_all_queues_cond_mutex;            //Common mutex to protect condition set changes
+static pthread_cond_t ps_all_queues_cond;                   //condition event
+static unsigned int PQ_Size;
 /////////////////////////////////////////////////////////////
 //
 static unsigned long inc_idx(const pu_queue_t* q, unsigned long idx) {
@@ -40,10 +46,16 @@ static int check_params_for_pu_queue_push(const pu_queue_t* queue, const pu_queu
 //
 //pu_queues_init - NB! it must be called once in initiation section before using any queue in a process!!
 //
-int pu_queues_init() {       // returns 0 if initiation fails
+int pu_queues_init(unsigned int queues_amount) {       // returns 0 if initiation fails
     pthread_mutex_init(&ps_all_queues_cond_mutex, NULL);
     pthread_cond_init (&ps_all_queues_cond, NULL);
-    for(unsigned int i = 0; i < PS_Size; i++) ps_all_queues_events_set[i] = 0;
+    if(ps_all_queues_events_set) {
+        pu_log(LL_ERROR, "pu_queues_init: Queues already initiated. Initiation ignored");
+        return 0;
+    }
+    PQ_Size = queues_amount + 1; //Adding default event "PQ_TIMEOUT"
+    ps_all_queues_events_set = malloc(PQ_Size* sizeof(pu_queue_event_t));
+    for(unsigned int i = 0; i < PQ_Size; i++) ps_all_queues_events_set[i] = 0;
     return 1;
 }
 //
@@ -55,12 +67,16 @@ void pu_queues_destroy() {
 }
 pu_queue_events_set_t* pu_add_queue_event(pu_queue_events_set_t* queue_events_mask, pu_queue_event_t event) { //add event to the waiting list
     if(!check_ptr(queue_events_mask, "pu_add_queue_event() got NULL \'queue_events_mask\' parameter. Failed.")) return NULL;
+    if(event >= PQ_Size) {
+        pu_log(LL_ERROR, "pu_add_queue_event: event# exceeds event set size. Failed.");
+        return NULL;
+    }
     (*queue_events_mask)[event] = 1;
     return queue_events_mask;
 }
 pu_queue_events_set_t* pu_clear_queue_events(pu_queue_events_set_t* queue_events_mask) { //remove all events from the waiting list
     if(!check_ptr(queue_events_mask, "pu_clear_queue_event() got NULL \'queue_events_mask\' parameter. Failed.")) return NULL;
-    for(pu_queue_event_t i = PS_Timeout; i < PS_Size; i++)
+    for(pu_queue_event_t i = 0; i < PQ_Size; i++)
     (*queue_events_mask)[i] = 0;
     return queue_events_mask;
 }
@@ -89,21 +105,21 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_events_set_t* queue_events_set, uns
         rt = pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
         if (rt == ETIMEDOUT) {
             pthread_mutex_unlock(&ps_all_queues_cond_mutex);
-            return PS_Timeout;
+            return PQ_TIMEOUT;
         }
     }
     else {
         pthread_cond_wait(&ps_all_queues_cond, &ps_all_queues_cond_mutex);
     }
 
-    ret = PS_Timeout;
-    for(pu_queue_event_t i = PS_Timeout+1; i < PS_Size; i++) {
+    ret = PQ_TIMEOUT;
+    for(pu_queue_event_t i = PQ_TIMEOUT+1; i < PQ_Size; i++) {
         if(((*queue_events_set)[i]) && (ps_all_queues_events_set[i] > 0)) {
             ps_all_queues_events_set[i] = 0;
             ret = i;
         }
     }
-    if(ret == PS_Timeout) goto wait;    //That was not our condition!
+    if(ret == PQ_TIMEOUT) goto wait;    //That was not our condition!
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
     return ret;
 }
@@ -149,7 +165,7 @@ void pu_queue_erase(pu_queue_t* queue) {
 
     for(unsigned long i = 0; i < queue->q_array_size; i++) erase_element(queue, i);
 }
-void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, unsigned int len) {
+void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
 
     if(!check_params_for_pu_queue_push(queue, data, len)) return;
 
@@ -183,7 +199,7 @@ void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, unsigned int l
     pthread_mutex_unlock(&queue->own_mutex);
 }
 //returns 0 if no data
-int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, unsigned int* len) {
+int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
     if(!check_ptr(queue, "pu_queue_pop() got NULL \'queue\' parameter. Failed.")) return 0;
     if(!check_ptr(data, "pu_queue_pop() got NULL \'data\' parameter. Failed.")) return 0;
     if(!check_ptr(len, "pu_queue_pop() got NULL \'len\' parameter. Failed.")) return 0;

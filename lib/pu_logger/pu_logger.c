@@ -107,7 +107,7 @@ static const char* get_line(const char* in, unsigned int offset, size_t* rest) {
 //file_name     - string with the full path to the log file
 //rec_amount    - size of max amount of records
 //log_level     - defines the level of logging. All recirds with the type higher than log level will be suppressed
-void pu_start_logger(const char* file_name, unsigned rec_amount, log_level_t l_level) {
+void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_level) {
     if (pthread_mutex_init(&lock, NULL) != 0) {
         printf("\n LOGGER: mutex init failed\n");
     }

@@ -7,14 +7,12 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <curl/curl.h>
-#include <zconf.h>
+#include <unistd.h>
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
-#include "pt_tcp_utl.h"
 #include "pt_http_utl.h"
 #include "pu_queue.h"
-#include "pu_logger.h"
 
 ////////////////////////////////////////////
 // Global params to be set in common configuration
@@ -23,7 +21,12 @@ pu_queue_t* from_server;
 pu_queue_t* to_agent;
 pu_queue_t* from_agent;
 
+//Total stop
 static volatile int finish = 0;
+
+//Queue events defines
+typedef enum {PS_Timeout = PQ_TIMEOUT,  PS_FromAgentQueue = 1, PS_ToServerQueue = 2, PS_FromServerQueue = 3, PS_ToAgentQueue = 4, PS_Size} queue_events_t;
+
 
 /** Thread attributes */
 static pthread_t sreadThreadId;
@@ -40,109 +43,15 @@ static volatile int wt_stops = 1;
 static void* server_write_thread(void* dummy_params);
 static volatile int at_stops = 1;
 static void* agent_thread(void *dummy_params);
-
-void static stop_children();
-void static main_thread_shutdown();
-
 //Main thread mgmt functions
-int static main_thread_startup() {
-    if(daemon(0, 0) < 0) {
-        fprintf(stderr, "Proxy main thread: Daemonization failed. Err=%d, %s\n", errno, strerror(errno));
-        return 0;
-    }
+static void stop_children();
+static int main_thread_startup();
+static void main_thread_shutdown();
 
-    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) return 0;
-
-    pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
-
-    if(!pt_http_curl_init()) return 0;
-
-    //Queues initiation
-    pu_queues_init();
-    to_server = pu_queue_create(pc_getQueuesRecAmt(), PS_ToServerQueue);
-    from_server = pu_queue_create(pc_getQueuesRecAmt(), PS_FromServerQueue);
-    to_agent = pu_queue_create(pc_getQueuesRecAmt(), PS_ToAgentQueue);
-    from_agent = pu_queue_create(pc_getQueuesRecAmt(), PS_FromAgentQueue);
-
-    if(!to_server || !from_server || !to_agent || !from_agent) return 0;
-
-    pu_log(LL_INFO, "Proxy main thread: initiated");
-
-//Threads start
-    pthread_attr_init(&sreadThreadAttr);
-    if (pthread_create(&sreadThreadId, &sreadThreadAttr, &server_read_thread, NULL)) {
-        pu_log(LL_ERROR, "[server_read_thread]: Creating write thread failed: %s", strerror(errno));
-        return 0;
-    }
-    pu_log(LL_INFO, "[server_read_thread]: started.");
-
-    pthread_attr_init(&swriteThreadAttr);
-    if (pthread_create(&swriteThreadId, &swriteThreadAttr, &server_write_thread, NULL)) {
-        pu_log(LL_ERROR, "[server_write_thread]: Creating write thread failed: %s", strerror(errno));
-        return 0;
-    }
-    pu_log(LL_INFO, "[server_write_thread]: started.");
-
-    pthread_attr_init(&agentThreadAttr);
-    if (pthread_create(&agentThreadId, &agentThreadAttr, &agent_thread, NULL)) {
-        pu_log(LL_ERROR, "[agent_thread]: Creating write thread failed: %s", strerror(errno));
-        return 0;
-    }
-    pu_log(LL_INFO, "[agent_thread]: started.");
-
-    return 1;
-}
-void static main_thread_shutdown() {
-    void* ret;
-    stop_children();
-    sleep(10);
-    pthread_join(sreadThreadId, &ret);
-    pthread_join(swriteThreadId, &ret);
-    pthread_join(agentThreadId, &ret);
-
-    pthread_attr_destroy(&sreadThreadAttr);
-    pthread_attr_destroy(&swriteThreadAttr);
-    pthread_attr_destroy(&agentThreadAttr);
-
-//Queues destroying
-    pu_queue_erase(from_server);
-    pu_queue_erase(to_server);
-    pu_queue_erase(from_agent);
-    pu_queue_erase(to_agent);
-
-    pu_queues_destroy();
-
-    pu_log(LL_INFO, "Server Main is finished");
-
-//cURL stop
-    curl_global_cleanup();
-
-//Logger stop
-    pu_stop_logger();
-}
-
-static __time_t prev_sec = 0;
-static __time_t to = 60;
-void static stop_children() {
-    int attempts = 0;
-
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-    if(now.tv_sec > prev_sec+to) {
-
-        finish = 1;
-
-        while ((attempts++ < 10) && (!wt_stops || !at_stops || !rt_stops)) sleep(1);
-
-        if (!wt_stops) pu_log(LL_ERROR, "write_to_server thread wasn't shotdown");
-        if (!rt_stops) pu_log(LL_ERROR, "read_from_server thread wasn't shotdown");
-        if (!at_stops) pu_log(LL_ERROR, "agent thread wasn't shotdown");
-    }
-}
 ///////////////////////////////////////////////////////////////////////////////
+//Main proxy thread
 //
-//
+//The only main thread's buffer!
 static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];
 int pt_main_thread_start() { //Starts and detach the main thread.
     pu_queue_events_set_t events;
@@ -154,7 +63,7 @@ int pt_main_thread_start() { //Starts and detach the main thread.
     pu_add_queue_event(&events, PS_FromServerQueue);
 
     while(!finish) {
-        unsigned int len = sizeof(mt_msg);
+        size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
 
         switch (ev=pu_wait_for_queues(&events, DEFAULT_MAIN_THREAD_TO_SEC)) {
@@ -184,7 +93,9 @@ int pt_main_thread_start() { //Starts and detach the main thread.
     main_thread_shutdown();
     return 0;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+//Local functions defenition
+//
 static void* server_read_thread(void* dummy_params) {
     char *buf = NULL;
     rt_stops = 0;
@@ -201,13 +112,15 @@ static void* server_read_thread(void* dummy_params) {
         while(rc <= 0) {
             rc = pt_http_read(&buf);
         }
-        pu_queue_push(from_server, buf, rc+1);  //NB! Possibly needs to split info to 0-terminated strings!
+        pu_queue_push(from_server, buf, (unsigned int)rc+1);  //NB! Possibly needs to split info to 0-terminated strings!
         pu_log(LL_INFO, "Received from cloud: %s", buf);
     }
     pt_http_read_destroy();
     rt_stops = 1;
     pthread_exit(NULL);
 }
+////////////////////////////////////////////////////////
+//THe only write_thread buffer!
 static pu_queue_msg_t wt_msg[PROXY_MAX_MSG_LEN];
 static void* server_write_thread(void* dummy_params) {
     pu_queue_events_set_t events;
@@ -226,13 +139,14 @@ static void* server_write_thread(void* dummy_params) {
     while(!finish) {
 
         if(pu_wait_for_queues(&events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
-             unsigned int len = sizeof(wt_msg);
+            size_t len = sizeof(wt_msg);
+            
              while(pu_queue_pop(to_server, wt_msg, &len)) {
                  pu_log(LL_DEBUG, "Got from from main by server_write_thread: %s", wt_msg);
 
                  int rc = 0;
-                 char *resp;
-                 unsigned int resp_len = 0;
+                 char *resp = NULL;
+                 size_t resp_len = 0;
                  while (rc <= 0) {
                      rc = pt_http_write(wt_msg, len, &resp, &resp_len);
                  }
@@ -270,7 +184,7 @@ static void* agent_thread(void *dummy_params) {
         reconnect = 0;
 
         while(!reconnect) {
-            int ret;
+            ssize_t ret;
             pt_tcp_assembling_buf_t as_buf = {abuf, sizeof(abuf), 0, rbuf, sizeof(rbuf)};
 
             switch(pt_tcp_selector(socket)) {
@@ -278,7 +192,7 @@ static void* agent_thread(void *dummy_params) {
                     // read
                     while(1) {
                         if (ret = pt_tcp_read(socket, rbuf, sizeof(rbuf)), ret > 0) { //read smth
-                            const char * msg = pt_tcp_assemble(rbuf, ret, &as_buf);
+                            const char * msg = pt_tcp_assemble(rbuf, (unsigned int)ret, &as_buf);
                             if(msg) {
                                 pu_queue_push(to_server, msg, strlen(msg)+1);
                                 pu_log(LL_INFO, "agent_thread got from AGENT: %s", msg);
@@ -298,7 +212,7 @@ static void* agent_thread(void *dummy_params) {
                 case CU_WRITE: {
                     //write
                     if(pu_wait_for_queues(&events, DEFAULT_AGENT_THREAD_TO_SEC)) {
-                        unsigned int len = sizeof(rbuf);
+                        size_t len = sizeof(rbuf);
                         while(pu_queue_pop(to_agent, rbuf, &len)) {
                             if(ret = pt_tcp_write(socket, rbuf, strlen(rbuf)+1), ret > 0) { //write smth
                                 pu_log(LL_DEBUG, "agent_thread: sent to AGENT %d bytes: %s", ret, rbuf);
@@ -329,4 +243,103 @@ static void* agent_thread(void *dummy_params) {
     pt_tcp_shutdown(socket);
     at_stops = 1;
     pthread_exit(NULL);
+}
+//Main thread mgmt functions
+static int main_thread_startup() {
+
+#ifdef PROXY_SEPARATE_RUN
+    if(daemon(0, 0) < 0) {
+        fprintf(stderr, "Proxy main thread: Daemonization failed. Err=%d, %s\n", errno, strerror(errno));
+        return 0;
+    }
+#endif
+
+    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) return 0;
+
+    pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
+
+    if(!pt_http_curl_init()) return 0;
+
+    //Queues initiation
+    pu_queues_init(PS_Size);
+    to_server = pu_queue_create(pc_getQueuesRecAmt(), PS_ToServerQueue);
+    from_server = pu_queue_create(pc_getQueuesRecAmt(), PS_FromServerQueue);
+    to_agent = pu_queue_create(pc_getQueuesRecAmt(), PS_ToAgentQueue);
+    from_agent = pu_queue_create(pc_getQueuesRecAmt(), PS_FromAgentQueue);
+
+    if(!to_server || !from_server || !to_agent || !from_agent) return 0;
+
+    pu_log(LL_INFO, "Proxy main thread: initiated");
+
+//Threads start
+    pthread_attr_init(&sreadThreadAttr);
+    if (pthread_create(&sreadThreadId, &sreadThreadAttr, &server_read_thread, NULL)) {
+        pu_log(LL_ERROR, "[server_read_thread]: Creating write thread failed: %s", strerror(errno));
+        return 0;
+    }
+    pu_log(LL_INFO, "[server_read_thread]: started.");
+
+    pthread_attr_init(&swriteThreadAttr);
+    if (pthread_create(&swriteThreadId, &swriteThreadAttr, &server_write_thread, NULL)) {
+        pu_log(LL_ERROR, "[server_write_thread]: Creating write thread failed: %s", strerror(errno));
+        return 0;
+    }
+    pu_log(LL_INFO, "[server_write_thread]: started.");
+
+    pthread_attr_init(&agentThreadAttr);
+    if (pthread_create(&agentThreadId, &agentThreadAttr, &agent_thread, NULL)) {
+        pu_log(LL_ERROR, "[agent_thread]: Creating write thread failed: %s", strerror(errno));
+        return 0;
+    }
+    pu_log(LL_INFO, "[agent_thread]: started.");
+
+    return 1;
+}
+static void main_thread_shutdown() {
+    void* ret;
+    stop_children();
+    sleep(10);
+    pthread_join(sreadThreadId, &ret);
+    pthread_join(swriteThreadId, &ret);
+    pthread_join(agentThreadId, &ret);
+
+    pthread_attr_destroy(&sreadThreadAttr);
+    pthread_attr_destroy(&swriteThreadAttr);
+    pthread_attr_destroy(&agentThreadAttr);
+
+//Queues destroying
+    pu_queue_erase(from_server);
+    pu_queue_erase(to_server);
+    pu_queue_erase(from_agent);
+    pu_queue_erase(to_agent);
+
+    pu_queues_destroy();
+
+    pu_log(LL_INFO, "Server Main is finished");
+
+//cURL stop
+    curl_global_cleanup();
+
+//Logger stop
+    pu_stop_logger();
+}
+static void stop_children() {
+    int attempts = 0;
+
+    finish = 1;
+
+    while ((attempts++ < 10) && (!wt_stops || !at_stops || !rt_stops)) sleep(1);
+
+    if (!wt_stops) {
+        pu_log(LL_ERROR, "write_to_server thread wasn't shotdown. Cancel the thread.");
+        pthread_cancel(swriteThreadId);
+    }
+    if (!rt_stops) {
+        pu_log(LL_ERROR, "read_from_server thread wasn't shotdown. Cancel the thread.");
+        pthread_cancel(sreadThreadId);
+    }
+    if (!at_stops) {
+        pu_log(LL_ERROR, "agent thread wasn't shotdown. Cancel the thread.");
+        pthread_cancel(agentThreadId);
+    }
 }

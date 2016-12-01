@@ -89,7 +89,7 @@ int pt_tcp_server_connect(int port, int sock, int reconnect) {  // returns socke
 //accept incoming connection
             struct sockaddr_in cli_addr = {0};
             socklen_t size = sizeof(struct sockaddr);
-            int conn_sock = accept(server_socket, (struct sockaddr *) &cli_addr, (socklen_t *) &size);
+            int conn_sock = accept(server_socket, (struct sockaddr *) &cli_addr, &size);
             if (conn_sock < 0) {
                 pu_log(LL_ERROR, "pt_tcp_server_connect: error accepting incoming connection %d, %s", errno, strerror(errno));
                 return -1;
@@ -151,7 +151,7 @@ int pt_tcp_client_connect(int port, int sock) { // returns socket or -1 if error
             sleep(1);   //wait for a while
         }
         else {
-            int ret = fcntl(client_socket, F_GETFL);
+            ret = fcntl(client_socket, F_GETFL);
             if (ret < 0) {
                 pu_log(LL_ERROR, "pt_tcp_client_connect: error get sock opts %d, %s", errno, strerror(errno));
                 return -1;
@@ -208,8 +208,8 @@ pt_tcp_selector_t pt_tcp_selector(int sock) {
 //buf       - buffer to copy info from the socket
 //buf_len   - buf capacity
 //Return amount of bytes red; -1 if error
-int pt_tcp_read(int sock, char* buf, unsigned buf_len) { // returns >0 if smth to read, 0 if nothing -1 if reconnect needed
-    int ret = read(sock, buf, buf_len);
+ssize_t pt_tcp_read(int sock, char* buf, size_t buf_len) { // returns >0 if smth to read, 0 if nothing -1 if reconnect needed
+    ssize_t ret = read(sock, buf, buf_len);
     if (ret > 0) { //Hurray, we read smth!
         return ret;
     } else { // some shit... go to reconnect
@@ -224,8 +224,8 @@ int pt_tcp_read(int sock, char* buf, unsigned buf_len) { // returns >0 if smth t
 //buf       - buffer to copy info to the socket
 //buf_len   - message len
 //Return amount of bytes written; -1 if error
-int pt_tcp_write(int sock, const char* buf, unsigned buf_len) {  // returns >0 if smth to write, 0 if nothing -1 reconnect needed
-    int ret = write(sock, buf, buf_len);
+ssize_t pt_tcp_write(int sock, const char* buf, size_t buf_len) {  // returns >0 if smth to write, 0 if nothing -1 reconnect needed
+    ssize_t ret = write(sock, buf, buf_len);
     if (ret > 0) { //Hurray, we write smth!
         return ret;
     } else { // some shit... go to reconnect
@@ -251,7 +251,7 @@ void pt_tcp_shutdown(int sock) {
 //len   - message length
 //ab    - assembling bufer
 //Return the 0-terminated message
-const char* pt_tcp_assemble(const char* in, unsigned len, pt_tcp_assembling_buf_t* ab) { // assimbling the full message. Return NULL if nothing oe msg
+const char* pt_tcp_assemble(const char* in, size_t len, pt_tcp_assembling_buf_t* ab) { // assimbling the full message. Return NULL if nothing oe msg
     unsigned i;
     char* ret = NULL;
     assert(in); assert(ab);

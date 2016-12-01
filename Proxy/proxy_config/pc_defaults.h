@@ -10,7 +10,7 @@
 #include "libhttpcomm.h"
 #include "eui64.h"
 
-#define DEFAULT_CFG_FILE_NAME   "/media/sf_GWDrive/Presto_new/build/proxyJSON.test"
+#define DEFAULT_CFG_FILE_NAME   "/media/sf_GWDrive/Presto_new/build/proxyJSON.conf"
 
 //Common defaults
 #define DEFAULT_LOG_NAME        "/media/sf_GWDrive/Presto_new/build/COMM_LOG"

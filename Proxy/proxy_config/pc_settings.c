@@ -2,8 +2,6 @@
 // Created by gsg on 29/10/16.
 //
 #include <assert.h>
-#include <errno.h>
-#include <zconf.h>
 #include <pthread.h>
 #include "string.h"
 #include "stdio.h"
@@ -11,7 +9,6 @@
 
 #include "cJSON.h"
 
-#include "libhttpcomm.h"
 #include "pc_config.h"
 #include "pc_settings.h"
 #include "pc_defaults.h"
@@ -40,19 +37,19 @@
 #define PROXY_AGENT_PORT        "AGENT_PORT"
 
 ////////////////////////////////////////////////////////
-//Convig values
+//Config values
 static char             log_name[PROXY_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
 static char             sertificate_path[PROXY_MAX_PATH];
 static char             activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
 static char             device_address[PROXY_DEVICE_ID_SIZE];
-unsigned int            device_type;
+static unsigned int     device_type;
 static char             cloud_url[PROXY_MAX_PATH];
 static char             main_cloud_url[PROXY_MAX_PATH];
-unsigned int            long_get_to;
-unsigned int            queue_rec_amt;
-unsigned int            agent_port;
+static unsigned int     long_get_to;
+static unsigned int     queue_rec_amt;
+static unsigned int     agent_port;
 
 static char conf_fname[PROXY_MAX_PATH];
 
@@ -84,7 +81,7 @@ const char* pc_getLogFileName() {
 }
 
 //Return max capacity of log file
-unsigned int pc_getLogRecordsAmt() {
+size_t pc_getLogRecordsAmt() {
     PC_RET(DEFAULT_LOG_RECORDS_AMT, log_rec_amt);
 }
 
@@ -112,13 +109,13 @@ unsigned int pc_getAgentPort() {
 }
 
 //Return max amount of records kept in Presto queues
-unsigned int pc_getQueuesRecAmt() {
+size_t pc_getQueuesRecAmt() {
     PC_RET(DEFAULT_QUEUE_RECORDS_AMT, queue_rec_amt);
 }
 
 //Return the Presto device type.(31 for now...)
 unsigned int pc_getProxyDeviceType() {
-    PC_RET(DEFAULT_PROXY_DEV_TYPE, queue_rec_amt);
+    PC_RET(DEFAULT_PROXY_DEV_TYPE, device_type);
 }
 
 /////////////////////////////////////////////////////////////
@@ -161,7 +158,7 @@ int pc_load_config(const char* cfg_file_name) {
 
 //Copy to the ret the clour uprl string
 //return empty string if no value or the value > max_len
-void pc_getCloudURL(char* ret, unsigned int max_len) { //return empty strinng if no value
+void pc_getCloudURL(char* ret, size_t max_len) { //return empty strinng if no value
     pthread_mutex_lock(&local_mutex);
 
     if(max_len < strlen(cloud_url)+1)
@@ -174,7 +171,7 @@ void pc_getCloudURL(char* ret, unsigned int max_len) { //return empty strinng if
 
 //Copy the the ret the default cloud contact point string
 //Copy empty string if the value > max_len
-void pc_getMainCloudURL(char* ret, unsigned int max_len) {
+void pc_getMainCloudURL(char* ret, size_t max_len) {
     pthread_mutex_lock(&local_mutex);
 
     if(max_len < strlen(main_cloud_url)+1)
@@ -187,7 +184,7 @@ void pc_getMainCloudURL(char* ret, unsigned int max_len) {
 
 //Copy to the ret the activation token string.
 //Copy empty string if the value > max_len
-void pc_getActivationToken(char* ret, unsigned int max_len) {
+void pc_getActivationToken(char* ret, size_t max_len) {
     pthread_mutex_lock(&local_mutex);
 
     if(max_len < strlen(activation_token)+1)
@@ -200,7 +197,7 @@ void pc_getActivationToken(char* ret, unsigned int max_len) {
 
 //Copy to the ret the device address (deviceID) string.
 //Copy empty string if the value > max_len
-void pc_getDeviceAddress(char* ret, unsigned int max_len) {
+void pc_getDeviceAddress(char* ret, size_t max_len) {
     pthread_mutex_lock(&local_mutex);
 
     if(max_len < strlen(device_address)+1)

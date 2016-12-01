@@ -43,7 +43,7 @@
 
 /***************** Public Prototypes ****************/
 
-int eui64_toString(char *dest, int destLen); //Return 0 if failed
+int eui64_toString(char *dest, size_t destLen); //Return 0 if failed
 
 
 #endif

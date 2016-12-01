@@ -22,7 +22,7 @@
  */
 
 
-#include "time.h"
+#include <time.h>
 #include <stdint.h>
 #include <assert.h>
 #include <memory.h>
@@ -31,10 +31,9 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <zconf.h>
+#include <unistd.h>
 
 #include "pc_settings.h"
-#include "pu_logger.h"
 #include "ioterror.h"
 #include "eui64.h"
 
@@ -59,7 +58,7 @@ static error_t readDeviceType(char *deviceType);
  * @param destLen Length of the buffer
  * @return SUCCESS if we are able to capture the EUI64
  */
-error_t eui64_toBytes(uint8_t *dest, int destLen) {
+error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
   struct ifreq *ifr;
   struct ifconf ifc;
   char buf[1024];
@@ -167,7 +166,7 @@ error_t eui64_toBytes(uint8_t *dest, int destLen) {
  * Copy the EUI64 into a string
  * @return 1 if we are able to capture the EUI64 else return 0
  */
-error_t eui64_toString(char *dest, int destLen) {
+error_t eui64_toString(char *dest, size_t destLen) {
   uint8_t byteAddress[EUI64_BYTES_SIZE], i;
   uint16_t checksum= 0;
   char deviceType[DEVICE_TYPE_SIZE];

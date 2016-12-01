@@ -3,7 +3,6 @@
 //
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "eui64.h"
 #include "pc_settings.h"
@@ -20,7 +19,7 @@ int main(int argc, char *argv[]) {
         pu_log(LL_WARNING, "1111111111111111111111111111111111111111111111111");
 
         printf("getLogFileName(): %s\n", pc_getLogFileName());
-        printf("getLogRecordsAmt(): %d\n", pc_getLogRecordsAmt());
+        printf("getLogRecordsAmt(): %lu\n", pc_getLogRecordsAmt());
         printf("getLogVevel(): %d\n", pc_getLogVevel());
         printf("getSertificatePath(): %s\n", pc_getSertificatePath());
         pc_getActivationToken(buf, sizeof(buf));
@@ -30,7 +29,7 @@ int main(int argc, char *argv[]) {
         printf("pc_getProxyDeviceType(): %d\n", pc_getProxyDeviceType());
         printf("getLongGetTO(): %d\n", pc_getLongGetTO());
         printf("getAgentPort(): %d\n", pc_getAgentPort());
-        printf("getQueuesRecAmt(): %d\n", pc_getQueuesRecAmt());
+        printf("getQueuesRecAmt(): %lu\n", pc_getQueuesRecAmt());
         pc_getCloudURL(buf, sizeof(buf));
         printf("pc_getCloudURL(): %s\n", buf);
 

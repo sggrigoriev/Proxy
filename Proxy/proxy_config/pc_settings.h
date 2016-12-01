@@ -14,12 +14,12 @@
 //Set of "get" functions to make an access to settings for Presto modules
 
 const char* pc_getLogFileName();        //Return LOG-file name
-unsigned int pc_getLogRecordsAmt();     //Return max capacity of log file
+size_t pc_getLogRecordsAmt();     //Return max capacity of log file
 log_level_t pc_getLogVevel();           //Return the min log level to be stored in LOG_FILE
 const char* pc_getSertificatePath();    //Return the path to private sertificate file
 unsigned int pc_getLongGetTO();         //Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage
 unsigned int pc_getAgentPort();         //Return the port# for communications with the Agent
-unsigned int pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
+size_t pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
 unsigned int pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID string
 
 //////////////////////////////////////////////////////////////////////////
@@ -27,10 +27,10 @@ unsigned int pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID s
 
 int pc_load_config(const char* cfg_file_name);                  // return 1 if success, 0 if not
 
-void pc_getCloudURL(char* ret, unsigned int max_len);           //return empty string if no value or the value > max_len
-void pc_getMainCloudURL(char* ret, unsigned int max_len);       //return empty string if no value or the value > max_len
-void pc_getActivationToken(char* ret, unsigned int max_len);    //return empty string if no value or the value > max_len
-void pc_getDeviceAddress(char* ret, unsigned int max_len);
+void pc_getCloudURL(char* ret, size_t max_len);           //return empty string if no value or the value > max_len
+void pc_getMainCloudURL(char* ret, size_t max_len);       //return empty string if no value or the value > max_len
+void pc_getActivationToken(char* ret, size_t max_len);    //return empty string if no value or the value > max_len
+void pc_getDeviceAddress(char* ret, size_t max_len);
 
 int pc_saveActivationToken(const char* new_at);     //Return 1 of success, return 0 if not
 int pc_saveDeviceAddress(const char* new_da);       //Return 1 of success, return 0 if not

@@ -2,10 +2,9 @@
 // Created by gsg on 28/11/16.
 //
 
-#include <assert.h>
 #include <errno.h>
-#include <zconf.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -25,7 +24,7 @@ cJSON* load_file(const char* fname) {
         fprintf(stderr, "Config file %s open error %d %s\n", fname, errno, strerror(errno));
         return 0;
     }
-    int ptr = 0;
+    size_t ptr = 0;
     while (fgets(buffer, sizeof(buffer), f)) {
         cfg = realloc(cfg, strlen(buffer)+ptr);
         memcpy(cfg+ptr, buffer, strlen(buffer));
@@ -87,14 +86,18 @@ void json_uint_update(const char* item_name, unsigned int value, cJSON* cfg) {
 //str_setting   - returned value of field_name
 //max_size      - str_setting capacity
 //Return 1 if OK 0 if error
-int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, unsigned int max_size) {
+int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t max_size) {
     cJSON* obj;
     if(obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
         fprintf(stderr, "Setting %s is not found.\n", field_name);
         return 0;
     }
+    if(obj->type!= cJSON_String) {
+        fprintf(stderr, "Setting %s is not a string.\n", field_name);
+        return 0;
+    }
     if(strlen(obj->valuestring) > max_size-1) {
-        fprintf(stderr, "Setting %s value > than max size: %lu against %d.\n", field_name, strlen(field_name), max_size);
+        fprintf(stderr, "Setting %s value > than max size: %lu against %lu.\n", field_name, strlen(field_name), max_size);
         return 0;
     }
     strcpy(str_setting, obj->valuestring);
@@ -112,11 +115,51 @@ int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting)
         fprintf(stderr, "Setting %s is not found.\n", field_name);
         return 0;
     }
-
+    if(obj->type!= cJSON_Number) {
+        fprintf(stderr, "Setting %s is not a numeric.\n", field_name);
+        return 0;
+    }
     *uint_setting = (unsigned int)obj->valueint;
     return 1;
 }
 
+//getCharArray()    -Allocate memory and copy into it string array. arr_len contains amount of strings in array
+//cfg           - poiner to cJSON object containgng configuration
+//field_name    - JSON fileld name
+//carr_setting  - returned value of field_name
+//arr_len       - returned length of array
+//Return 1 if OK 0 if error
+int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting, unsigned int* arr_len) {
+    cJSON *obj;
+    *carr_setting = NULL;
+    unsigned int carr_counter;
+    *arr_len = 0;
+    unsigned int i,j;
+    if (obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
+        fprintf(stderr, "Setting %s is not found.\n", field_name);
+        return 0;
+    }
+    if(obj->type != cJSON_Array) {
+        fprintf(stderr, "Setting %s is not an array.\n", field_name);
+        return 0;
+    }
+    *arr_len = (unsigned int)cJSON_GetArraySize(obj);
+    j = *arr_len;
+    (*carr_setting) = (char**)malloc(j*sizeof(char**));
+    carr_counter = 0;
+    for(i = 0; i < j; i++) {
+        cJSON* item;
+        item = cJSON_GetArrayItem(obj, i);
+        if(item->type != cJSON_String) {
+            fprintf(stderr, "Item %d of setting %s not a string.Skipped\n", i, field_name);
+            (*arr_len)--;
+        }
+        else {
+            (*carr_setting)[carr_counter++] = (!item->string)?strdup(""):strdup(obj->string);
+        }
+    }
+    return 1;
+}
 //saveToFile() - save cfg to the fname
 //fname     - file name
 //cfg       - pointer to cJSON object
@@ -154,9 +197,9 @@ int saveToFile(const char* fname, cJSON* cfg) { //Returns 0 if bad
 //new_value     - new value
 //old_value     - poiner to the setting in memory
 //max_size      - old_value capacity
-int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, unsigned int max_size) {
+int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, size_t max_size) {
     if(strlen(new_value)+1 > max_size) {
-        fprintf(stderr, "%s(): new value %s is too big: %lu against %d\n", func_name, new_value, strlen(new_value), max_size);
+        fprintf(stderr, "%s(): new value %s is too big: %lu against %lu\n", func_name, new_value, strlen(new_value), max_size);
         return 0;
     }
 

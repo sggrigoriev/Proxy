@@ -7,8 +7,6 @@
 
 #include "pc_settings.h"
 #include "pc_defaults.h"
-#include "pu_logger.h"
-#include "eui64.h"
 
 int main(void) {
     char eui[PROXY_DEVICE_ID_SIZE];

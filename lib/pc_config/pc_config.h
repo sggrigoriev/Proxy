@@ -21,17 +21,21 @@ void json_uint_update(const char* item_name, unsigned int value, cJSON* cfg);
 
 //Copy string value of field_name of cgf object into str_settings limited by max_size.
 //Return 1 if OK 0 if error
-int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, unsigned int max_size);
+int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t max_size);
 
 //Copy unsigned int value of field_name of cgf object into uint_setting.
 //Return 1 if OK 0 if error
 int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting);
 
+//Allocate memory and copy into it string array. arr_len contains amount of strings in array
+//Return 1 if OK 0 if error
+int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting, unsigned int* arr_len);
+
 //Safe the cfg object, translated to json ASCII text into text file fname. Return 1 if success and 0 othervize
 int saveToFile(const char* fname, cJSON* cfg);
 
 //Update the correspondent setting old_value in memory plus updates the settings file: insert/update field name value by new_value
-int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, unsigned int max_size);
+int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, size_t max_size);
 
 int saveUintValue(const char* func_name, const char* conf_fname, const char* field_name,  unsigned int new_value, unsigned int* old_value);
 
