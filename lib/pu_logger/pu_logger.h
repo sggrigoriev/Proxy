@@ -8,6 +8,8 @@
 #ifndef PRESTO_PU_LOGGER_H
 #define PRESTO_PU_LOGGER_H
 
+#include <unistd.h>
+
 typedef enum {LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
 
 void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_level);    //initiate logging utility

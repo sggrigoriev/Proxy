@@ -12,21 +12,21 @@
 
 #define PQ_TIMEOUT 0
 
+//TODO: Add pesistent layer to some queue(s) to be able to sent some alerts after resart
 ////////////////////////////////////////////////////
 // Common part, concerning all queues
-typedef unsigned int pu_queue_event_t;
-
+typedef unsigned char pu_queue_event_t;
+#define PQ_STOP (sizeof(pu_queue_event_t)*8-1)
 ///////////////////////////////////////////////////
 // Common funtcions
 int pu_queues_init(unsigned int queues_amount);       // returns 0 if initiation fails
 void pu_queues_destroy();
 
-pu_queue_event_t* pu_create_event_set();
-void pu_delete_event_set(pu_queue_event_t* es);
+pu_queue_event_t pu_create_event_set();
 
-pu_queue_event_t* pu_add_queue_event(pu_queue_event_t* queue_events_mask, pu_queue_event_t event); //add event to the waiting list
-pu_queue_event_t* pu_clear_queue_events(pu_queue_event_t* queue_events_mask); //remove all events from the waiting list
-pu_queue_event_t pu_wait_for_queues(pu_queue_event_t* queue_events_mask, unsigned int to_sec); //wait for one or several queue events
+pu_queue_event_t pu_add_queue_event(pu_queue_event_t queue_events_mask, pu_queue_event_t event); //add event to the waiting list
+//NB! PQ_STOP as well as PQ_TIMEOUT could come any time!
+pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_mask, unsigned int to_sec); //wait for one or several queue events
 ///////////////////////////////////////////////////
 // Single queue types & funcrions
 
@@ -52,6 +52,7 @@ typedef struct {
 static const size_t DEFAULT_QUEUE_SIZE = 1024;
 
 pu_queue_t* pu_queue_create(size_t records_amt, pu_queue_event_t my_event); //create the queue sertain size
+void pu_queue_stop(pu_queue_t* queue);   //send the PQ_STOP to the queue
 void pu_queue_erase(pu_queue_t* queue);    //Dispose the queue
 
 void pu_queue_push(pu_queue_t*, const pu_queue_msg_t* data, size_t len);    //Add data to queue

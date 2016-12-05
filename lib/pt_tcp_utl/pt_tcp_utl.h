@@ -8,31 +8,27 @@
 #include <stdio.h>
 
 #define PT_BINDING_ATTEMPTS     1000
-#define PT_SOCK_SELECT_TO_SEC   1       //Select timeout in seconds
+#define PT_SOCK_SELECT_TO_SEC   1
+
+typedef struct {int server_socket; int rd_socket; int wr_socket;} pt_tcp_rw_t;
 
 //Server part
-int pt_tcp_server_connect(int prort, int socket, int reconnect);    //Return connected socket (>0), -1 if error
+int pt_tcp_server_connect(int port, pt_tcp_rw_t* rw_sockets);    //Return 1 if OK 0 if not
 //////////////////////////////////////////////////
 //Client part
-int pt_tcp_client_connect(int port, int socket);                    //Return connected socket (>0), -1 if error
+int pt_tcp_client_connect(int port, pt_tcp_rw_t* rw_sockets);                    ///Return 1 if OK 0 if not
 //////////////////////////////////////////////////
-//Common part
-typedef enum {CU_READ, CU_WRITE, CU_TIMEOUT, CU_ERROR} pt_tcp_selector_t;
-
-pt_tcp_selector_t pt_tcp_selector(int socket);                      //Return event (see pt_tcp_selector_t in pt_tcp_utl.h) or error.
-ssize_t pt_tcp_read(int socket, char* buf, size_t buf_len);           //Return amount of bytes red; -1 if error
-ssize_t pt_tcp_write(int socket, const char* buf, size_t buf_len);    //Return amount of bytes written; -1 if error
-void pt_tcp_shutdown(int sock);
+void pt_tcp_shutdown_rw(pt_tcp_rw_t* socks);
 //
 
 typedef struct{
     char* buf;
     size_t buf_len;
     size_t idx;
-    char* retbuf;
-    unsigned retbuf_len;
-
 } pt_tcp_assembling_buf_t;
 
-const char* pt_tcp_assemble(const char* in, size_t len, pt_tcp_assembling_buf_t* assempling_buf); //Return the 0-terminated message
+//Return the 0-terminated message of NULL if no finished string
+const char* pt_tcp_assemble(char *out, size_t out_len, pt_tcp_assembling_buf_t* assembling_buf);
+//Return 1 if ok, return 0 if in was rejected
+int pt_tcp_get(const char* in, ssize_t len, pt_tcp_assembling_buf_t* ab);
 #endif //PT_TCP_UTL_H

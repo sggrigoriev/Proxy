@@ -19,13 +19,9 @@
 static char wr_src[1000];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
-        "{\"version\": 2, \"proxyId\": \"aioxGW-GSGTest_deviceid\", \"sequenceNumber\": \"13117\","
-            "\"measures\": [{\"deviceId\": \"DEVICE_ID_NO_TIMESTAMP\","
-                "\"params\": [{\"name\": \"desc\",\"value\": \"Send a measurement from an existing device, with no timestamp\"},{\"name\": \"power\",\"value\": \"100\"}]"
-            "}]"
-        "}"
+               "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     );
-    sleep(1);
+//    sleep(1);
     return wr_src;
 }
 static int finish = 0;
@@ -65,11 +61,11 @@ static void* read_proc(void* socket) {
             if(bytes_read > 0) {
                 pt_tcp_get(rbuf, bytes_read, &as_buf);
                 while(pt_tcp_assemble(out_buf, sizeof(out_buf), &as_buf)) {     //Reag all fully incoming messages
-                    pu_log(LL_INFO, "From server: %s", out_buf);
+                    pu_log(LL_INFO, "From agent: %s", out_buf);
                 }
             }
             else {  //error in read
-                pu_log(LL_ERROR, "Client. Read op failed %d %s. Reconnect", errno, strerror(errno));
+                pu_log(LL_ERROR, "Server. Read op failed %d %s. Reconnect", errno, strerror(errno));
                 rw_stop = 1;
             }
             if (aio_read(&rd_cb) < 0) {                                         //Run read operation again
@@ -78,10 +74,10 @@ static void* read_proc(void* socket) {
             }
         }
         else if (ret == EAGAIN) {   //Timeout
-            pu_log(LL_DEBUG, "Client read: timeout");
+            pu_log(LL_DEBUG, "Server read: timeout");
         }
         else {
-//            pu_log(LL_WARNING, "Client read was interrupted. ");
+//            pu_log(LL_WARNING, "Server read was interrupted. ");
         }
     }
     pu_log(LL_INFO, "Client's read is finished");
@@ -116,7 +112,7 @@ static void* write_proc(void* socket) {
         //Start write operation
         int ret = aio_write(&wr_cb);
         if(ret != 0) { //op start failed
-            pu_log(LL_ERROR, "Client. Write op start failed %d %s. Reconnect", errno, strerror(errno));
+            pu_log(LL_ERROR, "Server. Write op start failed %d %s. Reconnect", errno, strerror(errno));
             rw_stop = 1;
         }
         else {
@@ -124,19 +120,19 @@ static void* write_proc(void* socket) {
             if(wait_ret == 0) {                                         //error in write
                 ssize_t bytes_written = aio_return(&wr_cb);
                 if(bytes_written <= 0) {
-                    pu_log(LL_ERROR, "Client. Write op failed %d %s. Reconnect", errno, strerror(errno));
+                    pu_log(LL_ERROR, "Server. Write op failed %d %s. Reconnect", errno, strerror(errno));
                     rw_stop = 1;
                 }
             }
             else if (wait_ret == EAGAIN) {   //Timeout
-                pu_log(LL_DEBUG, "Client write: timeout");
+                pu_log(LL_DEBUG, "Server write: timeout");
             }
             else {
 //                pu_log(LL_WARNING, "Client write was interrupted");
             }
         }
     }
-    pu_log(LL_INFO, "Client's write is finished");
+    pu_log(LL_INFO, "Server's write is finished");
     pthread_exit(NULL);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,26 +141,26 @@ static pthread_attr_t readThreadAttr;
 static pthread_t writeThreadId;
 static pthread_attr_t writeThreadAttr;
 
-static void* main_client_proc(void* dummy) {
+static void* main_server_proc(void* dummy) {
 
     while(!finish) {
         rw_stop = 0;
         pt_tcp_rw_t rw = {-1, -1, -1};
 
-        if(pt_tcp_client_connect(pc_getAgentPort(), &rw)) {
+        if(pt_tcp_server_connect(pc_getAgentPort(), &rw)) {
             pthread_attr_init(&readThreadAttr);
             if (pthread_create(&readThreadId, &readThreadAttr, &read_proc, &(rw.rd_socket))) {
-                pu_log(LL_ERROR, "[client_read_thread]: Creating write thread failed: %s", strerror(errno));
+                pu_log(LL_ERROR, "[server_read_thread]: Creating write thread failed: %s", strerror(errno));
                 break;
             }
-            pu_log(LL_INFO, "[client_read_thread]: started.");
+            pu_log(LL_INFO, "[server_read_thread]: started.");
 
             pthread_attr_init(&writeThreadAttr);
             if (pthread_create(&writeThreadId, &writeThreadAttr, &write_proc, &(rw.wr_socket))) {
-                pu_log(LL_ERROR, "[client_write_thread]: Creating write thread failed: %s", strerror(errno));
+                pu_log(LL_ERROR, "[server_write_thread]: Creating write thread failed: %s", strerror(errno));
                 return 0;
             }
-            pu_log(LL_INFO, "[client_write_thread]: started.");
+            pu_log(LL_INFO, "[server_write_thread]: started.");
 
             void *ret;
             pthread_join(readThreadId, &ret);
@@ -174,10 +170,10 @@ static void* main_client_proc(void* dummy) {
             pthread_attr_destroy(&writeThreadAttr);
 
             pt_tcp_shutdown_rw(&rw);
-            pu_log(LL_WARNING, "Client read/write threads restart");
+            pu_log(LL_WARNING, "Server read/write threads restart");
         }
         else {
-            pu_log(LL_ERROR, "Client: connection error %d %s", errno, strerror(errno));
+            pu_log(LL_ERROR, "Server: connection error %d %s", errno, strerror(errno));
             sleep(1);
         }
     }
@@ -187,9 +183,9 @@ static void* main_client_proc(void* dummy) {
 int main(int argv, char* argc[]) {
     pu_start_logger(/*"./COMM_LOG"*/NULL, 5000, LL_INFO );
 
-    main_client_proc(NULL);
+    main_server_proc(NULL);
 
-    pu_log(LL_INFO, "Client Main is finished");
+    pu_log(LL_INFO, "Server Main is finished");
     pu_stop_logger();
     return 1;
 }

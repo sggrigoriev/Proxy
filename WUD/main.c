@@ -35,7 +35,7 @@ int main() {
     }
 
 //initiate logger
-    pu_start_logger(/*wc_getLogFileName()*/NULL, wc_getLogRecordsAmt(), wc_getLogVevel());
+    pu_start_logger(wc_getLogFileName(), wc_getLogRecordsAmt(), wc_getLogVevel());
 
 //check if download & upload directories are not empty
     wf_set_download_state(wu_dir_empty(wc_getFWDownloadFolder()));

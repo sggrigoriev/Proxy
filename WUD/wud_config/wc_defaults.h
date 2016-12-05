@@ -16,6 +16,8 @@
 #define WC_DEFAULT_LOG_RECORDS_AMT 5000
 #define WC_DEFAULT_LOG_LEVEL       LL_DEBUG
 
+#define WC_DEFAULT_QUEUES_REC_AMT   1024
+
 #define WC_DEFAULT_PID_DIRECTORY    "/var/run/"
 #define WC_DEFAULT_WUD_NAME         "wud"
 #define WC_DEFAULT_PIDF_EXTENCION   "pid"

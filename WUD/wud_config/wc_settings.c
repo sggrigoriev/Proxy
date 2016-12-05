@@ -23,6 +23,8 @@
     #define WUD_LL_INFO           "INFO"
     #define WUD_LL_ERROR          "ERROR"
 
+#define WUD_QUEUES_REC_AMT          "QUEUES_REC_AMT"
+
 #define WUD_WORKING_DIRECTORY       "WUD_WORKING_DIRECTORY"
 #define WUD_COMM_PORT               "WUD_COMM_PORT"
 
@@ -48,6 +50,8 @@
 static char             log_name[WC_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
+
+static unsigned int     queues_rec_amt;
 //
 static char working_dir[WC_MAX_PATH];
 static unsigned int wud_port;
@@ -105,6 +109,9 @@ unsigned int wc_getLogRecordsAmt() {
 }
 log_level_t wc_getLogVevel() {
     WC_RET(WC_DEFAULT_LOG_LEVEL, log_level);
+}
+unsigned int wc_getQueuesRecAmt() {
+    WC_RET(WC_DEFAULT_QUEUES_REC_AMT, queues_rec_amt);
 }
 const char* wc_getWorkingDir() {
     WC_RET(WUD_DEFAULT_WORKING_DIRECTORY, working_dir);
@@ -175,6 +182,8 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, WUD_LOG_NAME, log_name, sizeof(log_name)))                                                 WC_ERR();
     if(!getUintValue(cfg, WUD_LOG_REC_AMT, &log_rec_amt))                                                           WC_ERR();
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);                                                                    WC_ERR();
+
+    if(!getUintValue(cfg, WUD_QUEUES_REC_AMT, &queues_rec_amt))                                                     WC_ERR();
 
     if(!getStrValue(cfg, WUD_WORKING_DIRECTORY, working_dir, sizeof(working_dir)))                                  WC_ERR();
     if(!getUintValue(cfg, WUD_COMM_PORT, &wud_port))                                                                WC_ERR();

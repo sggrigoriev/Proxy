@@ -7,7 +7,7 @@
 #ifndef PT_THREADS_H
 #define PT_THREADS_H
 
-int pt_main_thread_start(); //Starts and detach the main thread.
+int pt_main_thread(); //Starts and detach the main thread.
 
 
 

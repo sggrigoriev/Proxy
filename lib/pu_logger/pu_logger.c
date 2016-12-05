@@ -84,7 +84,7 @@ static unsigned long countlines(const char *filename) {
 //Make the output line of PU_LOG_REC_SIZE-1 len. Returns NULL if o info
 //NB! rest initially must set equal to strlen(in) and decreasing after each get_line call
 static char out[PU_LOG_REC_SIZE];
-static const char* get_line(const char* in, unsigned int offset, size_t* rest) {
+static const char* get_line(const char const* const in, unsigned int offset, size_t* rest) {
     if(*rest < strlen(in)) {
         memset(out, ' ', offset);
     }
@@ -92,7 +92,7 @@ static const char* get_line(const char* in, unsigned int offset, size_t* rest) {
         offset = 0;
     }
     if(*rest > 0) {
-        size_t info_size = (((*rest)+offset) > PU_LOG_REC_SIZE-1)?PU_LOG_REC_SIZE-1:((*rest)+offset);
+        size_t info_size = (((*rest)+offset) > PU_LOG_REC_SIZE-1)?PU_LOG_REC_SIZE-1 - offset:((*rest)+offset);
         strncpy(out+offset, in+strlen(in)-(*rest), info_size);
         memset(out+info_size, PU_END_FILL, PU_LOG_REC_SIZE-1 - info_size);
         out[PU_LOG_REC_SIZE-1] = '\0';
@@ -159,9 +159,10 @@ void pu_set_log_level(log_level_t ll) {
 static char buf[10000]; //to decrease the stack size...Anyway the buf access is under Lock protection
 void pu_log(log_level_t lvl, const char* fmt, ...) {
     unsigned int offset;
-     if(log_lvl < lvl) return;   //Suppress the message
-
     pthread_mutex_lock(&lock);
+     if(log_lvl < lvl){ pthread_mutex_unlock(&lock); return; }   //Suppress the message
+
+
         size_t rest;
 
         getData(buf, sizeof(buf));
@@ -174,8 +175,8 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
         va_end(argptr);
 
         rest = strlen(buf);
-        while(rest) {
-            if (rec_amt >= max_rec) {
+        do {
+             if (rec_amt >= max_rec) {
                 if (file) {
                     rewind(file);
                 }
@@ -187,5 +188,6 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
             }
             rec_amt++;
         }
+        while(rest);
     pthread_mutex_unlock(&lock);
 }

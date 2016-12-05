@@ -12,6 +12,8 @@ const char* wc_getLogFileName();
 unsigned int wc_getLogRecordsAmt();
 log_level_t wc_getLogVevel();
 
+unsigned int wc_getQueuesRecAmt();
+
 const char* wc_getWorkingDir();
 unsigned int wc_getWUDPort();
 

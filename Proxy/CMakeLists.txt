@@ -15,6 +15,7 @@ set(REQUIRED_LIBRARIES
         m
         pthread
         curl
+        rt
         )
 
 #all include paths
@@ -60,6 +61,18 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
         )
+#Test server
+file(GLOB SOURCE_FILES_TEST_SERVER
+        test_server/comm_server.c
+        proxy_threads/*.c
+        proxy_config/pc_settings.c
+        ../lib/pt_tcp_utl/*.c
+        ../lib/pu_logger/*.c
+        ../lib/pc_config/pc_config.c
+        ../lib/pu_queues/*.c
+        ../lib/libhttpcomm/*.c
+        ../lib/json/*.c
+        )
 
 #Test config
 file(GLOB SOURCE_FILES_TEST_CONFIG
@@ -87,11 +100,13 @@ file(GLOB SOURCE_FILES_TEST_EUI
 
 add_executable(Proxy ${SOURCE_FILES})
 add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
+add_executable(comm_server ${SOURCE_FILES_TEST_SERVER})
 add_executable(pc_test ${SOURCE_FILES_TEST_CONFIG})
 add_executable(eui_test ${SOURCE_FILES_TEST_EUI})
 
 
 target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
 target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
+target_link_libraries(comm_server ${REQUIRED_LIBRARIES})
 target_link_libraries(pc_test ${REQUIRED_LIBRARIES})
 target_link_libraries(eui_test ${REQUIRED_LIBRARIES})
