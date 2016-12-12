@@ -174,6 +174,11 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
     params.timeouts.transferTimeout = DEFAULT_HTTP_TRANSFER_TIMEOUT_SEC;
     params.verbose = false;
 
+    memset(outBuf, 0, sizeof(outBuf));
+    pc_getDeviceAddress(devID, sizeof(devID)-1);
+    snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyId\": \"%s\", %s}", devID, outBuf);
+    len = strlen(outBuf);
+
     do {
         if (serverRetry == true) {
             retries++;
@@ -183,12 +188,6 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
         pc_getCloudURL(url, sizeof(url));
 
         pu_log(LL_INFO, "pt_http_write(): POST URL = %s", url);
-
-        memset(outBuf, 0, sizeof(outBuf));
-        pc_getDeviceAddress(devID, sizeof(devID)-1);
-        snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyId\": \"%s\", %s}", devID, outBuf);
-        len = strlen(outBuf);
-
 
         pc_getActivationToken(activation_token, sizeof(activation_token));
         if (libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url,
