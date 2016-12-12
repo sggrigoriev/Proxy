@@ -39,13 +39,15 @@
 #include <assert.h>
 #include <curl/curl.h>
 
+/*
 #include <libxml/globals.h>
 #include <libxml/xmlerror.h>
 #include <libxml/parser.h>
-#include <libxml/parserInternals.h> /* only for xmlNewInputFromFile() */
+#include <libxml/parserInternals.h> // only for xmlNewInputFromFile()
 #include <libxml/tree.h>
 #include <libxml/debugXML.h>
 #include <libxml/xmlmemory.h>
+*/
 #include <errno.h>
 #include <string.h>
 #include <time.h>
@@ -247,7 +249,7 @@ int libhttpcomm_sendMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 {yc_printf_msg("%s:in,TX:%s %s|||%s==========\n", __FUNCTION__, httpMethod == CURLOPT_POST ? "POST" : "GET", url, msgToSendPtr ? msgToSendPtr : "null");
     CURL * curlHandle = NULL;
     CURLcode curlResult;
-    char tempString[PATH_MAX];
+    char tempString[4097];
     char errorBuffer[CURL_ERROR_SIZE];
     struct HttpIoInfo outBoundCommInfo;
     struct HttpIoInfo inBoundCommInfo;
@@ -283,7 +285,7 @@ int libhttpcomm_sendMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 	{
 	    if ( msgToSendSize > 0 )
 	    {
-		slist = curl_slist_append(slist, "Content-Type: text/xml");
+		slist = curl_slist_append(slist, "Content-Type: application/json");
 		snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
 		slist = curl_slist_append(slist, tempString);
 	    }
@@ -489,7 +491,7 @@ int libhttpcomm_postMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 {yc_printf_msg("%s:in,TX:%s %s|||%s==========\n", __FUNCTION__, httpMethod == CURLOPT_HTTPPOST ? "HTTPPOST" : httpMethod == CURLOPT_POST ? "POST" : "GET", url, msgToSendPtr ? msgToSendPtr : "null");
     CURL * curlHandle = NULL;
     CURLcode curlResult;
-    char tempString[PATH_MAX];
+    char tempString[4097];
     char errorBuffer[CURL_ERROR_SIZE];
     struct HttpIoInfo outBoundCommInfo;
     struct HttpIoInfo inBoundCommInfo;
@@ -535,7 +537,7 @@ int libhttpcomm_postMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
         {
             if ( msgToSendSize > 0 )
             {
-                slist = curl_slist_append(slist, "Content-Type: text/xml");
+                slist = curl_slist_append(slist, "Content-Type: application/json");
                 snprintf(tempString, sizeof(tempString), "Content-Length: %d", msgToSendSize);
                 slist = curl_slist_append(slist, tempString);
             }
@@ -885,7 +887,7 @@ int libhttpcomm_sendFile(const char *url, const char *sslCertPath, const char *a
     CURL * curlHandle;
     CURLcode curlResult;
     FILE *file = NULL;
-    char tempString[PATH_MAX];
+    char tempString[4097];
     char errorBuffer[CURL_ERROR_SIZE];
     int fileSize = 0;
     struct HttpIoInfo inBoundCommInfo;

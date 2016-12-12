@@ -41,6 +41,7 @@ static void make_json_answer(char* buf, unsigned int buf_len, unsigned long comm
 // If something went wrong - repeat the answer several times, log error and return
 static void send_responce_to_command(unsigned long command_id);
 
+
 /////////////////////////////////////////////////////////////
 //Global functions
 //
@@ -163,6 +164,7 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
     char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
     char outBuf[PROXY_MAX_MSG_LEN];
     char response[PROXY_MAX_HTTP_SEND_MESSAGE_LEN];
+    char devID[PROXY_DEVICE_ID_SIZE+1];
     int retries = 0;
     http_param_t params;
 
@@ -183,7 +185,10 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
         pu_log(LL_INFO, "pt_http_write(): POST URL = %s", url);
 
         memset(outBuf, 0, sizeof(outBuf));
-        memcpy(outBuf, buf, len);           //libhttpcomm_sendMsg spoiling data :-(
+        pc_getDeviceAddress(devID, sizeof(devID)-1);
+        snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyID\": \"%s\", %s}", devID, outBuf);
+
+
         pc_getActivationToken(activation_token, sizeof(activation_token));
         if (libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url,
                                 pc_getSertificatePath(), activation_token, outBuf,
@@ -331,3 +336,4 @@ static void send_responce_to_command(unsigned long command_id) {
     }
     while (serverRetry == true && retries < PROXY_MAX_HTTP_RETRIES);
 }
+
