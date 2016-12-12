@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6)
 
 project(WUD C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY /media/sf_GWDrive/Presto_new/build)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -10,6 +10,7 @@ set(REQUIRED_LIBRARIES
         m
         pthread
         curl
+        rt
         )
 
 #all include paths
@@ -17,12 +18,12 @@ include_directories(
         wud_config
         wud_fw_upgrade
         wud_monitor
-        wud_request_processor
         wud_startup
         wud_watchdog
         wud_actions
         wud_utils
         wud_threads
+        ../lib/presto_commands
         ../lib/pt_tcp_utl
         ../lib/pu_logger
         ../lib/pc_config
@@ -37,12 +38,12 @@ file(GLOB SOURCE_FILES
         wud_config/wc_settings.c
         wud_fw_upgrade/*.c
         wud_monitor/*.c
-        wud_request_processor/*.c
         wud_startup/*.c
         wud_watchdog/*.c
         wud_actions/*.c
         wud_utils/*.c
         wud_threads/*.c
+        ../lib/presto_commands/*.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
         ../lib/pc_config/pc_config.c
