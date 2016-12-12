@@ -10,10 +10,10 @@
 #include "libhttpcomm.h"
 #include "eui64.h"
 
-#define DEFAULT_CFG_FILE_NAME   "/media/sf_GWDrive/Presto_new/build/proxyJSON.conf"
+#define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"
 
 //Common defaults
-#define DEFAULT_LOG_NAME        "/media/sf_GWDrive/Presto_new/build/COMM_LOG"
+#define DEFAULT_LOG_NAME        "./COMM_LOG"
 #define DEFAULT_LOG_RECORDS_AMT 5000
 #define DEFAULT_LOG_LEVEL       LL_DEBUG
 
@@ -34,7 +34,10 @@
 #define PROXY_DEVICE_ID_SIZE            EUI64_STRING_SIZE
 #define PROXY_MAX_PATH                 4097
 
-#define DEFAULT_SERTIFICATE_PATH    "/media/sf_GWDrive/SSHKey/GSG_Key.pub"
+#define DEFAULT_PROXY_PROCESS_NAME  "Proxy"
+#define DEFAULT_AGENT_PROCESS_NAME  "Agent"
+
+#define DEFAULT_SERTIFICATE_PATH    "./SSHKey/GSG_Key.pub"
 #define DEFAULT_MAIN_CLOUD_URL      ""
 #define DEFAULT_CLOUD_URL           ""
 #define DEFAULT_UPLOAD_TIMEOUT_SEC  120
@@ -56,6 +59,8 @@
 #define DEFAULT_MAIN_THREAD_TO_SEC          0
 #define DEFAULT_SERVER_WRITE_THREAD_TO_SEC  0
 #define DEFAULT_AGENT_THREAD_TO_SEC         1
+
+#define DEFAULT_WUD_PORT                8887
 
 
 
