@@ -186,7 +186,7 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
 
         memset(outBuf, 0, sizeof(outBuf));
         pc_getDeviceAddress(devID, sizeof(devID)-1);
-        snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyID\": \"%s\", %s}", devID, outBuf);
+        snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyId\": \"%s\", %s}", devID, outBuf);
 
 
         pc_getActivationToken(activation_token, sizeof(activation_token));
