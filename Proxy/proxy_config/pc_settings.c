@@ -38,6 +38,7 @@
 #define PROXY_AGENT_PORT        "AGENT_PORT"
 
 #define PROXY_WUD_PORT          "WUD_PORT"
+#define PROXY_WATCHDOG_TO_SEC   "WATCHDOG_TO_SEC"
 
 ////////////////////////////////////////////////////////
 //Config values
@@ -55,6 +56,7 @@ static unsigned int     long_get_to;
 static unsigned int     queue_rec_amt;
 static unsigned int     agent_port;
 static unsigned int     WUD_port;
+static unsigned int     proxy_wd_to;
 
 static char conf_fname[PROXY_MAX_PATH];
 
@@ -129,6 +131,9 @@ unsigned int pc_getWUDPort() {
 const char* pc_getProxyName() {
     PC_RET(PROXY_PROCESS_NAME, proxy_name);
 }
+unsigned int pc_getAgentWDTO() {
+    PC_RET(DEFAULT_PROXY_WATCHDOG_TO_SEC, proxy_wd_to);
+}
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
 //
@@ -162,6 +167,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 fprintf(stderr, "Default value will be used instead\n");
 
     cJSON_Delete(cfg);
 

@@ -35,6 +35,7 @@
 #define PROXY_MAX_PATH                 4097
 
 #define DEFAULT_PROXY_PROCESS_NAME  "Proxy"
+#define DEFAULT_PROXY_WATCHDOG_TO_SEC   600
 #define DEFAULT_AGENT_PROCESS_NAME  "Agent"
 
 #define DEFAULT_SERTIFICATE_PATH    "./SSHKey/GSG_Key.pub"
@@ -59,6 +60,7 @@
 #define DEFAULT_MAIN_THREAD_TO_SEC          0
 #define DEFAULT_SERVER_WRITE_THREAD_TO_SEC  0
 #define DEFAULT_AGENT_THREAD_TO_SEC         1
+#define DEFAULT_WUD_WRITE_THREAD_TO_SEC     0
 
 #define DEFAULT_WUD_PORT                8887
 

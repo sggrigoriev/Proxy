@@ -43,6 +43,7 @@ static pu_queue_t* to_agent;
 
 #ifndef PROXY_SEPARATE_RUN
 static pu_queue_t* to_wud;
+pf_clock_t clock = {0};
 #endif
 
 static pu_queue_event_t events;
@@ -50,6 +51,7 @@ static pu_queue_event_t events;
 void pt_main_thread() { //Starts the main thread.
 
     int main_finish = 0;
+
 
     if(!main_thread_startup()) {
         pu_log(LL_ERROR, "%s: Initialization failed. Abort");
@@ -90,7 +92,7 @@ void pt_main_thread() { //Starts the main thread.
 //Place for own actions
 //1. Wathchdog
 #ifndef PROXY_SEPARATE_RUN
-        if(pf_wd_time_to_send()) send_wd();
+        if(pf_wd_time_to_send(clock)) send_wd();
 #endif
     }
 
@@ -113,10 +115,6 @@ static int main_thread_startup() {
 
     events = pu_add_queue_event(pu_create_event_set(), PS_FromAgentQueue);
     events = pu_add_queue_event(events, PS_FromServerQueue);
-
-#ifndef PROXY_SEPARATE_RUN
-    pf_wd_init();   //countdown for the next watchdog event start
-#endif
 
     if(!start_server_read()) {
         pu_log(LL_ERROR, "%s: Creating %s failed: %s", PT_THREAD_NAME, "SERVER_READ", strerror(errno));

@@ -88,6 +88,7 @@ int pt_http_write_init() {    // Returns 0 if something wrong
 
     // Initialize the shared curl library
     libhttpcomm_curlShareInit(curlWriteHandle);
+    curl_easy_setopt(curlWriteHandle, CURLOPT_TCP_KEEPALIVE, 0);
 
     return 1;
 }

@@ -15,15 +15,16 @@
 
 const char* pc_getProxyName();      //Return process name
 
-const char* pc_getLogFileName();        //Return LOG-file name
-size_t pc_getLogRecordsAmt();     //Return max capacity of log file
-log_level_t pc_getLogVevel();           //Return the min log level to be stored in LOG_FILE
-const char* pc_getSertificatePath();    //Return the path to private sertificate file
-unsigned int pc_getLongGetTO();         //Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage
-unsigned int pc_getAgentPort();         //Return the port# for communications with the Agent
-size_t pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
-unsigned int pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID string
-unsigned int pc_getWUDPort();
+const char*     pc_getLogFileName();        //Return LOG-file name
+size_t          pc_getLogRecordsAmt();     //Return max capacity of log file
+log_level_t     pc_getLogVevel();           //Return the min log level to be stored in LOG_FILE
+const char*     pc_getSertificatePath();    //Return the path to private sertificate file
+unsigned int    pc_getLongGetTO();         //Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage
+unsigned int    pc_getAgentPort();         //Return the port# for communications with the Agent
+size_t          pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
+unsigned int    pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID string
+unsigned int    pc_getWUDPort();            //
+unsigned int    pc_getAgentWDTO();          // timeout for watchdog sending
 
 //////////////////////////////////////////////////////////////////////////
 //Thread-protected functions
