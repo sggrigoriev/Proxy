@@ -25,6 +25,7 @@
     #define PROXY_LL_INFO           "INFO"
     #define PROXY_LL_ERROR          "ERROR"
 
+#define PROXY_PROCESS_NAME      "PROXY_PROCESS_NAME"
 #define PROXY_SERTIFICAE_PATH   "SERTIFICAE_PATH"
 #define PROXY_ACTIVATION_TOKEN  "ACTIVATION_TOKEN"
 #define PROXY_DEVICE_ADDRESS    "DEVICE_ADDRESS"
@@ -36,8 +37,11 @@
 #define PROXY_QUEUES_REC_AMT    "QUEUES_REC_AMT"
 #define PROXY_AGENT_PORT        "AGENT_PORT"
 
+#define PROXY_WUD_PORT          "WUD_PORT"
+
 ////////////////////////////////////////////////////////
 //Config values
+static char             proxy_name[31];
 static char             log_name[PROXY_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
@@ -50,6 +54,7 @@ static char             main_cloud_url[PROXY_MAX_PATH];
 static unsigned int     long_get_to;
 static unsigned int     queue_rec_amt;
 static unsigned int     agent_port;
+static unsigned int     WUD_port;
 
 static char conf_fname[PROXY_MAX_PATH];
 
@@ -117,7 +122,13 @@ size_t pc_getQueuesRecAmt() {
 unsigned int pc_getProxyDeviceType() {
     PC_RET(DEFAULT_PROXY_DEV_TYPE, device_type);
 }
-
+//REturn port for watchdogging
+unsigned int pc_getWUDPort() {
+    PC_RET(DEFAULT_WUD_PORT, WUD_port);
+}
+const char* pc_getProxyName() {
+    PC_RET(PROXY_PROCESS_NAME, proxy_name);
+}
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
 //
@@ -149,6 +160,8 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           fprintf(stderr, "Default value will be used instead\n");
+    if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   fprintf(stderr, "Default value will be used instead\n");
 
     cJSON_Delete(cfg);
 

@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
 
     if(!pf_proxy_activation()) exit(-1);
 ////////
-    if(!pt_main_thread()) exit(-1);
+    pt_main_thread();
 
 //cURL stop
     curl_global_cleanup();

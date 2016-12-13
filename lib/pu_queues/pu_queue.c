@@ -175,7 +175,6 @@ void pu_queue_stop(pu_queue_t* queue) {
 void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
 
     if(!check_params_for_pu_queue_push(queue, data, len)) return;
-
     pthread_mutex_lock(&queue->own_mutex);
 
 //check for possible overflow

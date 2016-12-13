@@ -13,6 +13,8 @@
 //////////////////////////////////////////////////////////////////////////
 //Set of "get" functions to make an access to settings for Presto modules
 
+const char* pc_getProxyName();      //Return process name
+
 const char* pc_getLogFileName();        //Return LOG-file name
 size_t pc_getLogRecordsAmt();     //Return max capacity of log file
 log_level_t pc_getLogVevel();           //Return the min log level to be stored in LOG_FILE
@@ -21,6 +23,7 @@ unsigned int pc_getLongGetTO();         //Return the timeout in seconds for "lon
 unsigned int pc_getAgentPort();         //Return the port# for communications with the Agent
 size_t pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
 unsigned int pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID string
+unsigned int pc_getWUDPort();
 
 //////////////////////////////////////////////////////////////////////////
 //Thread-protected functions

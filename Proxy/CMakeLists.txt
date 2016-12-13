@@ -2,13 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(Proxy C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
-
 add_definitions( -DGIT_FIRMWARE_VERSION=301 )
-#add_definitions( -DPROXY_SEPARATE_RUN )
+add_definitions( -DPROXY_SEPARATE_RUN )
 #ifdef PROXY_SEPARATE_RUN - the proxy reads parameters from command line first
 #else - the proxy reads all configuration from default configuration file
 
+#set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -55,8 +54,10 @@ file(GLOB SOURCE_FILES
 #Test client
 #file(GLOB SOURCE_FILES_TEST_CLIENT
 #        test_client/comm_client.c
+#        proxy_functions/*.c
 #       proxy_threads/*.c
 #       proxy_config/pc_settings.c
+#        proxy_eui64/eui64.c
 #        ../lib/pt_tcp_utl/*.c
 #        ../lib/pu_logger/*.c
 #        ../lib/pc_config/pc_config.c

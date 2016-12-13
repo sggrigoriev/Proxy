@@ -19,13 +19,27 @@
 static char wr_src[1000];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
-        "{\"version\": 2, \"proxyId\": \"aioxGW-GSGTest_deviceid\", \"sequenceNumber\": \"13117\","
-            "\"measures\": [{\"deviceId\": \"DEVICE_ID_NO_TIMESTAMP\","
-                "\"params\": [{\"name\": \"desc\",\"value\": \"Send a measurement from an existing device, with no timestamp\"},{\"name\": \"power\",\"value\": \"100\"}]"
-            "}]"
+"{"
+    "\"measures\": "
+    "["
+        "{"
+            "\"deviceId\": \"DEVICE_ID_NO_TIMESTAMP\","
+            "\"params\": "
+            "["
+                "{"
+                    "\"name\": \"desc\","
+                    "\"value\": \"Send a measurement from an existing device, with no timestamp\""
+                "},"
+                "{"
+                    "\"name\": \"power\","
+                    "\"value\": \"100\""
+                "}"
+            "]"
         "}"
-    );
-    sleep(1);
+    "]"
+"}"
+);
+    sleep(5);
     return wr_src;
 }
 static int finish = 0;

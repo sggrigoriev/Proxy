@@ -40,6 +40,10 @@ static void make_json_answer(char* buf, unsigned int buf_len, unsigned long comm
 // Send immediate responce to the server "Got your command, relax"
 // If something went wrong - repeat the answer several times, log error and return
 static void send_responce_to_command(unsigned long command_id);
+/////////////////////////////////////////////////////////////
+//Calc http_write (POST) result; fill the reply if needed.
+//Return 1 if OK, 0 if connectivity problems, -1 if effof
+static int calc_post_result(char** result, size_t* len, char* reply, int rc);
 
 
 /////////////////////////////////////////////////////////////
@@ -157,16 +161,14 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
 // len - max buffer length
 // resp - the addres of the string with responce. NB! do not free this memory outside!!
 // resp_len - length of response
-// return 0 if error and 1 if OK
-int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Returns 0 if timeout or error, 1 if OK
-    bool serverRetry = false;
+// Returns 0 if timeout, -1 or error, 1 if OK
+pr_post_result_t pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Returns 0 if timeout or error, 1 if OK
     char url[PATH_MAX];
     char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
     char outBuf[PROXY_MAX_MSG_LEN];
     char response[PROXY_MAX_HTTP_SEND_MESSAGE_LEN];
-    char devID[PROXY_DEVICE_ID_SIZE+1];
-    int retries = 0;
     http_param_t params;
+    int rc;
 
     memset(&params, 0 , sizeof(params));
 
@@ -174,47 +176,20 @@ int pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Retu
     params.timeouts.transferTimeout = DEFAULT_HTTP_TRANSFER_TIMEOUT_SEC;
     params.verbose = false;
 
+
+    pc_getCloudURL(url, sizeof(url));
+    pu_log(LL_INFO, "pt_http_write(): POST URL = %s", url);
+
     memset(outBuf, 0, sizeof(outBuf));
-    pc_getDeviceAddress(devID, sizeof(devID)-1);
-    snprintf(outBuf, sizeof(outBuf)-1, "{\"proxyId\": \"%s\", %s}", devID, outBuf);
-    len = strlen(outBuf);
+    memcpy(outBuf, buf, len);
 
-    do {
-        if (serverRetry == true) {
-            retries++;
-            sleep(1);
-        }
+    pc_getActivationToken(activation_token, sizeof(activation_token));
 
-        pc_getCloudURL(url, sizeof(url));
+    rc = libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url, pc_getSertificatePath(), activation_token,
+                              outBuf, (int)len, response, sizeof(response), params, NULL);
 
-        pu_log(LL_INFO, "pt_http_write(): POST URL = %s", url);
+    return calc_post_result(resp, resp_len, response, rc);
 
-        pc_getActivationToken(activation_token, sizeof(activation_token));
-        if (libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url,
-                                pc_getSertificatePath(), activation_token, outBuf,
-                                (int)len, response, sizeof(response), params, NULL) == 0) {
-
-            serverRetry = (strlen(response) == 0) || (strstr(response, "ERR") != NULL) || (strstr(response, "ACK") == NULL);
-
-            if(!serverRetry)
-                pu_log(LL_INFO, "Send to server SUCCESS");
-            else
-                pu_log(LL_ERROR, "Error sending to server. Retry # %d: %s", retries, response);
-
-        }
-        else {
-            // Either the Internet or the server is down
-            // If the Internet is down, buffer messages and do not lose data
-            pu_log(LL_INFO, "Couldn't contact the server, retry to connect");
-            retries = 0;
-            serverRetry = true;
-        }
-    }
-    while (serverRetry == true && retries < PROXY_MAX_HTTP_RETRIES);
-
-    *resp = response;
-    *resp_len = strlen(response)+1;
-    return (serverRetry)?0:1;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
 //get_command_id - Get command ID from json message
@@ -337,3 +312,51 @@ static void send_responce_to_command(unsigned long command_id) {
     while (serverRetry == true && retries < PROXY_MAX_HTTP_RETRIES);
 }
 
+/////////////////////////////////////////////////////////////
+//Calc http_write (POST) result; fill the reply if needed.
+//Return 1 if OK, 0 if connectivity problems, -1 if effof
+
+static int calc_post_result(char** result, size_t* len, char* reply, int rc) {
+    pr_post_result_t ret;
+    if(rc) {    //Some curl-level problem - error case
+        if(!strlen(reply)) {
+            sprintf(reply, "cURL error %d, %s", rc, strerror(rc));
+            ret = PT_POST_ERROR;
+        }
+
+    }
+    else {  // rc == 0 technically write is OK
+        if (!strlen(reply)) { //No cURL problems but...
+            sprintf(reply, "Zero reply from the cloud");
+            ret = PT_POST_RETRY;
+        }
+        else { // ...and what we got?
+            cJSON* obj = cJSON_Parse(reply);
+            if(!obj) {
+                ret = PT_POST_ERROR;
+            }
+            else {
+                cJSON* item = cJSON_GetObjectItem(obj, "status");
+                if(!item) {
+                    ret = PT_POST_ERROR;
+                }
+                else if(!strcmp(item->valuestring, "ACK") || !strcmp(item->valuestring, "CONT")) {
+                    ret = PT_POST_OK;
+                }
+                else if(!strcmp(item->valuestring, "ERR")) {
+                    ret = PT_POST_RETRY;
+                }
+                else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
+                    ret = PT_POST_ERROR;
+                }
+                else {  //UNKNOWN, UNAUTHORIZED - let's wait untill somewhere takes a look on poor cycling modem
+                    ret = PT_POST_RETRY;
+                }
+                cJSON_Delete(obj);
+            }
+        }
+    }
+    *result = reply;
+    *len = strlen(reply);
+    return ret;
+}
