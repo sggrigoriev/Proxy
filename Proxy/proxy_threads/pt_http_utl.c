@@ -121,7 +121,7 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
 
     memset(&params, 0 , sizeof(params));
 
-    params.timeouts.connectTimeout = DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
+    params.timeouts.connectTimeout = pc_getLongGetTO();   //DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
     params.timeouts.transferTimeout = pc_getLongGetTO();
     params.verbose = true;
 

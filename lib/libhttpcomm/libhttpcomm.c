@@ -1107,7 +1107,7 @@ int _libhttpcomm_configureHttp(CURL * curlHandle, CURLSH * shareCurlHandle, stru
             goto out;
         }
     }
-/*
+
     curlResult = curl_easy_setopt(curlHandle, CURLOPT_DNS_CACHE_TIMEOUT, HTTPCOMM_DEFAULT_DNS_CACHING_TIMEOUT_SEC);
     if (curlResult != CURLE_OK)
     {
@@ -1115,7 +1115,7 @@ int _libhttpcomm_configureHttp(CURL * curlHandle, CURLSH * shareCurlHandle, stru
         retVal = false;
         goto out;
     }
-*/
+
     // no signals when using c-ares
     curlResult = curl_easy_setopt(curlHandle, CURLOPT_NOSIGNAL, 1L);
     if (curlResult != CURLE_OK)
