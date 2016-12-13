@@ -386,6 +386,15 @@ int libhttpcomm_sendMsg(CURLSH * shareCurlHandle, CURLoption httpMethod, const c
 	    curlErrno = ENOEXEC;
 	    goto out;
 	}
+//GSG add-ons begin
+    curlResult = curl_easy_setopt(curlHandle, CURLOPT_TCP_KEEPALIVE, 0);
+    if (curlResult != CURLE_OK)
+    {
+        pu_log(LL_ERROR, "%s CURLOPT_TCP_KEEPALIVE", curl_easy_strerror(curlResult));
+        curlErrno = ENOEXEC;
+        goto out;
+    }
+//GSG add-ons end
 
 	curlResult = curl_easy_perform(curlHandle);
 

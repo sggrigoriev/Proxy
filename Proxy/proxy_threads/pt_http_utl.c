@@ -88,7 +88,6 @@ int pt_http_write_init() {    // Returns 0 if something wrong
 
     // Initialize the shared curl library
     libhttpcomm_curlShareInit(curlWriteHandle);
-    curl_easy_setopt(curlWriteHandle, CURLOPT_TCP_KEEPALIVE, 0);
 
     return 1;
 }
@@ -123,8 +122,8 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
     memset(&params, 0 , sizeof(params));
 
     params.timeouts.connectTimeout = DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
-    params.timeouts.transferTimeout = pc_getLongGetTO();;
-    params.verbose = false;
+    params.timeouts.transferTimeout = pc_getLongGetTO();
+    params.verbose = true;
 
     pc_getCloudURL(url, sizeof(url));
     snprintf(url+strlen(url), sizeof(url)-strlen(url), "?id=");
