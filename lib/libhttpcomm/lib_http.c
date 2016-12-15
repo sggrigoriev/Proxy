@@ -137,7 +137,18 @@ int lib_http_get(char* msg, size_t msg_size) {
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, 120L);
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, 120L);
     char url[LIB_HTTP_MAX_URL_SIZE];
+    char dev_id[500];
+    char buf[500];
+
+    pc_getDeviceAddress(dev_id, sizeof(dev_id)-1);
     pc_getCloudURL(url, sizeof(url));
+
+    strncat(url, "?id=", sizeof(url)-1);
+    strncat(rd_url, dev_id, sizeof(url)-1);
+
+    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", 120L);
+    strncat(url, buf, sizeof(url)-1);
+
     curl_easy_setopt(curlGETHandle, CURLOPT_URL, url);
 
     CURLcode curlResult = curl_easy_perform(curlGETHandle);
