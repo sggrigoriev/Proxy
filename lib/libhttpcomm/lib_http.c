@@ -132,6 +132,10 @@ int lib_http_get(char* msg, size_t msg_size) {
     long curlErrno = 0;
 
     msg[0] = '\0';  //in case we got nothing
+    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, 120L);
+    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, 120L);
+
 
     CURLcode curlResult = curl_easy_perform(curlGETHandle);
 
