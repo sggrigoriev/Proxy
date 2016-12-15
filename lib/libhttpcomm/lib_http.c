@@ -96,11 +96,11 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
 */
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_URL, rd_url), curlResult != CURLE_OK) goto out;
-/*
+
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_ERRORBUFFER, rd_errBuf), curlResult != CURLE_OK) goto out;
+
     // CURLOPT_WRITEFUNCTION and CURLOPT_WRITEDATA in this context refers to
     // data received from the server... so curl will write data to us.
-*/
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_WRITEDATA, &rd_inBoundCommInfo), curlResult != CURLE_OK) goto out;
 /*
