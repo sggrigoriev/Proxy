@@ -89,11 +89,14 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
         pu_log(LL_ERROR, "lib_http_create_get_persistent_conn: cURL GET handler creation failed.");
         return 0;
     }
-
+/*
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
+
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_CONNECTTIMEOUT, rd_params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
+*/
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_URL, rd_url), curlResult != CURLE_OK) goto out;
+/*
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_ERRORBUFFER, rd_errBuf), curlResult != CURLE_OK) goto out;
     // CURLOPT_WRITEFUNCTION and CURLOPT_WRITEDATA in this context refers to
     // data received from the server... so curl will write data to us.
@@ -106,7 +109,7 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     snprintf(buf, sizeof(buf), "PPCAuthorization: esp token=%s", auth_token);
     rd_slist = curl_slist_append(rd_slist, buf);
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_HTTPHEADER, rd_slist), curlResult != CURLE_OK) goto out;
-
+*/
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, (long)rd_params.timeouts.connectTimeout+1), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, (long)rd_params.timeouts.connectTimeout+1), curlResult != CURLE_OK) goto out;
@@ -133,6 +136,7 @@ int lib_http_get(char* msg, size_t msg_size) {
     long curlErrno = 0;
 
     msg[0] = '\0';  //in case we got nothing
+/*
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, 120L);
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, 120L);
@@ -150,7 +154,7 @@ int lib_http_get(char* msg, size_t msg_size) {
     strncat(url, buf, sizeof(url)-1);
 
     curl_easy_setopt(curlGETHandle, CURLOPT_URL, url);
-
+*/
     CURLcode curlResult = curl_easy_perform(curlGETHandle);
 
     curl_easy_getinfo(curlGETHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode );
