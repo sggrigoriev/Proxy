@@ -144,7 +144,7 @@ int lib_http_get(char* msg, size_t msg_size) {
     pc_getCloudURL(url, sizeof(url));
 
     strncat(url, "?id=", sizeof(url)-1);
-    strncat(rd_url, dev_id, sizeof(url)-1);
+    strncat(url, dev_id, sizeof(url)-1);
 
     snprintf(buf, sizeof(buf)-1, "&timeout=%lu", 120L);
     strncat(url, buf, sizeof(url)-1);
