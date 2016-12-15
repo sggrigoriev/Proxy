@@ -105,12 +105,11 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_WRITEDATA, &rd_inBoundCommInfo), curlResult != CURLE_OK) goto out;
 /*
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_BUFFERSIZE, sizeof(rd_rx_buf)), curlResult != CURLE_OK) goto out;
-
+*/
     rd_slist = curl_slist_append(rd_slist, "User-Agent: IOT Proxy");
     snprintf(buf, sizeof(buf), "PPCAuthorization: esp token=%s", auth_token);
     rd_slist = curl_slist_append(rd_slist, buf);
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_HTTPHEADER, rd_slist), curlResult != CURLE_OK) goto out;
-*/
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, (long)rd_params.timeouts.connectTimeout+1), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, (long)rd_params.timeouts.connectTimeout+1), curlResult != CURLE_OK) goto out;
