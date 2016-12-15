@@ -13,6 +13,13 @@
 #include "pu_logger.h"
 #include "lib_http.h"
 
+#ifdef LIBHTTP_CURL_DEBUG
+struct data {
+  char trace_ascii; /* 1 or 0 */
+};
+static int my_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
+#endif
+
 // structure used to store data to be sent to the server.
 typedef struct {
     char * buffer;
@@ -30,8 +37,6 @@ typedef struct http_param_t {
     char *password;
     char *key;
 } http_param_t;
-
-//
 
 //Static data for persistent "GET"
 static CURLSH* curlGETHandle = NULL;
@@ -81,7 +86,7 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     strncat(rd_url, "?id=", sizeof(rd_url)-1);
     strncat(rd_url, deviceID, sizeof(rd_url)-1);
 
-    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", rd_params.timeouts.transferTimeout-20);
+    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", rd_params.timeouts.transferTimeout-LIB_HTTP_PROXY_SERVER_TO_DELTA);
     strncat(rd_url, buf, sizeof(rd_url)-1);
 
 
@@ -94,7 +99,6 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_CONNECTTIMEOUT, rd_params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
-
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_URL, rd_url), curlResult != CURLE_OK) goto out;
 
@@ -137,25 +141,7 @@ int lib_http_get(char* msg, size_t msg_size) {
     long curlErrno = 0;
 
     msg[0] = '\0';  //in case we got nothing
-/*
-    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, 120L);
-    curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, 120L);
-    char url[LIB_HTTP_MAX_URL_SIZE];
-    char dev_id[500];
-    char buf[500];
 
-    pc_getDeviceAddress(dev_id, sizeof(dev_id)-1);
-    pc_getCloudURL(url, sizeof(url));
-
-    strncat(url, "?id=", sizeof(url)-1);
-    strncat(url, dev_id, sizeof(url)-1);
-
-    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", 120L);
-    strncat(url, buf, sizeof(url)-1);
-
-    curl_easy_setopt(curlGETHandle, CURLOPT_URL, url);
-*/
     CURLcode curlResult = curl_easy_perform(curlGETHandle);
 
     curl_easy_getinfo(curlGETHandle, CURLINFO_RESPONSE_CODE, &httpResponseCode );
@@ -205,6 +191,10 @@ int lib_http_get(char* msg, size_t msg_size) {
 //Return 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 look for some answer from the server. All logging inside
 //Makes new connectione every time to post amd close it after the operation
 int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* url, const char* auth_token) {
+#ifdef LIBHTTP_CURL_DEBUG
+    struct data config;
+    config.trace_ascii = 1; /* enable ascii tracing */
+#endif
     char tx_buf[LIB_HTTP_MAX_MSG_SIZE];
     char rx_buf[LIB_HTTP_MAX_MSG_SIZE]; //for server answers
     struct curl_slist* slist = NULL;
@@ -247,23 +237,31 @@ int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* u
         goto out;
     }
 
+#ifdef LIBHTTP_CURL_DEBUG
+    curl_easy_setopt(wr_handler, CURLOPT_DEBUGFUNCTION, my_trace);
+    curl_easy_setopt(wr_handler, CURLOPT_DEBUGDATA, &config);
+    /* the DEBUGFUNCTION has no effect until we enable VERBOSE */
+    curl_easy_setopt(wr_handler, CURLOPT_VERBOSE, 1L);
+#endif
+
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_CONNECTTIMEOUT, params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_TIMEOUT, params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_URL, url), curlResult != CURLE_OK) goto out;
 
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_ERRORBUFFER, errBuf), curlResult != CURLE_OK) goto out;
 
-   if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEDATA, &inBoundCommInfo), curlResult != CURLE_OK) goto out;
 
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READFUNCTION, read_callback), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READDATA, &outBoundCommInfo), curlResult != CURLE_OK) goto out;
 
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_BUFFERSIZE, sizeof(rx_buf)), curlResult != CURLE_OK) goto out;
-
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPHEADER, slist), curlResult != CURLE_OK) goto out;
-
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPPOST, 0L), curlResult != CURLE_OK) goto out;
+
+
+    curl_easy_setopt(wr_handler, CURLOPT_POSTFIELDS, msg);
 
 //////////////////////////////////
     curlResult = curl_easy_perform(wr_handler);
@@ -338,7 +336,7 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp)
     char *data = (char *)ptr;
     pu_log(LL_DEBUG, "writer: dataToRead->buffer = %s", dataToRead->buffer);
     if (dataToRead == NULL || dataToRead->buffer == NULL) {
-        pu_log(LL_ERROR, "dataToRead == NULL");
+        pu_log(LL_ERROR, "writer: dataToRead == NULL");
         return 0;
     }
 
@@ -346,9 +344,9 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp)
     if((strlen(dataToRead->buffer)+(size * nmemb)) > (dataToRead->size - 1))
     {
 #if __WORDSIZE == 64
-        pu_log(LL_WARNING, "buffer overflow would result -> strlen(writeData): %lu, (size * nmemb): %lu, max size: %u",
+        pu_log(LL_WARNING, "writer: buffer overflow would result -> strlen(writeData): %lu, (size * nmemb): %lu, max size: %u",
 #else
-                pu_log(LL_WARNING, ("buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
+                pu_log(LL_WARNING, ("writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
 #endif
                strlen(dataToRead->buffer), (size * nmemb), dataToRead->size);
         return 0;
@@ -375,9 +373,9 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp)
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     HttpIoInfo_t *dataToWrite = (HttpIoInfo_t *) userp;
     int dataWritten = 0;
-    pu_log(LL_DEBUG, "writer: dataToWrite->buffer = %s", dataToWrite->buffer);
+    pu_log(LL_DEBUG, "read_callback: dataToWrite->buffer = %s", dataToWrite->buffer);
     if (dataToWrite == NULL || dataToWrite->buffer == NULL) {
-        pu_log(LL_ERROR, "dataToWrite == NULL");
+        pu_log(LL_ERROR, "read_callback: dataToWrite == NULL");
         return 0;
     }
     if (size * nmemb < 1) {
@@ -387,7 +385,7 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     if (dataToWrite->size > 0) {
         if (dataToWrite->size > (size * nmemb)) {
             dataWritten = size * nmemb;
-            pu_log(LL_DEBUG, "dataToWrite->size = %u is larger than size * nmemb = %u",
+            pu_log(LL_DEBUG, "read_callback: dataToWrite->size = %u is larger than size * nmemb = %u",
                    dataToWrite->size, size * nmemb);
         }
         else {
@@ -401,3 +399,96 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     }
     return 0;
 }
+#ifdef LIBHTTP_CURL_DEBUG
+/////////////////////////////////////////////////////////////////
+//Debug part
+//Copypizded from https://curl.haxx.se/libcurl/c/debug.html
+//
+static
+void dump(const char *text,
+          FILE *stream, unsigned char *ptr, size_t size,
+          char nohex)
+{
+  size_t i;
+  size_t c;
+
+  unsigned int width=0x10;
+
+  if(nohex)
+    /* without the hex output, we can fit more on screen */
+    width = 0x40;
+
+  fprintf(stream, "%s, %10.10ld bytes (0x%8.8lx)\n",
+          text, (long)size, (long)size);
+
+  for(i=0; i<size; i+= width) {
+
+    fprintf(stream, "%4.4lx: ", (long)i);
+
+    if(!nohex) {
+      /* hex not disabled, show it */
+      for(c = 0; c < width; c++)
+        if(i+c < size)
+          fprintf(stream, "%02x ", ptr[i+c]);
+        else
+          fputs("   ", stream);
+    }
+
+    for(c = 0; (c < width) && (i+c < size); c++) {
+      /* check for 0D0A; if found, skip past and start a new line of output */
+      if(nohex && (i+c+1 < size) && ptr[i+c]==0x0D && ptr[i+c+1]==0x0A) {
+        i+=(c+2-width);
+        break;
+      }
+      fprintf(stream, "%c",
+              (ptr[i+c]>=0x20) && (ptr[i+c]<0x80)?ptr[i+c]:'.');
+      /* check again for 0D0A, to avoid an extra \n if it's at width */
+      if(nohex && (i+c+2 < size) && ptr[i+c+1]==0x0D && ptr[i+c+2]==0x0A) {
+        i+=(c+3-width);
+        break;
+      }
+    }
+    fputc('\n', stream); /* newline */
+  }
+  fflush(stream);
+}
+
+static
+int my_trace(CURL *handle, curl_infotype type,
+             char *data, size_t size,
+             void *userp)
+{
+  struct data *config = (struct data *)userp;
+  const char *text;
+  (void)handle; /* prevent compiler warning */
+
+  switch(type) {
+  case CURLINFO_TEXT:
+    fprintf(stderr, "== Info: %s", data);
+  default: /* in case a new one is introduced to shock us */
+    return 0;
+
+  case CURLINFO_HEADER_OUT:
+    text = "=> Send header";
+    break;
+  case CURLINFO_DATA_OUT:
+    text = "=> Send data";
+    break;
+  case CURLINFO_SSL_DATA_OUT:
+    text = "=> Send SSL data";
+    break;
+  case CURLINFO_HEADER_IN:
+    text = "<= Recv header";
+    break;
+  case CURLINFO_DATA_IN:
+    text = "<= Recv data";
+    break;
+  case CURLINFO_SSL_DATA_IN:
+    text = "<= Recv SSL data";
+    break;
+  }
+
+  dump(text, stderr, (unsigned char *)data, size, config->trace_ascii);
+  return 0;
+}
+#endif

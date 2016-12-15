@@ -14,7 +14,8 @@ void pt_http_curl_stop();       //Returns 0 if failed 1 if succeed
 int pt_http_read_init();
 void pt_http_read_destroy();
 
-int pt_http_read(char* in_buf, size_t max_len); // Returns 0 if timeout, actual buf len (LONG GET) if OK, < 0 if error- no need to continue retries (-errno)
+// Returns 0 if timeout, 1 if OK, -1 if error- no need to continue retries
+int pt_http_read(char* in_buf, size_t max_len);
 
 //Returns 0 if timeout, -1 or error, 1 if OK
 //In all cases when the return is <=0 the resp contains some diagnostics

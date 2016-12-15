@@ -10,7 +10,8 @@
 #define LIB_HTTP_MAX_MSG_SIZE   8192
 #define LIB_HTTP_MAX_URL_SIZE   4097
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 128
-
+//Proxy will send to the Server connection timeout less on LIB_HTTP_PROXY_SERVER_TO_DELTA sec during the long GET
+#define LIB_HTTP_PROXY_SERVER_TO_DELTA 20
 /** Maximum time for an HTTP connection, including name resolving */
 #define LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC 30
 /** Maximum time for an HTTP transfer */
