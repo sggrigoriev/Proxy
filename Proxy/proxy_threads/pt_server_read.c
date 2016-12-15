@@ -2,6 +2,7 @@
 // Created by gsg on 06/12/16.
 //
 #include <pthread.h>
+#include <string.h>
 
 #include "pc_defaults.h"
 #include "pu_logger.h"
@@ -43,7 +44,7 @@ static void* read_proc(void* params) {
     to_main = pt_get_gueue(PS_FromServerQueue);
     stop = 0;
 
-    char *buf = NULL;
+    char buf[PROXY_MAX_MSG_LEN];
 
     if (!pt_http_read_init()) {
         pu_log(LL_ERROR, "%s: Cloud info read initiation failed. Stop.", PT_THREAD_NAME);
@@ -52,12 +53,24 @@ static void* read_proc(void* params) {
 
 //Main read loop
     while(!stop) {
-        int rc = 0;
-        while((rc <= 0) && !stop) {
-            rc = pt_http_read(&buf);
+        int out = 0;
+        while(!out && !stop) {
+            switch(pt_http_read(buf, sizeof(buf))) {
+                case -1:        //error
+                    sleep(1);   //just not to have cycling
+                    break;
+                case 0:     //timeout - read again
+                    break;
+                case 1:     //got smth
+                    out = 1;
+                    break;
+                default:
+                    pu_log(LL_ERROR, "%s: unexpected rc from pt_http_read");
+                    break;
+            }
         }
         if(!stop) {
-            pu_queue_push(to_main, buf, (unsigned int)rc + 1);  //NB! Possibly needs to split info to 0-terminated strings!
+            pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!
             pu_log(LL_INFO, "Received from cloud: %s", buf);
         }
         else {

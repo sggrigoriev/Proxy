@@ -7,7 +7,7 @@
 #define PRESTO_PC_DEFAULTS_H
 
 #include "pt_tcp_utl.h"
-#include "libhttpcomm.h"
+#include "lib_http.h"
 #include "eui64.h"
 
 #define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"
@@ -22,7 +22,7 @@
 // Global constants for Proxy communications with Server
 
 #define PROXY_MAX_HTTP_RETRIES                                  3
-#define PROXY_MAX_MSG_LEN                                       8192
+#define PROXY_MAX_MSG_LEN                                       LIB_HTTP_MAX_MSG_SIZE
 #define PROXY_NUM_SERVER_CONNECTIONS_BEFORE_SYSLOG_NOTIFICATION 20
 #define PROXY_MAX_PUSHES_ON_RECEIVED_COMMAND                    2
 #define PROXY_HEADER_PASSWORD_LEN                               64

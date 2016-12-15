@@ -2,155 +2,51 @@
 // Created by gsg on 13/11/16.
 //
 
-#include <curl/curl.h>
 #include <memory.h>
 #include <errno.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "cJSON.h"
-#include "libhttpcomm.h"
 #include "pu_logger.h"
 #include "pc_defaults.h"
 #include "pt_http_utl.h"
 #include "pc_settings.h"
 
+#define PT_POST_TO  0
+#define PT_GET_TO   1
 //////////////////////////////////////////////////////////////////////
 //
 // Local data
-//////////////////////////////////////////////////////////////////////
-//Used by pt_http_read to get info from the server
-static CURLSH *curlReadHandle = NULL;
-//Buffer for messages from the server
-static char msgFromServer[PROXY_MAX_MSG_LEN];
-
-//Used by pt_http_wread to post messages to the server
-static CURLSH *curlWriteHandle = NULL;
-/////////////////////////////////////////////////////////////
-//Extract command id from server message.
-//Returm commandID or 0 if no cmd_id
-//{"version":"2","status":"ACK","commands":[{"commandId":4,"type":0,"deviceId":"aioxGW-GSGTest_deviceid","paramsMap":{"accessCameraSettings":"0"}}]}
-static unsigned long get_command_id(const char* json_string);
-/////////////////////////////////////////////////////////////
-//Prepare json string:     const char* to_server = "\"responses\": [{commandId\": <commandID>, \"result\": 0}]";
-//Copy the string made to the buf
-//The functions needs to make immediate answer to thr server due to synchronous server's habits.
-// The answer with some significant info will be sent by Agent sometime trough the pt_http_write function
-static void make_json_answer(char* buf, unsigned int buf_len, unsigned long command_id);
-/////////////////////////////////////////////////////////////
-// Send immediate responce to the server "Got your command, relax"
-// If something went wrong - repeat the answer several times, log error and return
-static void send_responce_to_command(unsigned long command_id);
-/////////////////////////////////////////////////////////////
-//Calc http_write (POST) result; fill the reply if needed.
-//Return 1 if OK, 0 if connectivity problems, -1 if effof
-static int calc_post_result(char** result, size_t* len, char* reply, int rc);
-
-
-/////////////////////////////////////////////////////////////
-//Global functions
-//
-//////////////////////////////////////////////////////////////
-// Initiate cURL
-//Return 1 if success, 0 if error
-int pt_http_curl_init() {        //Global cUrl init. Returns 0 if failed
-    if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-        pu_log(LL_ERROR, "Error on cUrl initialiation. Something goes wrong. Exiting.");
-        pu_stop_logger();
-        return 0;
-    }
-    return 1;
+static pr_write_result_t calc_post_result(char* result, size_t size, int rc);
+//////////////////////////////////////////////////
+int pt_http_curl_start() {
+    return lib_http_init();
 }
-//////////////////////////////////////////////////////////////
-// Destroy cURL
 void pt_http_curl_stop() {
-    curl_global_cleanup();
+    lib_http_close();
 }
-//////////////////////////////////////////////////////////////
-// Initiates cURL read handler
-//Retuen 1 of OK, 0 if not
 int pt_http_read_init() {
-//Initiation part
-    // Sleep briefly to obtain init messages from application
-    sleep(5);
-
-    // Initialize the shared curl library
-    libhttpcomm_curlShareInit(curlReadHandle);
-
-    return 1;
-}
-//////////////////////////////////////////////////////////////
-// Initiates cURL write handler
-//Retuen 1 of OK, 0 if not
-int pt_http_write_init() {    // Returns 0 if something wrong
-    //Initiation part
-    // Sleep briefly to obtain init messages from application
-    sleep(5);
-
-    // Initialize the shared curl library
-    libhttpcomm_curlShareInit(curlWriteHandle);
-
-    return 1;
-}
-//////////////////////////////////////////////////////////////
-// Destroys cURL read handler
-void pt_http_read_destroy() {
-    libhttpcomm_curlShareClose(curlReadHandle);
-}
-//////////////////////////////////////////////////////////////
-// Destroys cURL write handler
-void pt_http_write_destroy() {
-    libhttpcomm_curlShareClose(curlWriteHandle);
-}
-/////////////////////////////////////////////////////////////////////////////
-//pt_http_read -"Long GET: wait for messages from the server. There are several variants if behaviour:
-//  a) Command received.
-//      ch_read answers immideately by "responses": [{commandId": <commandID>, "result": 0}] - means I go ot
-//  b) ERROR received
-//      - HTTP ERR - save it to the LOG
-//      - Logical error - just forward it to the agent - no special actions
-//
-// buf - returned adress of null-terminated string
-// return 0 if timeout or actual buf len (LONG GET), -1 if error - errno with negative sign
-int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG GET), -1 if error
-    char url[PATH_MAX];
-    char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-    http_param_t params;
-
-    bzero(msgFromServer, sizeof(msgFromServer));
-    *buf = NULL;
-
-    memset(&params, 0 , sizeof(params));
-
-    params.timeouts.connectTimeout = pc_getLongGetTO();   //DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
-    params.timeouts.transferTimeout = pc_getLongGetTO();
-    params.verbose = true;
+    char url[LIB_HTTP_MAX_URL_SIZE];
+    char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char device_id[PROXY_DEVICE_ID_SIZE];
 
     pc_getCloudURL(url, sizeof(url));
-    snprintf(url+strlen(url), sizeof(url)-strlen(url), "?id=");
-    pc_getDeviceAddress(url+strlen(url), sizeof(url)-strlen(url));
-    snprintf(url+strlen(url), sizeof(url)-strlen(url), "&timeout=%lu", params.timeouts.transferTimeout);
+    pc_getActivationToken(auth_token, sizeof(auth_token));
+    pc_getDeviceAddress(device_id, sizeof(device_id));
 
-    pu_log(LL_DEBUG, "GET URL: %s", url);
+    return lib_http_create_get_persistent_conn(url, auth_token, device_id, pc_getLongGetTO());
+}
+void pt_http_read_destroy() {
+    ilb_http_delete_get_persistent_conn();
+}
+// Returns 0 if timeout, actual buf len (LONG GET) if OK, < 0 if error- no need to continue retries (-errno)
+int pt_http_read(char* in_buf, size_t max_len) {
+    memset(in_buf, 0, max_len);
 
-    int ret;
+    int ret = lib_http_get(in_buf, max_len);
 
-    pc_getActivationToken(activation_token, sizeof(activation_token));
-
-    ret = libhttpcomm_sendMsg(curlReadHandle, CURLOPT_HTTPGET, url,
-                        pc_getSertificatePath(), activation_token, NULL, 0, msgFromServer, sizeof(msgFromServer),
-                        params, NULL);
-
-    if(ret == 0) {
-        if(strstr(msgFromServer, "command") != NULL) { //we have to send the responce...
-            unsigned long command_id = get_command_id(msgFromServer);
-            if(command_id) send_responce_to_command(command_id);
-        }
-            ret = (int)strlen(msgFromServer)+1;
-        *buf = msgFromServer;
-    }
-    else if(ret == ETIMEDOUT) ret = 0;
-    else ret = -ret;    // Some error...
-    pu_log(LL_DEBUG, "ch_read: RC = %d", ret);
+    pu_log(LL_DEBUG, "pt_http_read: RC = %d", ret);
     return ret;
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -162,201 +58,54 @@ int pt_http_read(char** buf) { // Returns 0 if timeout or actual buf len (LONG G
 // resp - the addres of the string with responce. NB! do not free this memory outside!!
 // resp_len - length of response
 // Returns 0 if timeout, -1 or error, 1 if OK
-pr_post_result_t pt_http_write(char* buf, size_t len, char** resp, size_t* resp_len) { //Returns 0 if timeout or error, 1 if OK
-    char url[PATH_MAX];
-    char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-    char outBuf[PROXY_MAX_MSG_LEN];
-    char response[PROXY_MAX_HTTP_SEND_MESSAGE_LEN];
-    http_param_t params;
-    int rc;
+pr_write_result_t pt_http_write(char* buf, char* resp, size_t resp_size) { //Returns 0 if timeout or error, 1 if OK
+    char url[LIB_HTTP_MAX_URL_SIZE];
+    char atoken[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
-    memset(&params, 0 , sizeof(params));
+    pc_getCloudURL(url, sizeof(url)-1);
+    pc_getActivationToken(atoken, sizeof(atoken)-1);
 
-    params.timeouts.connectTimeout = DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
-    params.timeouts.transferTimeout = DEFAULT_HTTP_TRANSFER_TIMEOUT_SEC;
-    params.verbose = false;
+    int rc = lib_http_post(buf, resp, resp_size, url, atoken);
 
-
-    pc_getCloudURL(url, sizeof(url));
-    pu_log(LL_INFO, "pt_http_write(): POST URL = %s", url);
-
-    memset(outBuf, 0, sizeof(outBuf));
-    memcpy(outBuf, buf, len);
-
-    pc_getActivationToken(activation_token, sizeof(activation_token));
-
-    rc = libhttpcomm_sendMsg(curlWriteHandle, CURLOPT_POST, url, pc_getSertificatePath(), activation_token,
-                              outBuf, (int)len, response, sizeof(response), params, NULL);
-
-    return calc_post_result(resp, resp_len, response, rc);
-
+    return calc_post_result(resp, resp_size, rc);
 }
-////////////////////////////////////////////////////////////////////////////////////////////
-//get_command_id - Get command ID from json message
-//json_string   - pointer to json string
-//Return command ID or 0 if error
-static unsigned long get_command_id(const char* json_string) {
-
-    cJSON* val = cJSON_Parse(json_string);
-    if(!val) {
-        pu_log(LL_ERROR, "get_command_id: Can\'t parse server command %s", json_string);
-        return 0;
-    }
-    cJSON* cmd_arr = cJSON_GetObjectItem(val, "commands");
-    if(!cmd_arr) {
-        pu_log(LL_ERROR, "get_command_id: Can\'t get commands list from server command %s", json_string);
-        cJSON_Delete(val);
-        return 0;
-    }
-    int cmd_arr_size = cJSON_GetArraySize(cmd_arr);
-    if(!cmd_arr_size) {
-        pu_log(LL_ERROR, "get_command_id: empty commands list from server command %s", json_string);
-        cJSON_Delete(val);
-        return 0;
-    }
-    if(cmd_arr_size > 1) {
-        pu_log(LL_ERROR, "get_command_id: More than one command in command list. Answer for the first only! Message from server: %s", json_string);
-    }
-
-    cJSON * cmd_body = cJSON_GetArrayItem(cmd_arr, 0);
-    if(!cmd_body) {
-        pu_log(LL_ERROR, "get_command_id: wrong command object from server command %s", json_string);
-        cJSON_Delete(val);
-        return 0;
-    }
-    unsigned long command_id = (unsigned long)cJSON_GetObjectItem(cmd_body,"commandId")->valueint;
-    cJSON_Delete(val);
-
-    return command_id;
-}
-////////////////////////////////////////////////////////////////////////////////////////////
-//make_json_answer - create immediate reply to the server
-//buf       - to this pointer the created responce will be copied
-//buf_len   - buf capacity
-//command_id- command id retrievad from the server's command
-static void make_json_answer(char* buf, unsigned int buf_len, unsigned long command_id) {
-// json_answer: "{"proxyId": <PROXY_ID>, "sequenceNumber": 1, "responses": [{"commandId": <command_id> "result": 0}]}";
-    char da[4097];
-    cJSON *root,*arr, *el0;
-    root=cJSON_CreateObject();
-
-    pc_getDeviceAddress(da, sizeof(da));
-    cJSON_AddStringToObject(root, "proxyId", da);
-
-    cJSON_AddNumberToObject(root,"sequenceNumber", 1);
-    cJSON_AddItemToObject(root, "responses", arr=cJSON_CreateArray());
-    el0=cJSON_CreateObject();
-    cJSON_AddNumberToObject(el0,"commandId", command_id);
-    cJSON_AddNumberToObject(el0,"result", 0);
-    cJSON_AddItemToArray(arr, el0);
-
-    char* res = cJSON_PrintUnformatted(root);
-
-    strncpy(buf, res, buf_len);
-    free(res);
-    cJSON_Delete(root);
-}
-////////////////////////////////////////////////////////////////////////////////////////////
-//send_responce_to_command - send immediate reply to the server
-//command_id    - command ID extracted from the server's message
-static void send_responce_to_command(unsigned long command_id) {
-    bool serverRetry = false;
-    char url[PATH_MAX];
-    char outBuf[PROXY_MAX_MSG_LEN];
-    char response[PROXY_MAX_HTTP_SEND_MESSAGE_LEN];
-    char activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-    int retries = 0;
-    http_param_t params;
-
-    memset(&params, 0 , sizeof(params));
-
-    params.timeouts.connectTimeout = DEFAULT_HTTP_CONNECT_TIMEOUT_SEC;
-    params.timeouts.transferTimeout = DEFAULT_HTTP_TRANSFER_TIMEOUT_SEC;
-    params.verbose = false;
-
-    do {
-        if (serverRetry == true) {
-            retries++;
-            sleep(1);
-        }
-
-        pc_getCloudURL(url, sizeof(url));
-        snprintf(url, sizeof(url)-strlen(url), "?id=");
-        pc_getDeviceAddress(url+strlen(url), sizeof(url)-strlen(url));
-        snprintf(url, sizeof(url)-strlen(url), "&timeout=%lu", params.timeouts.transferTimeout);
-
-        pu_log(LL_DEBUG, "send_responce_to_command(): POST URL = %s", url);
-
-        memset(response, 0, sizeof(response));
-        memset(outBuf, 0, sizeof(outBuf));
-        make_json_answer(outBuf, sizeof(outBuf), command_id);
-        pc_getActivationToken(activation_token, sizeof(activation_token));
-        if(libhttpcomm_postMsg(curlReadHandle, CURLOPT_POST, url, pc_getSertificatePath(), activation_token,
-                               outBuf, (int)strlen(outBuf), response, sizeof(response), params, NULL) == 0) {
-
-            serverRetry = (strlen(response) == 0) || (strstr(response, "ERR") != NULL) || (strstr(response, "ACK") == NULL);
-
-            if(!serverRetry)
-                pu_log(LL_DEBUG, "send_responce_to_command(): Send to server SUCCESS");
-            else
-                pu_log(LL_ERROR, "send_responce_to_command(): Error sending to server. Retry # %d: %s", retries, response);
-
-        }
-        else {
-            // Either the Internet or the server is down
-            pu_log(LL_INFO, "send_responce_to_command(): Couldn't contact the server.");
-            retries = 0;
-            serverRetry = true;
-        }
-    }
-    while (serverRetry == true && retries < PROXY_MAX_HTTP_RETRIES);
-}
-
 /////////////////////////////////////////////////////////////
 //Calc http_write (POST) result; fill the reply if needed.
 //Return 1 if OK, 0 if connectivity problems, -1 if effof
+static pr_write_result_t calc_post_result(char* result, size_t size, int rc) {
+    pr_write_result_t ret;
 
-static int calc_post_result(char** result, size_t* len, char* reply, int rc) {
-    pr_post_result_t ret;
-    if(rc) {    //Some curl-level problem - error case
-        if(!strlen(reply)) {
-            sprintf(reply, "cURL error %d, %s", rc, strerror(rc));
+    if(rc < 0) {    //Some curl-level problem - everything logged
+        result[0] = '\0';
+        ret = PT_POST_ERROR;
+    }
+    else if (!rc) {  // rc == 0 technically write is OK
+        ret = PT_POST_RETRY;
+    }
+    else { // ...and what we got? rc == 1
+        cJSON* obj = cJSON_Parse(result);
+        if(!obj) {
             ret = PT_POST_ERROR;
         }
-
-    }
-    else {  // rc == 0 technically write is OK
-        if (!strlen(reply)) { //No cURL problems but...
-            sprintf(reply, "Zero reply from the cloud");
-            ret = PT_POST_RETRY;
-        }
-        else { // ...and what we got?
-            cJSON* obj = cJSON_Parse(reply);
-            if(!obj) {
+        else {
+            cJSON* item = cJSON_GetObjectItem(obj, "status");
+            if(!item) {
                 ret = PT_POST_ERROR;
             }
-            else {
-                cJSON* item = cJSON_GetObjectItem(obj, "status");
-                if(!item) {
-                    ret = PT_POST_ERROR;
-                }
-                else if(!strcmp(item->valuestring, "ACK") || !strcmp(item->valuestring, "CONT")) {
-                    ret = PT_POST_OK;
-                }
-                else if(!strcmp(item->valuestring, "ERR")) {
-                    ret = PT_POST_RETRY;
-                }
-                else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
-                    ret = PT_POST_ERROR;
-                }
-                else {  //UNKNOWN, UNAUTHORIZED - let's wait untill somewhere takes a look on poor cycling modem
-                    ret = PT_POST_RETRY;
-                }
-                cJSON_Delete(obj);
+            else if(!strcmp(item->valuestring, "ACK") || !strcmp(item->valuestring, "CONT")) {
+                ret = PT_POST_OK;
             }
+            else if(!strcmp(item->valuestring, "ERR")) {
+                ret = PT_POST_RETRY;
+            }
+            else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
+                ret = PT_POST_ERROR;
+            }
+            else {  //UNKNOWN, UNAUTHORIZED - let's wait untill somewhere takes a look on poor cycling modem
+                ret = PT_POST_RETRY;
+            }
+            cJSON_Delete(obj);
         }
     }
-    *result = reply;
-    *len = strlen(reply);
     return ret;
 }

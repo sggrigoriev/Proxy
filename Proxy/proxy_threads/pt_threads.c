@@ -68,6 +68,10 @@ void pt_main_thread() { //Starts the main thread.
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
+                    if(pf_command_came(mt_msg)) {
+                        char resp[PROXY_MAX_MSG_LEN];
+                        pu_queue_push(to_server, pf_answer_to_command(resp, sizeof(resp), mt_msg), strlen(resp)+1);
+                    }
                     pu_queue_push(to_agent, mt_msg, len);
                     pu_log(LL_DEBUG, "%s: msg %d bytes was sent to agent: %s ", PT_THREAD_NAME, len, mt_msg);
                     len = sizeof(mt_msg);
@@ -94,7 +98,7 @@ void pt_main_thread() { //Starts the main thread.
 #ifndef PROXY_SEPARATE_RUN
         if(pf_wd_time_to_send(clock)) send_wd();
 #endif
-    }
+        }
 
     main_thread_shutdown();
 }

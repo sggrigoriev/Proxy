@@ -2,6 +2,7 @@
 // Created by gsg on 06/12/16.
 //
 #include <pthread.h>
+#include <string.h>
 
 #include "pc_defaults.h"
 #include "pu_logger.h"
@@ -23,6 +24,7 @@ static pu_queue_t* from_main;     //to read and pass
 static void* write_proc(void* params);
 
 int start_server_write() {
+
     if(pthread_attr_init(&attr)) return 0;
     if(pthread_create(&id, &attr, &write_proc, NULL)) return 0;
     return 1;
@@ -47,11 +49,6 @@ static void* write_proc(void* params) {
     from_main = pt_get_gueue(PS_ToServerQueue);
     to_main = pt_get_gueue(PS_FromServerQueue);
 
-    if(!pt_http_write_init()) {
-        pu_log(LL_ERROR, "%s: Cloud info write initiation failed. Stop.", PT_THREAD_NAME);
-        pthread_exit(NULL);
-    }
-
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
 
 //Main write loop
@@ -66,23 +63,22 @@ static void* write_proc(void* params) {
 //Sending with retries loop
                     int out = 0;
                     while(!stop && !out) {
-                        char *resp = NULL;
-                        size_t resp_len = 0;
+                        char resp[PROXY_MAX_MSG_LEN];
 
-                        switch (pt_http_write(msg, len, &resp, &resp_len)) {
+                        switch (pt_http_write(msg, resp, sizeof(resp))) {
                             case PT_POST_ERROR:
-                                pu_log(LL_ERROR, "%s: Error sending: %s", PT_THREAD_NAME, resp);
+                                pu_log(LL_ERROR, "%s: Error sending", PT_THREAD_NAME);
                                 out = 1;
                                 break;
                             case PT_POST_RETRY:
-                                pu_log(LL_WARNING, "%s: Connectivity problems, retry. %s", PT_THREAD_NAME, resp);
+                                pu_log(LL_WARNING, "%s: Connectivity problems, retry", PT_THREAD_NAME);
                                 sleep(1);
                                 break;
                             case PT_POST_OK:
                                 pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
-                                if (resp_len > 0) {
+                                if (strlen(resp) > 0) {
                                     pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
-                                    pu_queue_push(to_main, resp, resp_len);
+                                    pu_queue_push(to_main, resp, strlen(resp)+1);
                                     out = 1;
                                 }
                                 len = sizeof(msg);
@@ -106,6 +102,5 @@ static void* write_proc(void* params) {
                 break;
         }
     }
-    pt_http_write_destroy();
     pthread_exit(NULL);
 }

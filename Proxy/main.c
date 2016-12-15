@@ -8,7 +8,6 @@
 #include "pc_cli.h"
 #include "pc_settings.h"
 #include "pc_defaults.h"
-#include "pu_logger.h"
 #include "pt_http_utl.h"
 #include "pt_threads.h"
 #include "pf_proxy_activation.h"
@@ -37,14 +36,14 @@ int main(int argc, char* argv[]) {
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
 
-    if(!pt_http_curl_init()) exit(-1);
+    if(!pt_http_curl_start()) exit(-1);
 
     if(!pf_proxy_activation()) exit(-1);
 ////////
     pt_main_thread();
 
 //cURL stop
-    curl_global_cleanup();
+    pt_http_curl_stop();
 //Logger stop
     pu_stop_logger();
     exit(0);
