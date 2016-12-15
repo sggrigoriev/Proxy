@@ -91,11 +91,11 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     }
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_CONNECTTIMEOUT, rd_params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
 /*
-    if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_CONNECTTIMEOUT, rd_params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
 */
+    if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
+
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_URL, rd_url), curlResult != CURLE_OK) goto out;
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_ERRORBUFFER, rd_errBuf), curlResult != CURLE_OK) goto out;
