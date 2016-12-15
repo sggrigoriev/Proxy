@@ -9,6 +9,7 @@
 #include <curl/curl.h>
 
 #include <eui64.h>
+#include <pc_settings.h>
 #include "pu_logger.h"
 #include "lib_http.h"
 
@@ -135,7 +136,9 @@ int lib_http_get(char* msg, size_t msg_size) {
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPIDLE, 120L);
     curl_easy_setopt(curlGETHandle, CURLOPT_TCP_KEEPINTVL, 120L);
-
+    char url[LIB_HTTP_MAX_URL_SIZE];
+    pc_getCloudURL(url, sizeof(url));
+    curl_easy_setopt(curlGETHandle, CURLOPT_URL, url);
 
     CURLcode curlResult = curl_easy_perform(curlGETHandle);
 
