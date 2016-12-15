@@ -89,8 +89,6 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
         pu_log(LL_ERROR, "lib_http_create_get_persistent_conn: cURL GET handler creation failed.");
         return 0;
     }
-    printf("Connect timeout= %lu\n", rd_params.timeouts.connectTimeout);
-    printf("Transfer timeout = %lu\n", rd_params.timeouts.transferTimeout);
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
 
