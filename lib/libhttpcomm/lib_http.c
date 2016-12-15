@@ -103,9 +103,9 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     // data received from the server... so curl will write data to us.
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_WRITEDATA, &rd_inBoundCommInfo), curlResult != CURLE_OK) goto out;
-/*
+
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_BUFFERSIZE, sizeof(rd_rx_buf)), curlResult != CURLE_OK) goto out;
-*/
+
     rd_slist = curl_slist_append(rd_slist, "User-Agent: IOT Proxy");
     snprintf(buf, sizeof(buf), "PPCAuthorization: esp token=%s", auth_token);
     rd_slist = curl_slist_append(rd_slist, buf);
