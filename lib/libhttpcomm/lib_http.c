@@ -75,13 +75,13 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     bzero(rd_rx_buf, sizeof(rd_rx_buf));
     bzero(&rd_params, sizeof(rd_params));
 
-    rd_params.timeouts.connectTimeout = conn_to-20;
+    rd_params.timeouts.connectTimeout = conn_to;
     rd_params.timeouts.transferTimeout = conn_to;
 
     strncat(rd_url, "?id=", sizeof(rd_url)-1);
     strncat(rd_url, deviceID, sizeof(rd_url)-1);
 
-    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", rd_params.timeouts.transferTimeout);
+    snprintf(buf, sizeof(buf)-1, "&timeout=%lu", rd_params.timeouts.transferTimeout-20);
     strncat(rd_url, buf, sizeof(rd_url)-1);
 
 
