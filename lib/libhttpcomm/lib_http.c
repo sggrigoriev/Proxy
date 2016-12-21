@@ -214,8 +214,8 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     char errBuf[CURL_ERROR_SIZE];
     char wr_url[LIB_HTTP_MAX_URL_SIZE];
 
-    HttpIoInfo_t inBoundCommInfo = {rx_buf, sizeof(rd_rx_buf)};
-    HttpIoInfo_t outBoundCommInfo ={tx_buf, (int)(strlen(msg)+1)};
+    HttpIoInfo_t inBoundCommInfo = {rx_buf, sizeof(rx_buf)};
+    HttpIoInfo_t outBoundCommInfo ={tx_buf, (int)(strlen(msg))};
     http_param_t params;
 
     CURLcode curlResult = CURLE_OK;
@@ -226,21 +226,33 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     bzero(tx_buf, sizeof(tx_buf));
     bzero(rx_buf, sizeof(rx_buf));
     bzero(errBuf, sizeof(errBuf));
+    bzero(wr_url, sizeof(wr_url));
     bzero(&params, sizeof(params));
 
     strncpy(tx_buf, msg, strlen(msg)+1);
+
     strncpy(wr_url, url, sizeof(wr_url));
     strncat(wr_url, "?id=", sizeof(wr_url));
     strncat(wr_url, deviceID, sizeof(wr_url));
-    wr_url[sizeof(wr_url)-1] = '\0';
 
     params.timeouts.connectTimeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
     params.timeouts.transferTimeout = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
+
+    if(wr_handler = curl_easy_init(), !wr_handler) {
+        pu_log(LL_ERROR, "lib_http_post: cURL GET handler creation failed.");
+        goto out;
+    }
 
     slist = curl_slist_append(slist, "Content-Type: application/json");
     snprintf(buf, sizeof(buf)-1, "Content-Length: %d", outBoundCommInfo.size);
     slist = curl_slist_append(slist, buf);
 //
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_CONNECTTIMEOUT, params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_TIMEOUT, params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_URL, wr_url), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_POST, 1L), curlResult != CURLE_OK) goto out;
+    //
     slist = curl_slist_append(slist, "User-Agent: IOT Proxy");
 
     if(strlen(auth_token)) {                                //case of activation: no token
@@ -252,11 +264,13 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
         pu_log(LL_ERROR, "lib_http_post: error slist creation");
         return -1;
     }
-
-    if(wr_handler = curl_easy_init(), !wr_handler) {
-        pu_log(LL_ERROR, "lib_http_post: cURL GET handler creation failed.");
-        goto out;
-    }
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPHEADER, slist), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_ERRORBUFFER, errBuf), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READFUNCTION, read_callback), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READDATA, &outBoundCommInfo), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_BUFFERSIZE, sizeof(rx_buf)), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEDATA, &inBoundCommInfo), curlResult != CURLE_OK) goto out;
 
 #ifdef LIBHTTP_CURL_DEBUG
     curl_easy_setopt(wr_handler, CURLOPT_DEBUGFUNCTION, my_trace);
@@ -265,24 +279,8 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     curl_easy_setopt(wr_handler, CURLOPT_VERBOSE, 1L);
 #endif
 
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_CONNECTTIMEOUT, params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_TIMEOUT, params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_URL, wr_url), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_ERRORBUFFER, errBuf), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_WRITEDATA, &inBoundCommInfo), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READFUNCTION, read_callback), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_READDATA, &outBoundCommInfo), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_BUFFERSIZE, sizeof(rx_buf)), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPHEADER, slist), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPPOST, 0L), curlResult != CURLE_OK) goto out;
-
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_POSTFIELDS, msg), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_POSTFIELDS, 0L), curlResult != CURLE_OK) goto out;
 
 //////////////////////////////////
     curlResult = curl_easy_perform(wr_handler);
