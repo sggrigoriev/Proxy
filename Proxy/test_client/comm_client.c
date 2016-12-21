@@ -13,8 +13,7 @@
 #include "pc_defaults.h"
 #include "pc_settings.h"
 //
-#include <sys/socket.h>
-#include <netinet/in.h>
+
 //{"version": "2", "proxyId": "PROXY_ID", "sequenceNumber": "13117",
 //  "measures": [{"deviceId": "DEVICE_ID_NO_TIMESTAMP",
 //      "params": [{"name": "desc","value": "Send a measurement from an existing device, with no timestamp"},{"name": "power","value": "100"}]

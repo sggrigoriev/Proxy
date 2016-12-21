@@ -51,7 +51,7 @@ static HttpIoInfo_t rd_inBoundCommInfo = {rd_rx_buf, sizeof(rd_rx_buf)};
 /////////////////////////////////////////////////////////////
 //Calc http_write (POST) result
 //Return 1 if OK, 0 if connectivity problems, -1 if error
-static lib_http_post_result_t calc_post_result(const char* result, int rc);
+static lib_http_post_result_t calc_post_result(char* result, int rc);
 //Called when a message HAS TO BE SENT to the server. this is a standard streamer
 //if the size of the data to write is larger than size*nmemb, this function will be called several times by libcurl.
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
@@ -99,7 +99,7 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
     }
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
-
+    if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_CONNECTTIMEOUT, rd_params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_TIMEOUT, rd_params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
 
@@ -193,7 +193,7 @@ int lib_http_get(char* msg, size_t msg_size) {
 }
 //Return 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 look for some answer from the server. All logging inside
 //Makes new connectione every time to post amd close it after the operation
-lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_size, const char* url, const char* auth_token) {
+lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_size, const char* url, const char* auth_token, const char* deviceID) {
 #ifdef LIBHTTP_CURL_DEBUG
     struct data config;
     config.trace_ascii = 1; /* enable ascii tracing */
@@ -202,6 +202,7 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     char rx_buf[LIB_HTTP_MAX_MSG_SIZE]; //for server answers
     struct curl_slist* slist = NULL;
     char errBuf[CURL_ERROR_SIZE];
+    char wr_url[LIB_HTTP_MAX_URL_SIZE];
 
     HttpIoInfo_t inBoundCommInfo = {rx_buf, sizeof(rd_rx_buf)};
     HttpIoInfo_t outBoundCommInfo ={tx_buf, (int)(strlen(msg)+1)};
@@ -218,6 +219,10 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     bzero(&params, sizeof(params));
 
     strncpy(tx_buf, msg, strlen(msg)+1);
+    strncpy(wr_url, url, sizeof(wr_url));
+    strncat(wr_url, "?id=", sizeof(wr_url));
+    strncat(wr_url, deviceID, sizeof(wr_url));
+    rd_url[sizeof(wr_url)-1] = '\0';
 
     params.timeouts.connectTimeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
     params.timeouts.transferTimeout = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
@@ -227,6 +232,7 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     slist = curl_slist_append(slist, buf);
 //
     slist = curl_slist_append(slist, "User-Agent: IOT Proxy");
+
     if(strlen(auth_token)) {                                //case of activation: no token
         snprintf(buf, sizeof(buf)-1, "PPCAuthorization: esp token=%s", auth_token);
         slist = curl_slist_append(slist, buf);
@@ -250,8 +256,9 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
 #endif
 
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_CONNECTTIMEOUT, params.timeouts.connectTimeout), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_TIMEOUT, params.timeouts.transferTimeout), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_URL, url), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_URL, wr_url), curlResult != CURLE_OK) goto out;
 
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_ERRORBUFFER, errBuf), curlResult != CURLE_OK) goto out;
 
@@ -328,7 +335,7 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
 //
 //Calc http_write (POST) result; fill the reply if needed.
 //Return 1 if OK, 0 if connectivity problems, -1 if error
-static lib_http_post_result_t calc_post_result(const char* result, int rc) {
+static lib_http_post_result_t calc_post_result(char* result, int rc) {
     lib_http_post_result_t ret;
 
     if(rc < 0) {    //Some curl-level problem - everything logged
@@ -355,6 +362,16 @@ static lib_http_post_result_t calc_post_result(const char* result, int rc) {
             }
             else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
                 ret = LIB_HTTP_POST_ERROR;
+            }
+            else if(!strcmp(item->valuestring, "UNATHORIZED")) {
+                cJSON* item = cJSON_GetObjectItem(obj, "authToken");
+                if(!item) {
+                    ret = LIB_HTTP_POST_RETRY;
+                }
+                else {
+                    strcpy(result, (const char * restrict)item);
+                    ret = LIB_HTTP_POST_AUTH_TOKEN;
+                }
             }
             else {  //UNKNOWN, UNAUTHORIZED, ... - let's wait untill somewhere takes a look on poor cycling modem
                 ret = LIB_HTTP_POST_RETRY;

@@ -61,6 +61,7 @@ int pt_http_read(char* in_buf, size_t max_len) {
 lib_http_post_result_t pt_http_write(char* buf, size_t buf_size, char* resp, size_t resp_size) { //Returns 0 if timeout or error, 1 if OK
     char url[LIB_HTTP_MAX_URL_SIZE];
     char atoken[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char deviceID[LIB_HTTP_DEVICE_ID_SIZE];
 
 
     pc_getCloudURL(url, sizeof(url));
@@ -68,6 +69,7 @@ lib_http_post_result_t pt_http_write(char* buf, size_t buf_size, char* resp, siz
         pc_getMainCloudURL(url, sizeof(url));
     }
     pc_getActivationToken(atoken, sizeof(atoken));
+    pc_getProxyDeviceID(deviceID, sizeof(deviceID));
 
-    return lib_http_post(buf, resp, resp_size, url, atoken);
+    return lib_http_post(buf, resp, resp_size, url, atoken, deviceID);
 }
