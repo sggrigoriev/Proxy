@@ -71,10 +71,10 @@ static void* read_proc(void* params) {
         }
         if(!stop) {
             pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!
-            pu_log(LL_INFO, "Received from cloud: %s", buf);
+            pu_log(LL_INFO, "%s: Received from cloud: %s", PT_THREAD_NAME, buf);
         }
         else {
-            pu_log(LL_INFO, "&s STOP. Terminated", PT_THREAD_NAME);
+            pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
         }
     }
     pt_http_read_destroy();

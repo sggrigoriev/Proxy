@@ -10,11 +10,13 @@
 #include <malloc.h>
 #include <stdlib.h>
 
+
 #include "wc_defaults.h"
+#include "pr_ptr_list.h"
 #include "wu_utils.h"
 
 static const char* create_file_name(char* buf, size_t buf_len, const char* dir, const char* fname, const char* ext);
-static const unsigned int pl_len(char* const* list);
+static const char* add_slash(char* buf, size_t buf_size,const char* path); //Add slash to the path's tail if no slash found there
 
 //return 0 if not exisst 1 if exists
 int wu_process_exsists(const char* process_name) {
@@ -68,12 +70,12 @@ int wu_dir_empty(const char* dir_name) {
 //return 1 if OK, 0 if error
 int wu_clear_dir(const char* dir) {
     char path[WC_MAX_PATH];
-    char* slash_mask;
+
     if(!dir || !strlen(dir)) return 1; //Nothing to elete
 
-    slash_mask = (dir[strlen(dir)-1] == '/')?"":"/";
+    add_slash(path, sizeof(path), dir);
 
-    snprintf(path, sizeof(path), "%s%s%s%s", "rm -rf ", dir, slash_mask, "*");
+    snprintf(path+strlen(path), sizeof(path)-strlen(path), "%s%s%s", "rm -rf ", dir, "*");
 
     return (system(path) == 0);
 }
@@ -92,46 +94,86 @@ pid_t wu_start_process(const char* prg_name, char* const* command_string, const 
     }
     return pid;
 }
-//Add program name as the first parameter and NULL as the last one
-char** wu_prepare_papams_list(char** buf, const char* program_name, char* const* params_list) {
-    unsigned int len=0;
-    unsigned int j=0;
-    assert(program_name);
 
-    len = pl_len(params_list);
+//Move all files found from src_folder to dst_folder
+//Returns 1 if OK, 0 if not
+int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1 if OK, 0 if not
+    DIR           *d;
+    struct dirent *dir;
+    int ret = 1;
 
-    buf = (char**)malloc((len+1)*sizeof(char*));
-    buf[0]= strdup(program_name);
-    for(j = 1; j < len-1; j++) buf[j] = strdup(params_list[j-1]);
-    buf[len-1] = NULL;
-    return buf;
-}
-char** wu_duplicate_params_list(char** dest, char* const* src) {
-    size_t len,i;
+    if(d = opendir(src_folder), d) {
+        char buf_src[PATH_MAX];
+        char buf_dst[PATH_MAX];
 
-    if(len = pl_len(src), !len) return NULL;
-    dest = (char**)malloc(len*sizeof(char*));
-    for(i = 0; i < len-1; i++) {
-        dest[i] = strdup(src[i]);
+        add_slash(buf_src, sizeof(buf_src), src_folder);
+        size_t offs_src = strlen(buf_src);
+
+        add_slash(buf_dst, sizeof(buf_dst), dest_folder);
+        size_t offs_dst = strlen(buf_dst);
+
+        while (dir = readdir(d), dir != NULL) {
+            strncpy(buf_src + offs_src, dir->d_name, sizeof(buf_src) - offs_src);
+            strncpy(buf_dst + offs_dst, dir->d_name, sizeof(buf_dst) - offs_dst);
+
+            if(rename(buf_src, buf_dst)) {
+                ret = 0;
+                break;
+            }
+        }
+        closedir(d);
     }
-    dest[len-1] = NULL;
-    return dest;
+    else {
+        ret = 0;
+    }
+    return ret;
 }
-void wu_delete_params_list(char** params_list) {
-    unsigned i = 0;
-    if(!params_list) return;
-    while(params_list[i]) free(params_list[i++]);
-    free(params_list);
+
+//return files list from directory. Last element NULL. If no files - return at least one element with NULL
+//return NULL if allocation error
+char** wu_get_flist(const char* path) {
+    DIR           *d;
+    struct dirent *dir;
+    char** ret = NULL;
+
+    if(ret = malloc(sizeof(char**)), !ret) return NULL;
+    unsigned int len = 0;
+    if(d = opendir(path), d) {
+        while (dir = readdir(d), dir != NULL) {
+            if(ret[len] = strdup(dir->d_name), !ret[len]) {
+                pt_delete_ptr_list(ret);
+                return NULL;
+            }
+            len++;
+            if(ret = realloc(ret, sizeof(char**)*len), !ret) {
+                pt_delete_ptr_list(ret);
+                return NULL;
+            }
+
+        }
+        closedir(d);
+        ret[len] = NULL;
+    }
+    else {
+        ret[len] = NULL;
+    }
+    return ret;
+}
+void wu_free_flist(char** flist) {
+    pt_delete_ptr_list(flist);
 }
 //////////////////////////////////////////////////////////////////////////
 //Local finctions definition
 static const char* create_file_name(char* buf, size_t buf_len, const char* dir, const char* fname, const char* ext) {
-    snprintf(buf, buf_len-1, "%s%s.%s", dir, fname, ext);
+    if(strlen(ext))
+        snprintf(buf, buf_len-1, "%s%s.%s", dir, fname, ext);
+    else
+        snprintf(buf, buf_len-1, "%s%s", dir, fname);
     return buf;
 }
-static const unsigned int pl_len(char* const*  list) {
-    unsigned int len = 0;
-    if(!list) return 0;
-    while(list[len++]);
-    return len;
+//Add slash to the path's tail if no slash found there
+static const char* add_slash(char* buf, size_t buf_size, const char* path) {
+    if(path[strlen(path)-1] == '/') return strncpy(buf, path, buf_size);
+    snprintf(buf, buf_size, "%s%s", path, "/");
+    return buf;
 }

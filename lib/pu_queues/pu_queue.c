@@ -216,7 +216,12 @@ int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
         return 0;
     }
 
-    *len = (queue->q_array[queue->rd_idx].len > *len)? *len : queue->q_array[queue->rd_idx].len;
+    if(*len < queue->q_array[queue->rd_idx].len) {
+        pu_log(LL_WARNING, "pu_queue_pop: too small buffer: data truncated");
+    }
+    else {
+        *len = queue->q_array[queue->rd_idx].len;
+    }
     memcpy(data, queue->q_array[queue->rd_idx].data, *len);
     free(queue->q_array[queue->rd_idx].data);
     queue->q_array[queue->rd_idx].data = NULL;

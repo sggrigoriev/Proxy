@@ -5,7 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
-#include <stdio.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include "unistd.h"
@@ -16,6 +16,7 @@
 //#include "pc_defaults.h"
 #include "pu_logger.h"
 #include "pt_tcp_utl.h"
+#include "lib_tcp.h"
 
 
 //////////////////////////////////////////////////////////////////
@@ -48,7 +49,7 @@ int pt_tcp_server_connect(int port, pt_tcp_rw_t* rw_sockets) {  // returns socke
     addr_struct.sin_port = htons(port);
 
 //bind socket on repeated mode
-    int rpt = PT_BINDING_ATTEMPTS;
+    int rpt = LIB_TCP_BINGING_ATTEMPTS;
     while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
         pu_log(LL_ERROR, "pt_tcp_server_connect: error socket binding %d, %s", errno, strerror(errno));
         sleep(1);
@@ -124,11 +125,11 @@ int pt_tcp_client_connect(int port, pt_tcp_rw_t* rw_sockets) { // returns socket
     struct sockaddr_in addr_struct;
     memset(&addr_struct, 0, sizeof(addr_struct));
     addr_struct.sin_family = AF_INET;
-    addr_struct.sin_addr.s_addr = INADDR_ANY;
+    addr_struct.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr_struct.sin_port = htons(port);
 
 //And connect to the remote socket
-    unsigned rpt = PT_BINDING_ATTEMPTS;
+    unsigned rpt = LIB_TCP_BINGING_ATTEMPTS;
     while(rpt) {
         int ret = connect(client_socket, (struct sockaddr *)&addr_struct, sizeof(addr_struct));
         if (ret < 0) {
@@ -167,15 +168,12 @@ void pt_tcp_shutdown_rw(pt_tcp_rw_t* socks) {
 //pt_tcp_assemble   - assembling message from several tcp parsels if for some reasons the message
 //                  wasn't sent as one piece. The sign of end message is the 0-byte
 //
-//in    - message received
-//len   - message length
-//ab    - assembling bufer
-//Return the 0-terminated message
-const char* pt_tcp_assemble(char* out, size_t out_len, pt_tcp_assembling_buf_t* ab) { // assimbling the full message. Return NULL if nothing oe msg
+//Return the 0-terminated message or NULL if empty
+const char* pt_tcp_assemble(char* out, size_t out_size, pt_tcp_assembling_buf_t* ab) { // assimbling the full message. Return NULL if nothing oe msg
     unsigned i;
     assert(out);
     assert(ab);
-    assert(out_len > 0);
+    assert(out_size);
 
     for(i = 0; i < ab->idx; i++) {
         if(ab->buf[i] == '\0') {
@@ -187,8 +185,8 @@ const char* pt_tcp_assemble(char* out, size_t out_len, pt_tcp_assembling_buf_t* 
     }
     return NULL;
 }
-int pt_tcp_get(const char* in, ssize_t len, pt_tcp_assembling_buf_t* ab) {
-    assert(in); assert(ab); assert(len > 0);
+int pt_tcp_get(const char* in, size_t len, pt_tcp_assembling_buf_t* ab) {
+    assert(in); assert(ab); assert(len);
 
     if((ab->idx >= ab->buf_len) || ((ab->buf_len - ab->idx) < len)) return 0; //no place in buffer
     memcpy(ab->buf+ab->idx, in, len);

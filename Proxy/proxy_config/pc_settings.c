@@ -3,9 +3,9 @@
 //
 #include <assert.h>
 #include <pthread.h>
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "cJSON.h"
 
@@ -26,9 +26,8 @@
     #define PROXY_LL_ERROR          "ERROR"
 
 #define PROXY_PROCESS_NAME      "PROXY_PROCESS_NAME"
-#define PROXY_SERTIFICAE_PATH   "SERTIFICAE_PATH"
 #define PROXY_ACTIVATION_TOKEN  "ACTIVATION_TOKEN"
-#define PROXY_DEVICE_ADDRESS    "DEVICE_ADDRESS"
+#define PROXY_DEVICE_ID         "DEVICE_ID"
 #define PROXY_DEVICE_TYPE       "DEVICE_TYPE"
 #define PROXY_CLOUD_URL         "CLOUD_URL"
 #define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
@@ -42,13 +41,12 @@
 
 ////////////////////////////////////////////////////////
 //Config values
-static char             proxy_name[31];
+static char             proxy_name[PROXY_MAX_PROC_NAME];
 static char             log_name[PROXY_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
-static char             sertificate_path[PROXY_MAX_PATH];
 static char             activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-static char             device_address[PROXY_DEVICE_ID_SIZE];
+static char             device_id[PROXY_DEVICE_ID_SIZE];
 static unsigned int     device_type;
 static char             cloud_url[PROXY_MAX_PATH];
 static char             main_cloud_url[PROXY_MAX_PATH];
@@ -97,13 +95,6 @@ size_t pc_getLogRecordsAmt() {
 log_level_t pc_getLogVevel() {
     PC_RET(DEFAULT_LOG_LEVEL, log_level);
 }
-
-//Return the path to private sertificate file
-//NB! used just during the interactive debug in sandbox
-const char* pc_getSertificatePath() {
-    PC_RET(DEFAULT_SERTIFICATE_PATH, sertificate_path);
-}
-
 //Return the timeout in seconds for "long get" made by Presto to listen the
 //Cloud messages.
 unsigned int pc_getLongGetTO() {
@@ -157,9 +148,8 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, PROXY_LOG_NAME, log_name, sizeof(log_name)))                           fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_LOG_REC_AMT, &log_rec_amt))                                     fprintf(stderr, "Default value will be used instead\n");
     getLLTValue(cfg, PROXY_LOG_LEVEL, &log_level);
-    if(!getStrValue(cfg, PROXY_SERTIFICAE_PATH, sertificate_path, sizeof(sertificate_path)))    fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_ACTIVATION_TOKEN, activation_token, sizeof(activation_token)))   fprintf(stderr, "Default value will be used instead\n");
-    if(!getStrValue(cfg, PROXY_DEVICE_ADDRESS, device_address, sizeof(device_address)))         fprintf(stderr, "Default value will be used instead\n");
+    if(!getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                        fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_CLOUD_URL, cloud_url, sizeof(cloud_url)))                        fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   fprintf(stderr, "Default value will be used instead\n");
@@ -177,52 +167,48 @@ int pc_load_config(const char* cfg_file_name) {
 
 //Copy to the ret the clour uprl string
 //return empty string if no value or the value > max_len
-void pc_getCloudURL(char* ret, size_t max_len) { //return empty strinng if no value
+void pc_getCloudURL(char* ret, size_t size) { //return empty strinng if no value
+    assert(ret); assert(size);
     pthread_mutex_lock(&local_mutex);
 
-    if(max_len < strlen(cloud_url)+1)
-        strcpy(ret, "");
-    else
-        strcpy(ret, cloud_url);
+    strncpy(ret, cloud_url, size);
+    ret[size-1] = '\0';
 
     pthread_mutex_unlock(&local_mutex);
 }
 
 //Copy the the ret the default cloud contact point string
 //Copy empty string if the value > max_len
-void pc_getMainCloudURL(char* ret, size_t max_len) {
+void pc_getMainCloudURL(char* ret, size_t size) {
+    assert(ret); assert(size);
     pthread_mutex_lock(&local_mutex);
 
-    if(max_len < strlen(main_cloud_url)+1)
-        strcpy(ret, "");
-    else
-        strcpy(ret, main_cloud_url);
+    strncpy(ret, main_cloud_url, size);
+    ret[size-1] = '\0';
 
     pthread_mutex_unlock(&local_mutex);
 }
 
 //Copy to the ret the activation token string.
 //Copy empty string if the value > max_len
-void pc_getActivationToken(char* ret, size_t max_len) {
+void pc_getActivationToken(char* ret, size_t size) {
+    assert(ret); assert(size);
     pthread_mutex_lock(&local_mutex);
 
-    if(max_len < strlen(activation_token)+1)
-        strcpy(ret, "");
-    else
-        strcpy(ret, activation_token);
+    strncpy(ret, activation_token, size);
+    ret[size-1] = '\0';
 
     pthread_mutex_unlock(&local_mutex);
 }
 
 //Copy to the ret the device address (deviceID) string.
 //Copy empty string if the value > max_len
-void pc_getDeviceAddress(char* ret, size_t max_len) {
+void pc_getProxyDeviceID(char* ret, size_t size) {
+    assert(ret); assert(size);
     pthread_mutex_lock(&local_mutex);
 
-    if(max_len < strlen(device_address)+1)
-        strcpy(ret, "");
-    else
-        strcpy(ret, device_address);
+    strncpy(ret, device_id, size);
+    ret[size-1] = '\0';
 
     pthread_mutex_unlock(&local_mutex);
 }
@@ -242,12 +228,12 @@ int pc_saveActivationToken(const char* new_at) {
 
 //Update/insert new device address (deviceID). Update the current value in memory as well
 //Return 1 of success, return 0 if not
-int pc_saveDeviceAddress(const char* new_da) {
+int pc_saveProxyDeviceID(const char* new_da) {
     int ret;
 
     pthread_mutex_lock(&local_mutex);
 
-    ret = saveStrValue("pc_saveDeviceAddress", conf_fname, PROXY_DEVICE_ADDRESS, new_da, device_address, sizeof(device_address));
+    ret = saveStrValue("pc_saveDeviceAddress", conf_fname, PROXY_DEVICE_ID, new_da, device_id, sizeof(device_id));
 
     pthread_mutex_unlock(&local_mutex);
     return ret;
@@ -266,17 +252,17 @@ int pc_saveMainCloudURL(const char* new_main_url) {
     return ret;
 }
 
-//Update configuration file name. NB! Think twice before the call this function notat the very beginning of all Presto!
+//Update/insert new Cloud connection point. Update the current value in memory as well
 //Return 1 of success, return 0 if not
-int pc_saveCfgFileName(const char* new_file_name) {
+int pc_saveCloudURL(const char* new_url) {
+    int ret;
+
     pthread_mutex_lock(&local_mutex);
 
-    if(sizeof(conf_fname) < strlen(new_file_name)+1) return 0;
-
-    strcpy(conf_fname, new_file_name);
+    ret = saveStrValue("pc_saveCloudURL", conf_fname, PROXY_CLOUD_URL, new_url, cloud_url, sizeof(cloud_url));
 
     pthread_mutex_unlock(&local_mutex);
-    return 1;
+    return ret;
 }
 
 //Update/insert the port for communicating with the Agent. Update the current value in memory as well
@@ -291,37 +277,43 @@ int pc_saveAgentPort(unsigned int new_port) {
     return ret;
 }
 
-/////////////////////////////////////////////////////////////
-//Activation-related stuff
-//Used to calculate the level of activation:
-//PC_FULL_ACTIVATION        - deviceID not found
-//PC_ACTIVATION_KEY_NEEDED  - deviceID found, activation key not found
-//PC_NO_NEED_ACTIVATION     - deviceID found, activation key found
-//PC_TOTAL_MESS             - error - settings are not activated
-//(see pc_settings.h)
-pc_activation_type_t pc_calc_activation_type() { //Looks on deviceID and/or activation_token absence NB! what about the sertificate???
-    char buf[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-    if(!initiated) return PC_TOTAL_MESS;
+//Update configuration file name. NB! Think twice before the call this function notat the very beginning of all Presto!
+//Return 1 of success, return 0 if not
+int pc_saveCfgFileName(const char* new_file_name) {
+    pthread_mutex_lock(&local_mutex);
 
-    pc_getDeviceAddress(buf, sizeof(buf));
-    if(!strlen(buf)) return PC_FULL_ACTIVATION;
+    if(sizeof(conf_fname) < strlen(new_file_name)+1) return 0;
 
-    pc_getActivationToken(buf, sizeof(buf));
-    if(!strlen(buf)) return PC_ACTIVATION_KEY_NEEDED;
+    strcpy(conf_fname, new_file_name);
 
-    return PC_NO_NEED_ACTIVATION;
+    pthread_mutex_unlock(&local_mutex);
+    return 1;
 }
 
+//Activation-related stuff
+//
+int pc_existsCloudURL() {
+    return (initiated && strlen(cloud_url));
+}
+int pc_existsActivationToken() {
+    return (initiated && strlen(activation_token));
+}
+int ps_existsProxyDeviceID() {
+    return (initiated && strlen(device_id));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////
 static void initiate_defaults() {
     initiated = 1;
     strcpy(log_name, DEFAULT_LOG_NAME);
     log_rec_amt = DEFAULT_LOG_RECORDS_AMT;
     log_level = DEFAULT_LOG_LEVEL;
-    strcpy(sertificate_path, DEFAULT_SERTIFICATE_PATH);
 
-    strcpy(activation_token, DEFAULT_ACTIVATION_TOKEN);         //NB! default is empty string!
-    strcpy(device_address, DEFAULT_DEVICE_ADDRESS);             //NB! default is empty string!
-    strcpy(cloud_url, DEFAULT_CLOUD_URL);                       //NB! default is empty string!
+    strncpy(activation_token, DEFAULT_ACTIVATION_TOKEN, sizeof(activation_token));         //NB! default is empty string!
+    strncpy(device_id, DEFAULT_DEVICE_ID, sizeof(device_id));                           //NB! default is empty string!
+    strncpy(cloud_url, DEFAULT_CLOUD_URL, sizeof(cloud_url));                       //NB! default is empty string!
+    strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url));
 
     long_get_to = DEFAULT_UPLOAD_TIMEOUT_SEC;
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;

@@ -27,9 +27,9 @@ int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t ma
 //Return 1 if OK 0 if error
 int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting);
 
-//Allocate memory and copy into it string array. arr_len contains amount of strings in array
+//Allocate memory and copy into it NULL-terminated string array.
 //Return 1 if OK 0 if error
-int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting, unsigned int* arr_len);
+int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting);
 
 //Safe the cfg object, translated to json ASCII text into text file fname. Return 1 if success and 0 othervize
 int saveToFile(const char* fname, cJSON* cfg);

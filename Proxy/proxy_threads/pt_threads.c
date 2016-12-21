@@ -43,7 +43,7 @@ static pu_queue_t* to_agent;
 
 #ifndef PROXY_SEPARATE_RUN
 static pu_queue_t* to_wud;
-pf_clock_t clock = {0};
+pf_clock_t wd_clock = {0};
 #endif
 
 static pu_queue_event_t events;
@@ -52,9 +52,8 @@ void pt_main_thread() { //Starts the main thread.
 
     int main_finish = 0;
 
-
     if(!main_thread_startup()) {
-        pu_log(LL_ERROR, "%s: Initialization failed. Abort");
+        pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
 
@@ -68,20 +67,19 @@ void pt_main_thread() { //Starts the main thread.
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
+                    pu_log(LL_DEBUG, "%s: got from server_read %s", PT_THREAD_NAME, mt_msg);
                     if(pf_command_came(mt_msg)) {
                         char resp[PROXY_MAX_MSG_LEN];
                         pu_queue_push(to_server, pf_answer_to_command(resp, sizeof(resp), mt_msg), strlen(resp)+1);
                     }
                     pu_queue_push(to_agent, mt_msg, len);
-                    pu_log(LL_DEBUG, "%s: msg %d bytes was sent to agent: %s ", PT_THREAD_NAME, len, mt_msg);
                     len = sizeof(mt_msg);
                 }
                 break;
             case PS_FromAgentQueue:
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
-                    len = pf_add_proxy_head(mt_msg, sizeof(mt_msg));
+                    pu_log(LL_DEBUG, "%s: got from agent_read %s", PT_THREAD_NAME, mt_msg);
                     pu_queue_push(to_server, mt_msg, len);
-                    pu_log(LL_DEBUG, "%s: msg %s was sent to server_write", PT_THREAD_NAME, mt_msg);
                     len = sizeof(mt_msg);
                 }
                 break;
@@ -96,7 +94,7 @@ void pt_main_thread() { //Starts the main thread.
 //Place for own actions
 //1. Wathchdog
 #ifndef PROXY_SEPARATE_RUN
-        if(pf_wd_time_to_send(clock)) send_wd();
+        if(pf_wd_time_to_send(&wd_clock)) send_wd();
 #endif
         }
 
@@ -146,9 +144,9 @@ static int main_thread_startup() {
     pu_log(LL_INFO, "%s: started", "WUD_WRITE");
 
     return initiate_wud();
-#endif
-
+#else
     return 1;
+#endif
 }
 static void main_thread_shutdown() {
     set_stop_server_read();
@@ -175,16 +173,16 @@ static int initiate_wud() {
     pr_message_t msg;
     char buf[PROXY_MAX_PATH];
 
-    msg.message_type = PR_COMMAND;
-    msg.command.cmd = PR_PRESTO_INFO;
+    msg.presto_info.message_type = PR_COMMAND;
+    msg.presto_info.cmd = PR_PRESTO_INFO;
     pc_getActivationToken(buf, sizeof(buf));
-    msg.command.presto_info.activation_token = strdup(buf);
+    msg.presto_info.activation_token = strdup(buf);
 
     pc_getCloudURL(buf, sizeof(buf));
-    msg.command.presto_info.cloud_conn_string = strdup(buf);
+    msg.presto_info.cloud_conn_string = strdup(buf);
 
     pc_getDeviceAddress(buf, sizeof(buf));
-    msg.command.presto_info.device_id = strdup(buf);
+    msg.presto_info.device_id = strdup(buf);
 
     pr_make_message(&proxy_info, msg);
     pu_queue_push(to_wud, proxy_info, strlen(proxy_info)+1);
@@ -200,8 +198,8 @@ static void send_wd() {
     char *proxy_info;
     pr_message_t msg;
 
-    msg.message_type = PR__WATCHDOG_ALERT;
-    msg.watchdog_alert = strdup(pc_getProxyName());
+    msg.watchdog_alert.message_type = PR_WATCHDOG_ALERT;
+    msg.watchdog_alert.process_name = strdup(pc_getProxyName());
 
     pr_make_message(&proxy_info, msg);
     pu_queue_push(to_wud, proxy_info, strlen(proxy_info)+1);

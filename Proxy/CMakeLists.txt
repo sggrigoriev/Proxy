@@ -3,9 +3,13 @@ cmake_minimum_required(VERSION 3.5)
 project(Proxy C)
 
 add_definitions( -DGIT_FIRMWARE_VERSION=301 )
+
+#ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
+#else - the proxy reads all configuration from default configuration file only
 add_definitions( -DPROXY_SEPARATE_RUN )
-#ifdef PROXY_SEPARATE_RUN - the proxy reads parameters from command line first
-#else - the proxy reads all configuration from default configuration file
+
+#Eneble CURL debug option for POST operations
+add_definitions( -DLIBHTTP_CURL_DEBUG)
 
 #set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 
@@ -55,9 +59,10 @@ file(GLOB SOURCE_FILES
 #file(GLOB SOURCE_FILES_TEST_CLIENT
 #        test_client/comm_client.c
 #        proxy_functions/*.c
-#       proxy_threads/*.c
-#       proxy_config/pc_settings.c
+#        proxy_threads/*.c
+#        proxy_config/pc_settings.c
 #        proxy_eui64/eui64.c
+#        ../lib/presto_commands/*.c
 #        ../lib/pt_tcp_utl/*.c
 #        ../lib/pu_logger/*.c
 #        ../lib/pc_config/pc_config.c

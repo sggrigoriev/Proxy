@@ -45,6 +45,8 @@
 #define WUD_PROXY_WORKING_DIRECTORY "PROXY_WORKING_DIRECTORY"
 #define WUD_PROXY_WD_TIMEOUT_SEC    "PROXY_WD_TIMEOUT_SEC"
 
+#define WUD_MONITORING_TO_SEC       "WUD_MONITORING_TO_SEC"
+
 ////////////////////////////////////////////////////////
 //Config values
 static char             log_name[WC_MAX_PATH];
@@ -72,7 +74,11 @@ static char**       proxy_run_parameters;
 static char         proxy_working_directory[WC_MAX_PATH];
 static unsigned int proxy_wd_timeout_sec;
 
+static unsigned int wud_monitoring_timeout_sec;
+
 static char conf_fname[WC_MAX_PATH];
+
+static char** null_list = {NULL};   //used for arg lists initiation
 
 /////////////////////////////////////////////////////////////
 // Local functions
@@ -135,7 +141,7 @@ const char* wc_getAgentBinaryName() {
     WC_RET(WUD_DEFAULT_AGENT_BINARY_NAME, agent_binary_name);
 }
 char* const* wc_getAgentRunParameters() {
-    return (!initiated)?WUD_DEFAULT_AGENT_RUN_PARAMETERS:agent_run_parameters;
+    WC_RET(null_list, agent_run_parameters);
 }
 const char* wc_getAgentWorkingDirectory() {
     WC_RET(WUD_DEFAULT_AGENT_WORKING_DIRECTORY, agent_working_directory);
@@ -150,13 +156,16 @@ const char* wc_getProxyBinaryName() {
     WC_RET(WUD_DEFAULT_PROXY_BINARY_NAME, proxy_binary_name);
 }
 char* const* wc_getProxyRunParameters() {
-    return (!initiated)?WUD_DEFAULT_PROXY_RUN_PARAMETERS:proxy_run_parameters;
+    WC_RET(null_list, proxy_run_parameters);
 }
 const char* wc_getProxyWorkingDirectory() {
     WC_RET(WUD_DEFAULT_PROXY_WORKING_DIRECTORY, proxy_working_directory);
 }
 unsigned int wc_getProxyWDTimeoutSec() {
     WC_RET(WUD_DEFAULT_PROXY_WD_TIMEOUT_SEC, proxy_wd_timeout_sec);
+}
+unsigned int wc_getWUDMonitoringTO() {
+    WC_RET(WUD_DEFAULT_MONITORING_TO_SEC, wud_monitoring_timeout_sec);
 }
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
@@ -181,29 +190,27 @@ int wc_load_config(const char* cfg_file_name) {
 //Now load data
     if(!getStrValue(cfg, WUD_LOG_NAME, log_name, sizeof(log_name)))                                                 WC_ERR();
     if(!getUintValue(cfg, WUD_LOG_REC_AMT, &log_rec_amt))                                                           WC_ERR();
-    getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);                                                                    WC_ERR();
-
     if(!getUintValue(cfg, WUD_QUEUES_REC_AMT, &queues_rec_amt))                                                     WC_ERR();
-
     if(!getStrValue(cfg, WUD_WORKING_DIRECTORY, working_dir, sizeof(working_dir)))                                  WC_ERR();
     if(!getUintValue(cfg, WUD_COMM_PORT, &wud_port))                                                                WC_ERR();
-
     if(!getUintValue(cfg, WUD_CHILDREN_SHUTDOWN_TO_SEC, &children_to_sec))                                          WC_ERR();
-
     if(!getStrValue(cfg, WUD_FW_DOWNLOAD_FOLDER, fw_download_folder, sizeof(fw_download_folder)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_FW_UPGRADE_FOLDER, fw_upgrade_folder, sizeof(fw_upgrade_folder)))                      WC_ERR();
-
     if(!getStrValue(cfg, WUD_AGENT_PROCESS_NAME, agent_process_name, sizeof(agent_process_name)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_AGENT_BINARY_NAME, agent_binary_name, sizeof(agent_binary_name)))                      WC_ERR();
-    getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
     if(!getStrValue(cfg, WUD_AGENT_WORKING_DIRECTORY, agent_working_directory, sizeof(agent_working_directory)))    WC_ERR();
     if(!getUintValue(cfg, WUD_AGENT_WD_TIMEOUT_SEC, &agent_wd_timeout_sec))                                         WC_ERR();
-
-    if(!getStrValue(cfg, WUD_PROXY_PROCESS_NAME, proxy_process_name, sizeof(agent_process_name)))                   WC_ERR();
-    if(!getStrValue(cfg, WUD_PROXY_BINARY_NAME, proxy_binary_name, sizeof(agent_binary_name)))                      WC_ERR();
-    getParTValue(cfg, WUD_PROXY_RUN_PARAMETERS, &proxy_run_parameters);
+    if(!getStrValue(cfg, WUD_PROXY_PROCESS_NAME, proxy_process_name, sizeof(proxy_process_name)))                   WC_ERR();
+    if(!getStrValue(cfg, WUD_PROXY_BINARY_NAME, proxy_binary_name, sizeof(proxy_process_name)))                     WC_ERR();
     if(!getStrValue(cfg, WUD_PROXY_WORKING_DIRECTORY, agent_working_directory, sizeof(agent_working_directory)))    WC_ERR();
     if(!getUintValue(cfg, WUD_PROXY_WD_TIMEOUT_SEC, &agent_wd_timeout_sec))                                         WC_ERR();
+    if(!getUintValue(cfg, WUD_PROXY_WD_TIMEOUT_SEC, &proxy_wd_timeout_sec))                                         WC_ERR();
+    if(!getUintValue(cfg, WUD_MONITORING_TO_SEC, &wud_monitoring_timeout_sec))                                      WC_ERR();
+
+
+    getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
+    getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
+    getParTValue(cfg, WUD_PROXY_RUN_PARAMETERS, &proxy_run_parameters);
 
     cJSON_Delete(cfg);
 
@@ -225,13 +232,13 @@ static void initiate_defaults() {
 
     strcpy(agent_process_name, WUD_DEFAULT_AGENT_PROCESS_NAME);
     strcpy(agent_binary_name, WUD_DEFAULT_AGENT_BINARY_NAME);
-    agent_run_parameters = WUD_DEFAULT_AGENT_RUN_PARAMETERS;
+    agent_run_parameters = null_list;
     strcpy(agent_working_directory, WUD_DEFAULT_AGENT_WORKING_DIRECTORY);
     agent_wd_timeout_sec = WUD_DEFAULT_AGENT_WD_TIMEOUT_SEC;
 
     strcpy(proxy_process_name, WUD_DEFAULT_PROXY_PROCESS_NAME);
     strcpy(proxy_binary_name, WUD_DEFAULT_PROXY_BINARY_NAME);
-    proxy_run_parameters = WUD_DEFAULT_PROXY_RUN_PARAMETERS;
+    proxy_run_parameters = null_list;
     strcpy(proxy_working_directory, WUD_DEFAULT_PROXY_WORKING_DIRECTORY);
     proxy_wd_timeout_sec = WUD_DEFAULT_PROXY_WD_TIMEOUT_SEC;
 
@@ -262,12 +269,7 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
 //Copy char* argv[] into the setting. The last pointer is NULL. If empty or not found - NULL
 //NB! memory allocated here!
 static void getParTValue(cJSON* cfg, const char* field_name, char*** setting) {
-    unsigned int len;
-    if(!getCharArray(cfg, field_name, setting, &len)) {
+    if(!getCharArray(cfg, field_name, setting)) {
         fprintf(stderr, "Default will be used instead.\n");
-    }
-    else if(len) {
-        (*setting) = (char**)realloc((*setting), (len + 1) * sizeof(char**)); //make as argv[]
-        (*setting)[len] = NULL;
     }
 }

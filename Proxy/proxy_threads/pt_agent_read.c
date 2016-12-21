@@ -5,6 +5,7 @@
 #include <aio.h>
 #include <string.h>
 #include <errno.h>
+#include <pt_tcp_utl.h>
 
 #include "pc_defaults.h"
 #include "pu_logger.h"
@@ -21,9 +22,9 @@ static pthread_attr_t attr;
 
 static struct aiocb cb;
 static const struct aiocb* cb_list[1];
-static char out_buf[PROXY_MAX_MSG_LEN];
-static char in_buf[PROXY_MAX_MSG_LEN];
-static char ass_buf[PROXY_MAX_MSG_LEN*2];
+static char out_buf[PROXY_MAX_MSG_LEN] = {0};
+static char in_buf[PROXY_MAX_MSG_LEN] = {0};
+static char ass_buf[PROXY_MAX_MSG_LEN*2] = {0};
 static struct timespec agent_rd_timeout = {1,0};
 
 int read_socket;
@@ -67,37 +68,30 @@ static void* agent_read(void* params) {
         pu_log(LL_ERROR, "%s: aio_read: start operation failed %d %s", PT_THREAD_NAME, errno, strerror(errno));
         set_stop_agent_children();
     }
-//    pu_log(LL_DEBUG,"%s: is_stop_agent_write_agent_read() = %d", PT_THREAD_NAME, is_stop_agent_write_agent_read());
+
     while(!is_childs_stop()) {
-        int ret = aio_suspend(cb_list, 1, &agent_rd_timeout); //wait until the read
-        if(ret == 0) {                                      //Read succeed
-            ssize_t bytes_read = aio_return(&cb);
-            if(bytes_read > 0) {
-                if(pt_tcp_get(in_buf, bytes_read, &as_buf)) {
-                    while(pt_tcp_assemble(out_buf, sizeof(out_buf), &as_buf)) {     //Reag all fully incoming messages
-                        pu_queue_push(to_main, out_buf, strlen(out_buf)+1);
-                        pu_log(LL_INFO, "From agent: %s", out_buf);
-                    }
-                }
-                else {
-                    pu_log(LL_ERROR, "%s: incoming mesage too large: %lu vs %lu. Ignored", PT_THREAD_NAME, bytes_read,
-                           sizeof(ass_buf));
-                }
-            }
-            else {  //error in read
-                pu_log(LL_ERROR, "%s. Read op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
-                set_stop_agent_children();
-            }
-            if (aio_read(&cb) < 0) {                                         //Run read operation again
-                pu_log(LL_ERROR, "%s: aio_read: start operation failed %d %s", PT_THREAD_NAME, errno, strerror(errno));
-                set_stop_agent_children();
-            }
+        ssize_t bytes_read;
+        if(aio_suspend(cb_list, 1, &agent_rd_timeout)) {    //wait until the read
+            continue;
         }
-        else if (ret == EAGAIN) {   //Timeout
-            pu_log(LL_DEBUG, "%s: timeout", PT_THREAD_NAME);
+        if(bytes_read = aio_return(&cb), bytes_read <= 0) {
+            pu_log(LL_ERROR, "%s. Read op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
+            set_stop_agent_children();
+            continue;
+        }
+        if(pt_tcp_get(in_buf, bytes_read, &as_buf)) {
+            while(pt_tcp_assemble(out_buf, sizeof(out_buf), &as_buf)) {     //Reag all fully incoming messages
+                pu_queue_push(to_main, out_buf, strlen(out_buf)+1);
+                pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
+            }
         }
         else {
-//            pu_log(LL_WARNING, "Server read was interrupted. ");
+            pu_log(LL_ERROR, "%s: incoming mesage too large: %lu vs %lu. Ignored", PT_THREAD_NAME, bytes_read, sizeof(ass_buf));
+            continue;
+        }
+        if (aio_read(&cb) < 0) {                                         //Run read operation again
+            pu_log(LL_ERROR, "read proc: aio_read: start operation failed %d %s", errno, strerror(errno));
+            set_stop_agent_children();;
         }
     }
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);

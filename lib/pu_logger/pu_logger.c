@@ -125,7 +125,10 @@ void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_lev
         else {
             max_rec = (!rec_amount) ? DEFAULT_REC_AMOUNT : rec_amount;
             file = fopen(file_name, "r+");
-            if(file) fseek(file, 0, SEEK_END);
+            if(file)
+                fseek(file, 0, SEEK_END);
+            else
+                file = fopen(file_name, "w+");
          }
         if (file == NULL) {
             file = stdout;

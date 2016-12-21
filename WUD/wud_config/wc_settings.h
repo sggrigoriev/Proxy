@@ -23,16 +23,21 @@ const char* wc_getFWDownloadFolder();
 const char* wc_getFWUpgradeFolder();
 
 const char* wc_getAgentProcessName();
+
 const char* wc_getAgentBinaryName();
 char* const* wc_getAgentRunParameters();
+
 const char* wc_getAgentWorkingDirectory();
 unsigned int wc_getAgentWDTimeoutSec();
 
 const char* wc_getProxyProcessName();
 const char* wc_getProxyBinaryName();
 char* const* wc_getProxyRunParameters();
+
 const char* wc_getProxyWorkingDirectory();
 unsigned int wc_getProxyWDTimeoutSec();
+
+unsigned int wc_getWUDMonitoringTO();
 
 int wc_load_config(const char* cfg_file_name);
 

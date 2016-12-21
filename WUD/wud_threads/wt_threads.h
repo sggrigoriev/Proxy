@@ -8,6 +8,7 @@
 #define PRESTO_WT_THREADS_H
 
 //Run all WUD routines
-int wt_start_routine(); //return 1 if OK, 0 if not
+
+int wt_request_processor(); //return 1 if OK, 0 if not
 
 #endif //PRESTO_WT_THREADS_H

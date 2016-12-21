@@ -70,30 +70,22 @@ static void* agent_write(void* params) {
             case PS_ToAgentQueue: {
                 size_t len = sizeof(out_buf);
                 while (pu_queue_pop(from_main, out_buf, &len)) {
-                    //Prepare write operation
+//Prepare write operation
                     cb.aio_nbytes = len + 1;
-                    //Start write operation
-                    int ret = aio_write(&cb);
-                    if(ret != 0) { //op start failed
+//Start write operation
+                    if(aio_write(&cb)) { //op start failed
                         pu_log(LL_ERROR, "%s. Write op start failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
                         set_stop_agent_children();
+                        break;
                     }
-                    else {
-                        int wait_ret = aio_suspend(cb_list, 1, &agent_wr_timeout); //wait until the write
-                        if(wait_ret == 0) {                                         //error in write
-                            ssize_t bytes_written = aio_return(&cb);
-                            if(bytes_written <= 0) {
-                                pu_log(LL_ERROR, "%s. Write op finish failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
-                                set_stop_agent_children();
-                            }
-                        }
-                        else if (wait_ret == EAGAIN) {   //Timeout
-                            pu_log(LL_DEBUG, "%s: timeout", PT_THREAD_NAME);
-                        }
-                        else {
-//                pu_log(LL_WARNING, "Client write was interrupted");
-                        }
+                    while(aio_suspend(cb_list, 1, &agent_wr_timeout) && !is_childs_stop());
+
+                    if(aio_return(&cb) <= 0) {
+                        pu_log(LL_ERROR, "%s. Write op finish failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
+                        set_stop_agent_children();
+                        break;
                     }
+                    pu_log(LL_DEBUG, "%s: written: %s", PT_THREAD_NAME, out_buf);
                     len = sizeof(out_buf);
                 }
                 break;

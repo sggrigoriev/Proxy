@@ -8,8 +8,7 @@
 #include <string.h>
 #include <curl/curl.h>
 
-#include <eui64.h>
-#include <pc_settings.h>
+#include "cJSON.h"
 #include "pu_logger.h"
 #include "lib_http.h"
 
@@ -49,6 +48,10 @@ static HttpIoInfo_t rd_inBoundCommInfo = {rd_rx_buf, sizeof(rd_rx_buf)};
 //
 //Static functions declaration
 //
+/////////////////////////////////////////////////////////////
+//Calc http_write (POST) result
+//Return 1 if OK, 0 if connectivity problems, -1 if error
+static lib_http_post_result_t calc_post_result(const char* result, int rc);
 //Called when a message HAS TO BE SENT to the server. this is a standard streamer
 //if the size of the data to write is larger than size*nmemb, this function will be called several times by libcurl.
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
@@ -190,7 +193,7 @@ int lib_http_get(char* msg, size_t msg_size) {
 }
 //Return 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 look for some answer from the server. All logging inside
 //Makes new connectione every time to post amd close it after the operation
-int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* url, const char* auth_token) {
+lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_size, const char* url, const char* auth_token) {
 #ifdef LIBHTTP_CURL_DEBUG
     struct data config;
     config.trace_ascii = 1; /* enable ascii tracing */
@@ -224,8 +227,10 @@ int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* u
     slist = curl_slist_append(slist, buf);
 //
     slist = curl_slist_append(slist, "User-Agent: IOT Proxy");
-    snprintf(buf, sizeof(buf)-1, "PPCAuthorization: esp token=%s", auth_token);
-    slist = curl_slist_append(slist, buf);
+    if(strlen(auth_token)) {                                //case of activation: no token
+        snprintf(buf, sizeof(buf)-1, "PPCAuthorization: esp token=%s", auth_token);
+        slist = curl_slist_append(slist, buf);
+    }
 
     if(!slist) {
         pu_log(LL_ERROR, "lib_http_post: error slist creation");
@@ -260,8 +265,7 @@ int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* u
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPHEADER, slist), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_HTTPPOST, 0L), curlResult != CURLE_OK) goto out;
 
-
-    curl_easy_setopt(wr_handler, CURLOPT_POSTFIELDS, msg);
+    if(curlResult = curl_easy_setopt(wr_handler, CURLOPT_POSTFIELDS, msg), curlResult != CURLE_OK) goto out;
 
 //////////////////////////////////
     curlResult = curl_easy_perform(wr_handler);
@@ -308,16 +312,58 @@ int lib_http_post(const char* msg, char* reply, size_t reply_size, const char* u
         goto out;
     }
     out:
-    if(slist) curl_slist_free_all(slist);
-    if(wr_handler) curl_easy_cleanup(wr_handler);
+    {
+        int ret;
+        if (slist) curl_slist_free_all(slist);
+        if (wr_handler) curl_easy_cleanup(wr_handler);
 
-    if(curlErrno == EAGAIN) return 0;   //timeout case
-    if(!curlErrno) return 1; //Got smth to read
-    return -1;
+        if (curlErrno == EAGAIN) ret = 0;   //timeout case
+        else if (!curlErrno) ret = 1; //Got smth to read
+        else ret = -1;
+        return calc_post_result(reply, ret);
+    }
 }
 ////////////////////////////////////////////////////////////////
 //local functions
 //
+//Calc http_write (POST) result; fill the reply if needed.
+//Return 1 if OK, 0 if connectivity problems, -1 if error
+static lib_http_post_result_t calc_post_result(const char* result, int rc) {
+    lib_http_post_result_t ret;
+
+    if(rc < 0) {    //Some curl-level problem - everything logged
+        ret = LIB_HTTP_POST_ERROR;
+    }
+    else if (!rc) {  // rc == 0 technically write is OK
+        ret = LIB_HTTP_POST_RETRY;
+    }
+    else { // ...and what we got? rc == 1
+        cJSON* obj = cJSON_Parse(result);
+        if(!obj) {
+            ret = LIB_HTTP_POST_ERROR;
+        }
+        else {
+            cJSON* item = cJSON_GetObjectItem(obj, "status");
+            if(!item) {
+                ret = LIB_HTTP_POST_ERROR;
+            }
+            else if(!strcmp(item->valuestring, "ACK") || !strcmp(item->valuestring, "CONT")) {
+                ret = LIB_HTTP_POST_OK;
+            }
+            else if(!strcmp(item->valuestring, "ERR")) {
+                ret = LIB_HTTP_POST_RETRY;
+            }
+            else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
+                ret = LIB_HTTP_POST_ERROR;
+            }
+            else {  //UNKNOWN, UNAUTHORIZED, ... - let's wait untill somewhere takes a look on poor cycling modem
+                ret = LIB_HTTP_POST_RETRY;
+            }
+            cJSON_Delete(obj);
+        }
+    }
+    return ret;
+}
 /**********************************************************************************************//**
  * @brief   Called when a message has to be received from the server. this is a standard streamer
  *              if the size of the data to read, equal to size*nmemb, the function can return

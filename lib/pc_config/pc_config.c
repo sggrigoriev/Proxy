@@ -129,13 +129,11 @@ int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting)
 //carr_setting  - returned value of field_name
 //arr_len       - returned length of array
 //Return 1 if OK 0 if error
-int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting, unsigned int* arr_len) {
+int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {
     cJSON *obj;
-    unsigned int carr_counter;
-    unsigned int i,j;
+    unsigned int i,list_len;
 
     *carr_setting = NULL;
-    *arr_len = 0;
 
     if (obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
         fprintf(stderr, "Setting %s is not found.\n", field_name);
@@ -145,21 +143,22 @@ int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting, unsig
         fprintf(stderr, "Setting %s is not an array.\n", field_name);
         return 0;
     }
-    *arr_len = (unsigned int)cJSON_GetArraySize(obj);
-    j = *arr_len;
-    (*carr_setting) = (char**)malloc(j*sizeof(char**));
-    carr_counter = 0;
-    for(i = 0; i < j; i++) {
+    list_len = (unsigned int)cJSON_GetArraySize(obj);
+
+     // One position for NULL-terminator
+    (*carr_setting) = (char**)malloc((list_len+1)*sizeof(char**)); // One position added for NULL-terminator
+    for(i = 0; i < list_len; i++) {
         cJSON* item;
         item = cJSON_GetArrayItem(obj, i);
         if(item->type != cJSON_String) {
-            fprintf(stderr, "Item %d of setting %s not a string.Skipped\n", i, field_name);
-            (*arr_len)--;
+            fprintf(stderr, "Item %d of setting %s not a string.Parameter ignored.\n", i, field_name);
+            free(*carr_setting);
+            *carr_setting = NULL;
+            return 0;
         }
-        else {
-            (*carr_setting)[carr_counter++] = (!item->valuestring)?strdup(""):strdup(item->valuestring);
-        }
+        (*carr_setting)[i] = (!item->valuestring)?strdup(""):strdup(item->valuestring);
     }
+    (*carr_setting)[i] = NULL;  // add termination element into the list
     return 1;
 }
 //saveToFile() - save cfg to the fname

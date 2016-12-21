@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+#set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -23,6 +23,7 @@ include_directories(
         wud_actions
         wud_utils
         wud_threads
+        ..lib/lib_tcp
         ../lib/presto_commands
         ../lib/pt_tcp_utl
         ../lib/pu_logger
@@ -43,6 +44,7 @@ file(GLOB SOURCE_FILES
         wud_actions/*.c
         wud_utils/*.c
         wud_threads/*.c
+        ..lib/lib_tcp/*.c
         ../lib/presto_commands/*.c
         ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c

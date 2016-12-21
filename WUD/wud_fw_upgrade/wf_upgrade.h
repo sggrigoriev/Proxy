@@ -5,15 +5,19 @@
 #ifndef PRESTO_WF_UPGRADE_H
 #define PRESTO_WF_UPGRADE_H
 
-//Make firmware upgrade task
+//Check downloaded file
 //Return 1 if OK, 0 if error
 
-typedef enum {WF_LOAD_FAILED, WF_CHECK_FAILED, WF_OK} wf_upgrade_rc_t;
+#define WF_STATE_EMPTY 0
+#define WF_STATE_BUZY 1
 
-void wf_upgrade(const char* upgrade_command);
 
-//FW Upgrade reqwest processor part
-//Return the final FW Upgrade state
-wf_upgrade_rc_t wf_rp_upgrade(const char* alert);
+int wf_check_files(const char* path);
+
+void wf_set_download_state(int empty);
+void wf_set_upgrade_state(int empty);
+
+int wf_was_download_empty();
+int wf_was_upgrade_empty();
 
 #endif //PRESTO_WF_UPGRADE_H

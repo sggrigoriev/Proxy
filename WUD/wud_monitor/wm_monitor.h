@@ -5,6 +5,13 @@
 #ifndef PRESTO_WM_MONITOR_H
 #define PRESTO_WM_MONITOR_H
 
-void wm_monitor(const char* alert);
+#include <stdlib.h>
+
+int wm_init_monitor_data();
+void wn_destroy_monitor_data();
+
+//Return pointer to alert, NULL if nothing to tell
+//NB! could issue alerts or commands for restart!
+const char* wm_monitor();
 
 #endif //PRESTO_WM_MONITOR_H

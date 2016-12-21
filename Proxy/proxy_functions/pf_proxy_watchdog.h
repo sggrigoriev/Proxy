@@ -13,6 +13,6 @@ typedef struct {
 }pf_clock_t;
 
 //Return 1 if it is time to send watchdog alert to the WUD
-int pf_wd_time_to_send(pf_clock_t dat);
+int pf_wd_time_to_send(pf_clock_t* dat);
 
 #endif //PRESTO_PF_PROXY_WATCHDOG_H

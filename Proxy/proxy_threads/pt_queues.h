@@ -8,7 +8,13 @@
 #include "pu_queue.h"
 
 #define PS_MIN_QUEUE PS_FromAgentQueue
-#define PS_MAX_QUEUE PS_ToServerQueue
+
+#ifndef PROXY_SEPARATE_RUN
+    #define PS_MAX_QUEUE PS_ToWUDQueue
+#else
+    #define PS_MAX_QUEUE PS_ToServerQueue
+#endif
+
 
 typedef enum {PS_Timeout = PQ_TIMEOUT,
     PS_FromAgentQueue = 1, PS_ToAgentQueue = 2, PS_FromServerQueue = 3, PS_ToServerQueue = 4,

@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
     if(!pt_http_curl_start()) exit(-1);
 
-    if(!pf_proxy_activation()) exit(-1);
+//    if(!pf_proxy_activation()) exit(-1);
 ////////
     pt_main_thread();
 

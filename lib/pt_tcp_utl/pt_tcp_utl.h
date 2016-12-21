@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 
-#define PT_BINDING_ATTEMPTS     1000
 #define PT_SOCK_SELECT_TO_SEC   1
 
 typedef struct {int server_socket; int rd_socket; int wr_socket;} pt_tcp_rw_t;
@@ -30,5 +29,5 @@ typedef struct{
 //Return the 0-terminated message of NULL if no finished string
 const char* pt_tcp_assemble(char *out, size_t out_len, pt_tcp_assembling_buf_t* assembling_buf);
 //Return 1 if ok, return 0 if in was rejected
-int pt_tcp_get(const char* in, ssize_t len, pt_tcp_assembling_buf_t* ab);
+int pt_tcp_get(const char* in, size_t len, pt_tcp_assembling_buf_t* ab);
 #endif //PT_TCP_UTL_H
