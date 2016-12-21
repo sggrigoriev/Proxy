@@ -11,7 +11,7 @@ add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 add_definitions( -DLIBHTTP_CURL_DEBUG)
 
-#set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -56,20 +56,20 @@ file(GLOB SOURCE_FILES
         )
 
 #Test client
-#file(GLOB SOURCE_FILES_TEST_CLIENT
-#        test_client/comm_client.c
-#        proxy_functions/*.c
-#        proxy_threads/*.c
-#        proxy_config/pc_settings.c
-#        proxy_eui64/eui64.c
-#        ../lib/presto_commands/*.c
-#        ../lib/pt_tcp_utl/*.c
-#        ../lib/pu_logger/*.c
-#        ../lib/pc_config/pc_config.c
-#        ../lib/pu_queues/*.c
-#        ../lib/libhttpcomm/*.c
-#        ../lib/json/*.c
-#        )
+file(GLOB SOURCE_FILES_TEST_CLIENT
+        test_client/comm_client.c
+        proxy_functions/*.c
+        proxy_threads/*.c
+        proxy_config/pc_settings.c
+        proxy_eui64/eui64.c
+        ../lib/presto_commands/*.c
+        ../lib/pt_tcp_utl/*.c
+        ../lib/pu_logger/*.c
+        ../lib/pc_config/pc_config.c
+        ../lib/pu_queues/*.c
+        ../lib/libhttpcomm/*.c
+        ../lib/json/*.c
+        )
 #Test server
 #file(GLOB SOURCE_FILES_TEST_SERVER
 #        test_server/comm_server.c
@@ -108,14 +108,14 @@ file(GLOB SOURCE_FILES
 
 
 add_executable(Proxy ${SOURCE_FILES})
-#add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT} proxy_threads/pt_wud_write.c proxy_threads/pt_wud_write.h)
+add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT} proxy_threads/pt_wud_write.c proxy_threads/pt_wud_write.h)
 #add_executable(comm_server ${SOURCE_FILES_TEST_SERVER})
 #add_executable(pc_test ${SOURCE_FILES_TEST_CONFIG})
 #add_executable(eui_test ${SOURCE_FILES_TEST_EUI})
 
 
 target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
-#target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
+target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
 #target_link_libraries(comm_server ${REQUIRED_LIBRARIES})
 #target_link_libraries(pc_test ${REQUIRED_LIBRARIES})
 #target_link_libraries(eui_test ${REQUIRED_LIBRARIES})

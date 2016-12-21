@@ -59,7 +59,7 @@ int pf_proxy_activation() {  //return 0 if proxy was not activated
 //NB! the function could be called in activation part as well as from recurring routine (bad connection case)
 int pf_get_cloud_url(char* url, size_t size) {
 
- return 0;
+    return 0;
 }
 
 static int get_activation_token(char* token, size_t size) {

@@ -73,7 +73,10 @@ void lib_http_close() {
 
 //Return 1 if OK, 0 if error.All errors put into log inside
 int lib_http_create_get_persistent_conn(const char *url, const char* auth_token, const char* deviceID, unsigned int conn_to) {
-
+#ifdef LIBHTTP_CURL_DEBUG
+    struct data config;
+    config.trace_ascii = 1; /* enable ascii tracing */
+#endif
     CURLcode curlResult = CURLE_OK;
     char buf[LIB_HTTP_AUTHENTICATION_STRING_SIZE+50];
 
@@ -97,6 +100,13 @@ int lib_http_create_get_persistent_conn(const char *url, const char* auth_token,
         pu_log(LL_ERROR, "lib_http_create_get_persistent_conn: cURL GET handler creation failed.");
         return 0;
     }
+
+#ifdef LIBHTTP_CURL_DEBUG
+    curl_easy_setopt(curlGETHandle, CURLOPT_DEBUGFUNCTION, my_trace);
+    curl_easy_setopt(curlGETHandle, CURLOPT_DEBUGDATA, &config);
+    /* the DEBUGFUNCTION has no effect until we enable VERBOSE */
+    curl_easy_setopt(curlGETHandle, CURLOPT_VERBOSE, 1L);
+#endif
 
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_NOSIGNAL, 1L), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(curlGETHandle, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2), curlResult != CURLE_OK) goto out;
