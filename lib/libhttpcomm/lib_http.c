@@ -232,7 +232,7 @@ lib_http_post_result_t lib_http_post(const char* msg, char* reply, size_t reply_
     strncpy(wr_url, url, sizeof(wr_url));
     strncat(wr_url, "?id=", sizeof(wr_url));
     strncat(wr_url, deviceID, sizeof(wr_url));
-    rd_url[sizeof(wr_url)-1] = '\0';
+    wr_url[sizeof(wr_url)-1] = '\0';
 
     params.timeouts.connectTimeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
     params.timeouts.transferTimeout = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
