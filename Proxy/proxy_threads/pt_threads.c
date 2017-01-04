@@ -181,7 +181,7 @@ static int initiate_wud() {
     pc_getCloudURL(buf, sizeof(buf));
     msg.presto_info.cloud_conn_string = strdup(buf);
 
-    pc_getDeviceAddress(buf, sizeof(buf));
+    pc_getProxyDeviceID(buf, sizeof(buf));
     msg.presto_info.device_id = strdup(buf);
 
     pr_make_message(&proxy_info, msg);

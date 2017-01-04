@@ -5,6 +5,8 @@
 #ifndef PRESTO_WU_UTILS_H
 #define PRESTO_WU_UTILS_H
 
+#include <sys/types.h>
+
 int wu_process_exsists(const char* process_name); //return 0 if not exisst 1 if exists
 int wu_create_pid_file(const char* process_name, pid_t process_pid); //return 0 if error, 1 if OK
 

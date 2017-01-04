@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
 
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+
+#set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc-4.8.3)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -11,7 +13,7 @@ set(REQUIRED_LIBRARIES
         pthread
         curl
         rt
-        )
+   )
 
 #all include paths
 include_directories(
@@ -23,9 +25,8 @@ include_directories(
         wud_actions
         wud_utils
         wud_threads
-        ..lib/lib_tcp
+        ../lib/libtcp
         ../lib/presto_commands
-        ../lib/pt_tcp_utl
         ../lib/pu_logger
         ../lib/pc_config
         ../lib/pu_queues
@@ -44,9 +45,8 @@ file(GLOB SOURCE_FILES
         wud_actions/*.c
         wud_utils/*.c
         wud_threads/*.c
-        ..lib/lib_tcp/*.c
+        ../lib/libtcp/*.c
         ../lib/presto_commands/*.c
-        ../lib/pt_tcp_utl/*.c
         ../lib/pu_logger/*.c
         ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c

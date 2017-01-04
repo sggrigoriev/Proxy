@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <zconf.h>
 #include <errno.h>
 #include <string.h>
 #include <wm_childs_info.h>

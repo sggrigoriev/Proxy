@@ -6,7 +6,6 @@
 #ifndef PRESTO_PC_DEFAULTS_H
 #define PRESTO_PC_DEFAULTS_H
 
-#include "pt_tcp_utl.h"
 #include "lib_http.h"
 #include "eui64.h"
 

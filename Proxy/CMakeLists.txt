@@ -9,9 +9,11 @@ add_definitions( -DGIT_FIRMWARE_VERSION=301 )
 add_definitions( -DPROXY_SEPARATE_RUN )
 
 #Eneble CURL debug option for POST operations
-add_definitions( -DLIBHTTP_CURL_DEBUG)
+#add_definitions( -DLIBHTTP_CURL_DEBUG)
 
-#set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+
+#set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 
@@ -20,7 +22,7 @@ set(REQUIRED_LIBRARIES
         pthread
         curl
         rt
-        )
+    )
 
 #all include paths
 include_directories(
@@ -30,7 +32,7 @@ include_directories(
         proxy_config/proxy_config_cli
         proxy_eui64
         ../lib/presto_commands
-        ../lib/pt_tcp_utl
+        ../lib/libtcp
         ../lib/pu_logger
         ../lib/pc_config
         ../lib/pu_queues
@@ -47,7 +49,7 @@ file(GLOB SOURCE_FILES
         proxy_config/proxy_config_cli/*.c
         proxy_eui64/eui64.c
         ../lib/presto_commands/*.c
-        ../lib/pt_tcp_utl/*.c
+        ../lib/libtcp/*.c
         ../lib/pu_logger/*.c
         ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
@@ -63,7 +65,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         proxy_config/pc_settings.c
         proxy_eui64/eui64.c
         ../lib/presto_commands/*.c
-        ../lib/pt_tcp_utl/*.c
+        ../lib/libtcp/*.c
         ../lib/pu_logger/*.c
         ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c

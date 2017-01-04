@@ -23,6 +23,7 @@
 
 
 #include <string.h>
+#include <stdio.h>
 #include <getopt.h>
 
 #include "pc_defaults.h"

@@ -24,13 +24,14 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <net/if.h>
 #include <assert.h>
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
+
 #include <unistd.h>
 
 #include "pc_settings.h"

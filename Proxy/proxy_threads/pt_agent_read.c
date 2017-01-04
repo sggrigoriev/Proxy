@@ -5,8 +5,9 @@
 #include <aio.h>
 #include <string.h>
 #include <errno.h>
-#include <pt_tcp_utl.h>
+#include <lib_tcp.h>
 
+#include "lib_tcp.h"
 #include "pc_defaults.h"
 #include "pu_logger.h"
 #include "pt_queues.h"
@@ -20,12 +21,8 @@
 static pthread_t id;
 static pthread_attr_t attr;
 
-static struct aiocb cb;
-static const struct aiocb* cb_list[1];
+
 static char out_buf[PROXY_MAX_MSG_LEN] = {0};
-static char in_buf[PROXY_MAX_MSG_LEN] = {0};
-static char ass_buf[PROXY_MAX_MSG_LEN*2] = {0};
-static struct timespec agent_rd_timeout = {1,0};
 
 int read_socket;
 static pu_queue_t* to_main;
@@ -50,50 +47,46 @@ void stop_agent_read() {
 
 static void* agent_read(void* params) {
 
-//Init section
-    pt_tcp_assembling_buf_t as_buf = {ass_buf, sizeof(ass_buf), 0};
-
     to_main = pt_get_gueue(PS_FromAgentQueue);
 
-    memset(&cb, 0, sizeof(struct aiocb));
-    cb.aio_buf = in_buf;
-    cb.aio_fildes = read_socket;
-    cb.aio_nbytes = sizeof(in_buf)-1;
-    cb.aio_offset = 0;
-
-    memset(&cb_list, 0, sizeof(cb_list));
-    cb_list[0] = &cb;
-
-    if (aio_read(&cb) < 0) {                 //start read operation
-        pu_log(LL_ERROR, "%s: aio_read: start operation failed %d %s", PT_THREAD_NAME, errno, strerror(errno));
+    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, PROXY_MAX_MSG_LEN, PROXY_MAX_MSG_LEN*2);
+    if(!all_conns) {
+        pu_log(LL_ERROR, "%s: memory allocation error.", PT_THREAD_NAME);
         set_stop_agent_children();
+        goto allez;      //Allez kaputt
+    }
+    if(!lib_tcp_add_new_conn(read_socket, all_conns)) {
+        pu_log(LL_ERROR, "%s: new incoming connection exeeds max amount. Aborted", PT_THREAD_NAME);
+        set_stop_agent_children();
+        goto allez;
     }
 
     while(!is_childs_stop()) {
-        ssize_t bytes_read;
-        if(aio_suspend(cb_list, 1, &agent_rd_timeout)) {    //wait until the read
-            continue;
-        }
-        if(bytes_read = aio_return(&cb), bytes_read <= 0) {
+        lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1); //connection removed inside
+        if (!conn) {
             pu_log(LL_ERROR, "%s. Read op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
             set_stop_agent_children();
+            break;
+        }
+        if (conn == LIB_TCP_READ_TIMEOUT) {
+            continue;   //timeout
+        }
+        if (conn == LIB_TCP_READ_MSG_TOO_LONG) {
+            pu_log(LL_ERROR, "%s: incoming mesage too large: %lu vs %lu. Ignored", PT_THREAD_NAME, conn->in_buf.len, conn->ass_buf.size);
             continue;
         }
-        if(pt_tcp_get(in_buf, bytes_read, &as_buf)) {
-            while(pt_tcp_assemble(out_buf, sizeof(out_buf), &as_buf)) {     //Reag all fully incoming messages
-                pu_queue_push(to_main, out_buf, strlen(out_buf)+1);
-                pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
-            }
+        if (conn == LIB_TCP_READ_NO_READY_CONNS) {
+            pu_log(LL_ERROR, "%s: internal error - no ready sockets. Reconnect", PT_THREAD_NAME);
+            set_stop_agent_children();
+            break;
         }
-        else {
-            pu_log(LL_ERROR, "%s: incoming mesage too large: %lu vs %lu. Ignored", PT_THREAD_NAME, bytes_read, sizeof(ass_buf));
-            continue;
-        }
-        if (aio_read(&cb) < 0) {                                         //Run read operation again
-            pu_log(LL_ERROR, "read proc: aio_read: start operation failed %d %s", errno, strerror(errno));
-            set_stop_agent_children();;
+        while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     //Reag all fully incoming messages
+            pu_queue_push(to_main, out_buf, strlen(out_buf) + 1);
+            pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
         }
     }
+    allez:
+    lib_tcp_destroy_conns(all_conns);
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);
 }
