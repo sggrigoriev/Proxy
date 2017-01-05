@@ -1,3 +1,0 @@
-/home/mlevitin/presto-privatesdk-c/WUD/build/CMakeFiles/edit_cache.dir
-/home/mlevitin/presto-privatesdk-c/WUD/build/CMakeFiles/rebuild_cache.dir
-/home/mlevitin/presto-privatesdk-c/WUD/build/CMakeFiles/WUD.dir
