@@ -20,7 +20,8 @@ set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
 
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -D_POSIX_C_SOURCE=200112L -D_GNU_SOURCE -D__USE_UNIX98  -Wall") # -std=c9x -lc -Wall -Werror")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -D_POSIX_C_SOURCE=200112L -D_GNU_SOURCE -D__USE_UNIX98  -Wall") # -std=c9x -lc -Wall -Werror")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -D_GNU_SOURCE -Wall") 
 
 set(REQUIRED_LIBRARIES
         m
