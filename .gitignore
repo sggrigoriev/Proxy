@@ -1,2 +1,4 @@
 build/*
+Proxy/build/*
+WUD/build/*
 .idea/
