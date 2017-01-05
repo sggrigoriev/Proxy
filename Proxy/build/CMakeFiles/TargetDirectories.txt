@@ -1,0 +1,4 @@
+/home/mlevitin/presto-privatesdk-c/Proxy/build/CMakeFiles/edit_cache.dir
+/home/mlevitin/presto-privatesdk-c/Proxy/build/CMakeFiles/rebuild_cache.dir
+/home/mlevitin/presto-privatesdk-c/Proxy/build/CMakeFiles/comm_client.dir
+/home/mlevitin/presto-privatesdk-c/Proxy/build/CMakeFiles/Proxy.dir
