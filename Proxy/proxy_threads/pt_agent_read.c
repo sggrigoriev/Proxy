@@ -2,16 +2,13 @@
 // Created by gsg on 06/12/16.
 //
 #include <pthread.h>
-#include <aio.h>
 #include <string.h>
 #include <errno.h>
-#include <lib_tcp.h>
 
 #include "lib_tcp.h"
 #include "pc_defaults.h"
 #include "pu_logger.h"
 #include "pt_queues.h"
-#include "pt_agent_write.h"
 #include "pt_agent_read.h"
 #include "pt_main_agent.h"
 

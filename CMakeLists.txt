@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
 project(Presto C)
 
-
-#set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/build)
-
 add_subdirectory(Proxy)
 add_subdirectory(WUD)
+
+#NB! do not forget put it into top-level include file!
+#if STDC_VERSION >= 199901L
+#define _XOPEN_SOURCE 600
+#else
+#define _XOPEN_SOURCE 500
+#endif / STDC_VERSION /

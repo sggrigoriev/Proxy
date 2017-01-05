@@ -6,7 +6,7 @@ add_definitions( -DGIT_FIRMWARE_VERSION=301 )
 
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
-add_definitions( -DPROXY_SEPARATE_RUN )
+#add_definitions( -DPROXY_SEPARATE_RUN )
 
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
@@ -21,7 +21,6 @@ set(REQUIRED_LIBRARIES
         m
         pthread
         curl
-        rt
     )
 
 #all include paths
@@ -72,19 +71,6 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
         )
-#Test server
-#file(GLOB SOURCE_FILES_TEST_SERVER
-#        test_server/comm_server.c
-#        proxy_threads/*.c
-#        proxy_config/pc_settings.c
-#        ../lib/pt_tcp_utl/*.c
-#        ../lib/pu_logger/*.c
-#        ../lib/pc_config/pc_config.c
-#        ../lib/pu_queues/*.c
-#        ../lib/libhttpcomm/*.c
-#        ../lib/json/*.c
-#        )
-
 #Test config
 #file(GLOB SOURCE_FILES_TEST_CONFIG
 #        proxy_config/*.c

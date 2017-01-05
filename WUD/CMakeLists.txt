@@ -12,7 +12,6 @@ set(REQUIRED_LIBRARIES
         m
         pthread
         curl
-        rt
    )
 
 #all include paths

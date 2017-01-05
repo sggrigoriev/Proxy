@@ -1,11 +1,11 @@
 //
 // Created by gsg on 06/12/16.
 //
-#include <aio.h>
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
 
+#include "lib_tcp.h"
 #include "pc_defaults.h"
 #include "pu_logger.h"
 #include "pt_queues.h"
@@ -20,10 +20,7 @@ static pthread_t id;
 static pthread_attr_t attr;
 static volatile int stop;   //one stop for write and read agent threads
 
-static struct aiocb cb;
-static const struct aiocb* cb_list[1];
-static char out_buf[PROXY_MAX_MSG_LEN*2];
-static struct timespec agent_wr_timeout = {1,0};
+static char out_buf[PROXY_MAX_MSG_LEN];
 
 static int write_socket;
 static pu_queue_t* from_main;
@@ -48,15 +45,6 @@ void stop_agent_write() {
 static void* agent_write(void* params) {
     from_main = pt_get_gueue(PS_ToAgentQueue);
 
-//Init section
-    memset(&cb, 0, sizeof(struct aiocb));
-    cb.aio_buf = out_buf;
-    cb.aio_fildes = write_socket;
-    cb.aio_nbytes = sizeof(out_buf)-1;
-    cb.aio_offset = 0;
-
-    memset(&cb_list, 0, sizeof(cb_list));
-    cb_list[0] = &cb;
 //Queue events init
     pu_queue_event_t events;
     events = pu_add_queue_event(pu_create_event_set(), PS_ToAgentQueue);
@@ -70,18 +58,12 @@ static void* agent_write(void* params) {
             case PS_ToAgentQueue: {
                 size_t len = sizeof(out_buf);
                 while (pu_queue_pop(from_main, out_buf, &len)) {
-//Prepare write operation
-                    cb.aio_nbytes = len + 1;
-//Start write operation
-                    if(aio_write(&cb)) { //op start failed
+                    //Prepare write operation
+                    ssize_t ret;
+                    while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!is_childs_stop());  //run until the timeout
+                    if(is_childs_stop()) break; // goto reconnect
+                    if(ret < 0) { //op start failed
                         pu_log(LL_ERROR, "%s. Write op start failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
-                        set_stop_agent_children();
-                        break;
-                    }
-                    while(aio_suspend(cb_list, 1, &agent_wr_timeout) && !is_childs_stop());
-
-                    if(aio_return(&cb) <= 0) {
-                        pu_log(LL_ERROR, "%s. Write op finish failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
                         set_stop_agent_children();
                         break;
                     }
