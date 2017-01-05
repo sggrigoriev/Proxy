@@ -97,7 +97,8 @@ int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t ma
         return 0;
     }
     if(strlen(obj->valuestring) > max_size-1) {
-        fprintf(stderr, "Setting %s value > than max size: %lu against %lu.\n", field_name, strlen(field_name), max_size);
+        //mlevitin fprintf(stderr, "Setting %s value > than max size: %lu against %lu.\n", field_name, strlen(field_name), max_size);
+	fprintf(stderr, "Setting %s value > than max size: %zu against %zu.\n", field_name, strlen(field_name), max_size);
         return 0;
     }
     strcpy(str_setting, obj->valuestring);
@@ -200,7 +201,8 @@ int saveToFile(const char* fname, cJSON* cfg) { //Returns 0 if bad
 //max_size      - old_value capacity
 int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, size_t max_size) {
     if(strlen(new_value)+1 > max_size) {
-        fprintf(stderr, "%s(): new value %s is too big: %lu against %lu\n", func_name, new_value, strlen(new_value), max_size);
+        //mlevitin fprintf(stderr, "%s(): new value %s is too big: %lu against %lu\n", func_name, new_value, strlen(new_value), max_size);
+	fprintf(stderr, "%s(): new value %s is too big: %zu against %zu\n", func_name, new_value, strlen(new_value), max_size);
         return 0;
     }
 
