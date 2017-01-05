@@ -1,26 +1,33 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(Proxy C)
-
 add_definitions( -DGIT_FIRMWARE_VERSION=301 )
-
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
-#add_definitions( -DPROXY_SEPARATE_RUN )
-
+add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
-
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
-
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
+
+
+# MLevitin additions
+set(OPENWRT_PATH /opt1/PP/openwrt)
+set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
+set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
+set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
+set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
+
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -D_POSIX_C_SOURCE=200112L -D_GNU_SOURCE -D__USE_UNIX98  -Wall") # -std=c9x -lc -Wall -Werror")
 
 set(REQUIRED_LIBRARIES
         m
         pthread
         curl
+        rt
+	mbedtls
     )
 
 #all include paths
@@ -71,6 +78,19 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
         )
+#Test server
+#file(GLOB SOURCE_FILES_TEST_SERVER
+#        test_server/comm_server.c
+#        proxy_threads/*.c
+#        proxy_config/pc_settings.c
+#        ../lib/pt_tcp_utl/*.c
+#        ../lib/pu_logger/*.c
+#        ../lib/pc_config/pc_config.c
+#        ../lib/pu_queues/*.c
+#        ../lib/libhttpcomm/*.c
+#        ../lib/json/*.c
+#        )
+
 #Test config
 #file(GLOB SOURCE_FILES_TEST_CONFIG
 #        proxy_config/*.c

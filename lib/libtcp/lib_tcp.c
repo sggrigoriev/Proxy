@@ -213,7 +213,8 @@ int lib_tcp_get_client_socket(int port, int to_sec) {
 }
 
 //Return bytes sent amt, 0 if timeout, < 0 if error
-ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
+//mlevitin ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
+int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
     struct timeval tv = {to_sec, 0};
     fd_set writedset;
     FD_SET(wr_socket, &writedset);

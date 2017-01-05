@@ -417,7 +417,8 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp)
 #if __WORDSIZE == 64
         pu_log(LL_WARNING, "writer: buffer overflow would result -> strlen(writeData): %lu, (size * nmemb): %lu, max size: %u",
 #else
-                pu_log(LL_WARNING, ("writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
+                //mlevitin pu_log(LL_WARNING, ("writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
+		pu_log(LL_WARNING, "writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
 #endif
                strlen(dataToRead->buffer), (size * nmemb), dataToRead->size);
         return 0;

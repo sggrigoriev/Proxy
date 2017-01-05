@@ -51,7 +51,8 @@ typedef struct {
 
 static const size_t DEFAULT_QUEUE_SIZE = 1024;
 
-pu_queue_t* pu_queue_create(size_t records_amt, pu_queue_event_t my_event); //create the queue sertain size
+//mlevitin pu_queue_t* pu_queue_create(size_t records_amt, pu_queue_event_t my_event); //create the queue sertain size
+pu_queue_t* pu_queue_create(unsigned long records_amt, pu_queue_event_t my_event); //create the queue sertain size
 void pu_queue_stop(pu_queue_t* queue);   //send the PQ_STOP to the queue
 void pu_queue_erase(pu_queue_t* queue);    //Dispose the queue
 

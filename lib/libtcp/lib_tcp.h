@@ -23,7 +23,8 @@ typedef struct{
 typedef struct {
     char* buf;
     size_t size;
-    ssize_t len;
+    int len;//mlevitin ssize_t len;
+    
 } lib_tcp_in_t;
 
 typedef struct {
@@ -68,7 +69,8 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size);
 int lib_tcp_get_client_socket(int port, int to_sec);
 
 //Return bytes sent amt, 0 if timeout, < 0 if error
-ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec);
+//mlevitin ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec);
+int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec);
 
 void lib_tcp_client_close(int write_socket);
 
