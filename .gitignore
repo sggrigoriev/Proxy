@@ -1,4 +1,7 @@
 build/*
+!build/.gitkeep
 Proxy/build/*
+Proxy/build/.gitkeep
 WUD/build/*
+!WUD/build/.gitkeep
 .idea/
