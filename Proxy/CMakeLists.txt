@@ -12,12 +12,13 @@ add_definitions( -DPROXY_SEPARATE_RUN )
 
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
+	file(MAKE_DIRECTORY $ENV{PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+configure_file(proxyJSON.conf $ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
 	message(STATUS "Compiling for the MIPS")
-	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(OPENWRT_PATH /opt1/PP/openwrt)
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
@@ -32,8 +33,6 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
 	message(STATUS "Compiling for the X86")
-	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
