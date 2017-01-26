@@ -79,7 +79,7 @@ void pt_main_thread() { //Starts the main thread.
             case PS_FromAgentQueue:
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
                     pu_log(LL_DEBUG, "%s: got from agent_read %s", PT_THREAD_NAME, mt_msg);
-                    pu_queue_push(to_server, mt_msg, len);
+                    pu_queue_push(to_server, mt_msg, len); //TODO mlevitin
                     len = sizeof(mt_msg);
                 }
                 break;

@@ -60,7 +60,7 @@ static void* write_proc(void* params) {
             case PS_ToServerQueue: {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(from_main, msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
+                    pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg); //TODO mlevitin
 
 //Sending with retries loop
                     int out = 0;
