@@ -39,7 +39,13 @@ unsigned int wc_getProxyWDTimeoutSec();
 
 unsigned int wc_getWUDMonitoringTO();
 
+//thread-protected functions
 int wc_load_config(const char* cfg_file_name);
 
-
+void wc_getDeviceID(char* di, size_t size);
+void wc_setDeviceID(const char* di);
+void wc_getURL(char* urk, size_t size);
+void wc_setURL(const char* url);
+void wc_getAuthToken(char* at, size_t size);
+void wc_setAuthToken(const char* at);
 #endif //PRESTO_WC_SETTINGS_H

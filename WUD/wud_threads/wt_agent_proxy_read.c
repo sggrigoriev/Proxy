@@ -46,7 +46,7 @@ void wt_stop_agent_proxy_read() {
 //////////////////////////////////////////////////////////////////
 static void* ap_reader(void* params) {
 
-    proxy_commands = wt_get_gueue(WT_ProxyAgentMessage);
+    proxy_commands = wt_get_gueue(WT_to_Main);
 
     while(!stop) {
        int server_socket = lib_tcp_get_server_socket(wc_getWUDPort());
@@ -55,7 +55,7 @@ static void* ap_reader(void* params) {
             stop = 1;
             break;      //Allez kaputt
         }
-        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(WA_SIZE, WC_MAX_MSG_LEN, WC_MAX_MSG_LEN*2);
+        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(PR_CHILD_SIZE, WC_MAX_MSG_LEN, WC_MAX_MSG_LEN*2);
         if(!all_conns) {
             pu_log(LL_ERROR, "%s: memory allocation error.", PT_THREAD_NAME);
             stop = 1;

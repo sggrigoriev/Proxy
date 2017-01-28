@@ -9,417 +9,216 @@
 
 #include "pr_commands.h"
 
-//fw_pgrade thread alerts
-#define FWU_INIT_FAILED_MSG     "Firmware upgrade initiation failed"
-#define FWU_DOWNLOAD_FAIL_MSG   "Firmware file(s) download failed"
-#define FWU_CHECK_FAIL_MSG      "Firmware check file(s) failed"
-#define FWU_MOVE_FAIL_MSG       "Firmware file(s) move to 'Upgrade' folder fails"
-#define WFU_INIT_OK             "Firmware upgrade process start"
-#define FWU_DOWNLOAD_OK_MSG     "Firmware file(s) download completed"
-#define FWU_CHECK_OK_MSG        "Firmware check file(s) completed"
-#define FWU_MOVE_OK_MSG         "Firmware files are ready for upgrade"
-#define FWU_DOWNLOAD_BUSY_ALERT "Download directory was busy"
-#define FWU_UPGRADE_BUSY_ALERT  "Upgrade directory was busy"
-#define FWU_CANCELL_ALERT       "Firmware upgrade process cancel"
-
-static const char* FWU_MESSAGES[PR_FWU_SIZE] = {
-        FWU_INIT_FAILED_MSG, FWU_DOWNLOAD_FAIL_MSG, FWU_CHECK_FAIL_MSG, FWU_MOVE_FAIL_MSG, WFU_INIT_OK,
-        FWU_DOWNLOAD_OK_MSG, FWU_CHECK_OK_MSG, FWU_MOVE_OK_MSG, FWU_DOWNLOAD_BUSY_ALERT, FWU_UPGRADE_BUSY_ALERT,
-        FWU_CANCELL_ALERT
- };
+static const char ALERT_TYPES[PR_ALERT_SIZE][PR_ALERT_TYPE_PREFFIX_LEN] = {
+"ERR", "MON", "WDT", "WFU", "URL", "CMD"
+};
+static const char ALERT_DELIM = '-';
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// the strucure: {"alerts":[{"alertId":<seq#>,"deviceId":"<proxyID>","alertType":"CCC-NNN","timestamp":<NNNNNNN>,"paramsMap"{...}}]}
+//header items:
+static const char* alerts = "alerts";
+static const char* alertId = "alertId";
+static const char* deviceId = "deviceId";
+//common items:
+static const char* alertType = "alertType";
+static const char* timestamp = "timestamp";
+static const char* paramsMap = "paramsMap";
+//Error alert
+static const char* error_text = "errorText";
+//Monitor alert:
+static const char* component = "component";
+static const char* reason = "reason";
+//Upgrade alert, update alert:
+static const char* alertText = "alertText";
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//item names for cmd
+static const char* cmd_file_server_url = "fileServerURL";
+static const char* cmd_conn_string = "connString";
+static const char* cmd_device_id = "deviceId";
+static const char* cmd_auth_token = "authToken";
 //
-//WUD alerts
-#define WUD_START "WUD start"
-#define WUD_CHILD_RESTART "WUD component restart"
-#define WUD_REBOOT "WUD is going to reboot"
 
 static pthread_mutex_t  own_mutex;
 
-static const char* WUD_MESSAGES[PR_WUD_SIZE] = {WUD_START, WUD_CHILD_RESTART, WUD_REBOOT};
-static char* PROC_NAMES[WA_SIZE] = {0};
+static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
 ///////////////////////////////////////////////////////////
 //some helpers
-static const char* find_str_value(cJSON* obj, const char* field); //returns NULL if fot found
-static int find_int_value(cJSON* obj, const char* field); //returns -1 if not found
-static void pr_json_2_command(cJSON* obj, pr_message_t *msg, const char* json_string);
-static int create_err_msg(cJSON* obj, pr_err_alert_msg_t err);
-static int create_monitor_alert(cJSON* obj, pr_mon_alert_msg_t monitor_alert);
-static int create_watchdog_alert(cJSON* obj, pr_wd_alert_msg_t watchdog_alert);
-static int create_fwu_alert(cJSON* obj, pr_fwu_alert_msg_t fw_upgrade_alert);
-static int create_wud_alert(cJSON* obj, pr_wud_alert_msg_t wud_alert);
-static int create_presto_info_msg(cJSON* obj, pr_presto_info_msg_t presto_info);
-static int create_fw_start_msg(cJSON* obj, pr_fw_start_msg_t fw_start);
-static int create_restart_child_msg(cJSON* obj, pr_restart_child_msg_t restart_child);
-static int create_nopar_cmd_msg(cJSON* obj, pr_nopar_cmd_msg_t nopar_cmd);
+static int find_str_value(cJSON* obj, const char* field, char* val, size_t size); //returns 1 of OK
+static int find_int_value(cJSON* obj, const char* field, int* val); //returns 1 if OK
 
-wa_child_t pr_string_2_chld(const char* child_name) {
-    wa_child_t ret = WA_SIZE;
+static cJSON* skip_alert_head(cJSON* obj);
+static int get_head(cJSON* obj, pr_alert_head_t* header, char** err_text);
+static int make_struct_head(pr_alert_t* alert, pr_alert_head_t header, char** err_text);
 
-    for(unsigned int i = 0; i < WA_SIZE; i++) {
+//Takes the string parameter from paramsMap
+//return 1 if OK
+static int get_str_par(cJSON* obj, const char* field, char* value, size_t size, char** err_text);
+static const char* create_alert_type(int prefix, char delim, int postfix, char* buf, size_t size);
+//ts ignored if it is 0
+static cJSON* add_alert_head(cJSON* obj, const char* deviceID, unsigned int seqNo);
+static int create_alert_head(cJSON* obj, int prefix, int postfix, time_t ts);
+static cJSON* create_par_map(cJSON* obj);
+static int add_str_2_par_map(cJSON* pm, const char* field, const char* value);
+
+//////////////////////////////////////////////////////////////////////////////////////
+void pr_store_child_name(int child_name, const char* name) {
+    assert(pr_child_t_range_check(child_name));
+    assert(name);
+    pthread_mutex_lock(&own_mutex);
+        strncpy(PROC_NAMES[child_name], name, PR_MAX_PROC_NAME_SIZE-1);
+    pthread_mutex_unlock(&own_mutex);
+}
+const char* pr_chld_2_string(pr_child_t child_name) {
+    assert(pr_child_t_range_check(child_name));
+    return PROC_NAMES[child_name];
+}
+pr_child_t pr_string_2_chld(const char* child_name) {
+    pr_child_t ret = PR_CHILD_SIZE;
+
+    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
         if(!strcmp(child_name, PROC_NAMES[i])) {
-            ret = (wa_child_t)i;
+            ret = (pr_child_t)i;
             break;
         }
     }
-
     return ret;
 }
-void pr_store_child_name(int child_name, const char* name) {
-    assert(wa_child_t_range_check(child_name));
-    assert(name);
-    pthread_mutex_lock(&own_mutex);
-    if(PROC_NAMES[child_name]) free(PROC_NAMES[child_name]);
-    PROC_NAMES[child_name] = strdup(name);
-    pthread_mutex_unlock(&own_mutex);
-}
-const char* pr_chld_2_string(wa_child_t child_name) {
-    assert(wa_child_t_range_check(child_name));
 
-    return PROC_NAMES[child_name];
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//common items:
-static const char* messageType = "messageType";
-//
-//Error message
-/*
-{
-"messageType": <messageType>                      -- PR_MSG_ERROR
-"error_text": "<error_text>" 
-}
-*/
-//item names for error message
-//
-static const char* error_text = "error_text";
-//see static int create_err_msg
-//
-//Monitor alert JSON template
-/*
-{
-"messageType": <messageType>                      -- PR_MONITOR_ALERT
-"alerts": [
-{
-"alertId": <alertId>,                   --unique ID
-"alertType": "<alertType>",             -- currently just 0 - will be added later
-"aletrTimestamp" :"<AlertTimestamp>"    --time_t
-"paramsMap": {
-"component": "<component>",         -- process name
-"errorCode": "<errorCode>"          -- diagnostics
-}
-}
-]
-}
-*/
-//item names for monitor alert
-static const char* mn_alerts = "alerts";
-static const char* mn_alertId = "alertId";
-static const char* mn_alertType = "alertType";
-static const char* mn_alertTimestamp = "aletrTimestamp";
-static const char* mn_paramsMap = "paramsMap";
-static const char* mn_component = "component";
-static const char* mn_errorCode = "errorCode";
-//see static int create_monitor_alert()
-
-//Watchdog alert structure
-/*
-{
-"messageType": <messageType> --PR_WATCHDOG_ALERT
-"component": "<component>",  -- process name
-}
-*/
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//item names for watchdog alert
-static const char* wd_component = "component";
-//see static int create_watchdog_alert()
-//
-//Firmware upgrade alert structure
-/*
-{
-"messageType": <messageType>            --pr_msg_t = PR_FWU_ALERT
- "alertType": <alertType>               -- pr_fwu_msg_t
-"timestamp": <timestamp>                -- time_t
-"error": "<error_message>",             -- diagnostics
-}
-*/
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//item names forfirmware upgrade alerts
-static const char* fw_timestamp = "timestamp";
-static const char* fw_alertType = "alertType";
-static const char* fw_error = "error";
-//
-// see static int create_fwu_alert
-//WUD alert structure
-/*
-{
-""messageType": <messageType>            --pr_msg_t = PR_WUD_ALERT
-"timestamp": <timestamp>                -- time_t
-"process_name": "<process_name>"        --
-"error": "<error_message>",             -- diagnostics
-}
-*/ 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//item names for WUD alert
-static const char* wud_timestamp = "timestamp";
-static const char* wud_process_name = "process_name";
-static const char* wud_error = "error";
-//
-//see static int create_wud_alert()
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Command message structure (WUD internal)
-/*
-{
-
-"messageType": <messageType>            --PR_COMMAND
-"commandID": <commandID> --PR_FW_UPGRADE_START = 1, PR_FW_UPGRADE_CANCEL = 2, PR_STOP, PR_RESTART_CHILD = 3, PR_PRESTO_INFO = 4,  PR_WATCHDOG = 5,
-"commandBody": {
-<command_body>                      -- depeding on command type
-}
-<command_body>:
-PR_FW_UPGRADE_START:
-"conn_string":  "<conn_string>"
-PR_FW_UPGRADE_CANCEL:
-        PR_STOP:
-<empty>
-        PR_RESTART_CHILD:
-"child_index":  <wa_child_t>        --Child process #. Currently 0 or 1
-PR_PRESTO_INFO:
-"cloud_conn_string":    "<cloud_connection_string>"
-"device_id":            "<device_id>"
-"activation_token":     "<activation_token>"
-PR_WATCHDOG:
-"process_name":         "<process_name_from_config>"
-*/
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//item names for cmd
-static const char* cmd_commandID = "commandID";
-static const char* cmd_commandBody = "commandBody";
-static const char* cmd_conn_string = "conn_string";
-static const char* cmd_child_idx = "child_idx";
-static const char* cmd_cloud_conn_string = "cloud_conn_string";
-static const char* cmd_device_id = "device_id";
-static const char* cmd_activation_token = "activation_token";
-//
-//see static int create_command
-//
 ///////////////////////////////////////////////////////////////////////////////////////////
 //All are thread-protected except range checks
 //////////////////////////////////////////////////////////////////////////////////////////
-pr_message_t pr_json_2_msg(const char* json_string) {
-    pr_message_t ret;
-    const char* err_msg = "";
-    const char* str_value= "";
-    int int_value;
+//return 1 if the json doesn't contain alerts
+int pr_is_command(const char* json) {
+    return (strstr(json, alerts) == NULL);
+}
+
+void pr_json_2_struct(pr_alert_t* alert, const char* json_string) {
+    char* err_text;
+    pr_alert_head_t header;
 
     pthread_mutex_lock(&own_mutex);
 
     cJSON* obj = cJSON_Parse(json_string);
+    cJSON* cobj;
     if(!obj) {
-        err_msg = "Error in JSON message ";
+        err_text = "Error in JSON message ";
         goto on_error;
     }
-    if(int_value = find_int_value(obj, messageType), !pr_msg_type_t_range_check(int_value)) {
-        err_msg = "\"messageType\" item not found or not an int type or has bad value in json string ";
+    cobj = (pr_is_command(json_string))?obj:skip_alert_head(obj);
+    if(!cobj) {
+        err_text = "Error in alerts structure ";
         goto on_error;
     }
-    pr_msg_type_t message_type = (pr_msg_type_t)int_value;
-    switch(message_type) {
-        case PR_MSG_ERROR:
-            ret.err.message_type = message_type;
-            if(str_value = find_str_value(obj, error_text), str_value == NULL) {
-                err_msg = "\"error_text\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.err.err_msg = strdup(str_value);
-            break;
-        case PR_MONITOR_ALERT: {
-            cJSON* al;
-            cJSON* pm;
-            ret.monitor_alert.message_type = message_type;
-            if (al = cJSON_GetObjectItem(obj, mn_alerts), al == NULL) {
-                err_msg = "\"alerts\" item not found in json string ";
-                goto on_error;
-            }
-            if(int_value = find_int_value(al, mn_alertId), int_value < 0) {
-                err_msg = "\"alertId\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.monitor_alert.alertId = (unsigned int)int_value;
-            if(int_value = find_int_value(al, mn_alertType), !pr_mon_alert_t_range_check(int_value)) {
-                err_msg = "\"alertType\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.monitor_alert.alertType = (pr_mon_alert_t)int_value;
-            if(int_value = find_int_value(al, mn_alertTimestamp), int_value < 0) {
-                err_msg = "\"alertTimestamp\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.monitor_alert.alertTimestamp = int_value;
-            if (pm = cJSON_GetObjectItem(obj, mn_paramsMap), pm == NULL) {
-                err_msg = "\"paramsMap\" item not found in json string ";
-                goto on_error;
-            }
-            if(str_value = find_str_value(pm, mn_component), str_value == NULL) {
-                err_msg = "\"component\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.monitor_alert.proc_name = strdup(str_value);
-            if(str_value = find_str_value(pm, mn_errorCode), str_value == NULL) {
-                err_msg = "\"errorCode\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.monitor_alert.errorCode = strdup(str_value);
-        }
-            break;
-        case PR_WATCHDOG_ALERT:
-            ret.watchdog_alert.message_type = message_type;
-            if(str_value = find_str_value(obj, wd_component), str_value == NULL) {
-                err_msg = "\"component\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            if(!wa_child_t_range_check(pr_string_2_chld(str_value))) {
-                err_msg = "WATCHDOG_ALERT component name is not found ";
-                goto on_error;
-            }
-            ret.watchdog_alert.process_name = strdup(str_value);
-             break;
-        case PR_FWU_ALERT:
-            ret.fw_upgrade_alert.message_type = message_type;
-            if(int_value = find_int_value(obj, fw_timestamp), int_value < 0) {
-                err_msg = "\"timestamp\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.fw_upgrade_alert.timestamp = int_value;
-            if(int_value = find_int_value(obj, fw_alertType), !pr_fwu_msg_t_range_check(int_value)) {
-                err_msg = "\"alertType\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.fw_upgrade_alert.alert_type = (pr_fwu_msg_t)int_value;
-            if(str_value = find_str_value(obj, fw_error), str_value == NULL) {
-                err_msg = "\"error\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.fw_upgrade_alert.error = strdup(str_value);
-            break;
-        case PR_WUD_ALERT:
-            ret.wud_alert.message_type = message_type;
-            if(int_value = find_int_value(obj, wud_timestamp), int_value < 0) {
-                err_msg = "\"timestamp\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
-            }
-            ret.wud_alert.timestamp = int_value;
-            if(str_value = find_str_value(obj, wud_process_name), str_value == NULL) {
-                err_msg = "\"process_name\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.wud_alert.proc_name = strdup(str_value);
-            if(str_value = find_str_value(obj, wud_error), str_value == NULL) {
-                err_msg = "\"error\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            ret.wud_alert.error = strdup(str_value);
-            break;
-        case PR_COMMAND:
-            pr_json_2_command(obj, &ret, json_string);  //it makes an error msg by itself if needed
-            break;
-        default:
-            err_msg = "pr_json_2_msg: Unsupported command ID!";
-            goto on_error;
-            break;
-    }
-    pthread_mutex_unlock(&own_mutex);
-    return ret;
-    on_error: {
-        char *msg = malloc(strlen(err_msg) + strlen(json_string) + 1);
-        sprintf(msg, "%s%s", err_msg, json_string);
-        ret.err.message_type = PR_MSG_ERROR;
-        ret.err.err_msg = msg;
-    pthread_mutex_unlock(&own_mutex);
-        return ret;
-    }
-}
-void pr_erase_msg(pr_message_t msg) {
-    pr_msg_type_t message_type = msg.msg_type;
-    switch (message_type) {
-        case PR_MSG_ERROR:
-            if (msg.err.err_msg) free(msg.err.err_msg);
+    if(!get_head(cobj, &header, &err_text)) goto on_error;
+    if(!make_struct_head(alert, header, &err_text)) goto on_error; //creating fixed part of alert structure
+    switch(alert->alert_type) {     //creating variable (paramsMap) part of alert structure
+        case PR_ERROR_ALERT:
+            if(!get_str_par(cobj, error_text, alert->error.error_text, sizeof(alert->error.error_text), &err_text)) goto on_error;
             break;
         case PR_MONITOR_ALERT:
-            if (msg.monitor_alert.proc_name) free(msg.monitor_alert.proc_name);
-            if (msg.monitor_alert.errorCode) free(msg.monitor_alert.errorCode);
+            if(!get_str_par(cobj, component, alert->monitor.component, sizeof(alert->monitor.component), &err_text)) goto on_error;
+            if(!get_str_par(cobj, reason, alert->monitor.reason, sizeof(alert->monitor.reason), &err_text)) goto on_error;
             break;
         case PR_WATCHDOG_ALERT:
-            if (msg.watchdog_alert.process_name) free(msg.watchdog_alert.process_name);
+            if(!get_str_par(cobj, component, alert->watchdog.component, sizeof(alert->watchdog.component), &err_text)) goto on_error;
             break;
         case PR_FWU_ALERT:
-            if (msg.fw_upgrade_alert.error) free(msg.fw_upgrade_alert.error);
+            if(!get_str_par(cobj, alertText, alert->fwu.alert_text, sizeof(alert->fwu.alert_text), &err_text)) goto on_error;
             break;
-        case PR_WUD_ALERT:
-            if (msg.wud_alert.proc_name) free(msg.wud_alert.proc_name);                        // process name
-            if (msg.wud_alert.error) free(msg.wud_alert.error);
+        case PR_URL_ALERT:
+            if(!get_str_par(cobj, alertText, alert->url.alert_text, sizeof(alert->url.alert_text), &err_text)) goto on_error;
             break;
-        case PR_COMMAND: {
-            pr_command_id_t command_type = msg.cmd_type.cmd;
-            switch (command_type) {
-                case PR_FW_UPGRADE_START:
-                    if (msg.fw_start.file_server_url) free(msg.fw_start.file_server_url);
+        case PR_COMMAND:
+            switch(header.alert_subtype) {
+                case PR_CMD_FWU_START:
+                    if(!get_str_par(cobj, cmd_file_server_url, alert->cmd_fwu.file_server_url, sizeof(alert->cmd_fwu.file_server_url), &err_text)) goto on_error;
                     break;
-                case PR_FW_UPGRADE_CANCEL:
+                case PR_CMD_FWU_CANCEL:
+                case PR_CMD_STOP:
                     break;
-                case PR_STOP:
+                case PR_CMD_RESTART_CHILD:
+                    if(!get_str_par(cobj, component, alert->cmd_restart.component, sizeof(alert->cmd_restart.component), &err_text)) goto on_error;
                     break;
-                case PR_RESTART_CHILD:
-                    break;
-                case PR_PRESTO_INFO:
-                    if (msg.presto_info.cloud_conn_string)free(msg.presto_info.cloud_conn_string);
-                    if (msg.presto_info.device_id)free(msg.presto_info.device_id);
-                    if (msg.presto_info.activation_token)free(msg.presto_info.activation_token);
+                case PR_CMD_CLOUD_CONN:
+                    if(!get_str_par(cobj, cmd_conn_string, alert->cmd_cloud.conn_string, sizeof(alert->cmd_cloud.conn_string), &err_text)) goto on_error;
+                    if(!get_str_par(cobj, cmd_device_id, alert->cmd_cloud.device_id, sizeof(alert->cmd_cloud.device_id), &err_text)) goto on_error;
+                    if(!get_str_par(cobj, cmd_auth_token, alert->cmd_cloud.auth_token, sizeof(alert->cmd_cloud.auth_token), &err_text)) goto on_error;
                     break;
                 default:
-                    break;
+                    err_text = "Unsupported alert subtype";
+                    goto on_error;
             }
-        }
             break;
         default:
-            break;
+            err_text = "Unsupported alert type";
+            goto on_error;
     }
+    cJSON_Delete(obj);
+    pthread_mutex_unlock(&own_mutex);
+    return;
+    on_error: {
+        alert->error.alert_type = PR_ERROR_ALERT;
+        alert->error.error_alert_type = PR_ERROR_TYPE;
+        alert->error.tmestamp = time(NULL);
+        strncpy(alert->error.error_text, err_text, sizeof(alert->error.error_text));
+    if(obj) cJSON_Delete(obj);
+    pthread_mutex_unlock(&own_mutex);
+    }
+    return;
 }
-int pr_make_message(char** buf, pr_message_t msg) {
+int pr_struct_2_json(char* buf, size_t size, pr_alert_t msg, const char* deviceID, unsigned int seqNo) {
     cJSON* obj;
+    cJSON* cobj;
     pthread_mutex_lock(&own_mutex);
     obj = cJSON_CreateObject();
-    switch(msg.msg_type) {
-        case PR_MSG_ERROR:
-            create_err_msg(obj, msg.err);
+    cobj = (msg.alert_type == PR_COMMAND)?obj:add_alert_head(obj, deviceID, seqNo);
+    switch(msg.alert_type) {
+        case PR_ERROR_ALERT:
+            create_alert_head(cobj, msg.error.alert_type, msg.error.error_alert_type, msg.error.tmestamp);
+            add_str_2_par_map(create_par_map(cobj), error_text, msg.error.error_text);
             break;
-        case PR_MONITOR_ALERT:
-            create_monitor_alert(obj, msg.monitor_alert);
+        case PR_MONITOR_ALERT: {
+            create_alert_head(cobj, msg.monitor.alert_type, msg.monitor.monitor_alert_type, msg.monitor.timestamp);
+            cJSON *p = create_par_map(cobj);
+            add_str_2_par_map(p, component, msg.monitor.component);
+            add_str_2_par_map(p, reason, msg.monitor.reason);
             break;
+        }
         case PR_WATCHDOG_ALERT:
-            create_watchdog_alert(obj, msg.watchdog_alert);
+            create_alert_head(cobj, msg.watchdog.alert_type, msg.watchdog.watchdog_alert_type, msg.watchdog.timestamp);
+            add_str_2_par_map(create_par_map(cobj), component, msg.watchdog.component);
             break;
         case PR_FWU_ALERT:
-            create_fwu_alert(obj, msg.fw_upgrade_alert);
+            create_alert_head(cobj, msg.fwu.alert_type, msg.fwu.fwu_alert_type, msg.fwu.timestamp);
+            add_str_2_par_map(create_par_map(cobj), alertText, msg.fwu.alert_text);
             break;
-        case PR_WUD_ALERT:
-            create_wud_alert(obj, msg.wud_alert);
+        case PR_URL_ALERT:
+            create_alert_head(cobj, msg.url.alert_type, msg.url.url_alert_type, msg.url.timestamp);
+            add_str_2_par_map(create_par_map(obj), alertText, msg.url.alert_text);
             break;
         case PR_COMMAND:
-            switch(msg.cmd_type.cmd) {
-                case PR_FW_UPGRADE_START:
-                    create_fw_start_msg(obj, msg.fw_start);
+            switch(msg.cmd_type) {
+                case PR_CMD_FWU_START:
+                    create_alert_head(cobj, msg.cmd_fwu.alert_type, msg.cmd_fwu.command_type, 0);
+                    add_str_2_par_map(create_par_map(cobj), cmd_file_server_url, msg.cmd_fwu.file_server_url);
                     break;
-                case PR_FW_UPGRADE_CANCEL:
-                    create_nopar_cmd_msg(obj, msg.fw_cancel);
+                case PR_CMD_FWU_CANCEL:
+                    create_alert_head(cobj, msg.cmd_fwu.alert_type, msg.cmd_fwu.command_type, 0);
                     break;
-                case PR_STOP:
-                    create_nopar_cmd_msg(obj, msg.stop_req);
+                case PR_CMD_RESTART_CHILD:
+                    create_alert_head(cobj, msg.cmd_restart.alert_type, msg.cmd_restart.command_type, 0);
+                    add_str_2_par_map(create_par_map(cobj), component, msg.cmd_restart.component);
                     break;
-                case PR_RESTART_CHILD:
-                    create_restart_child_msg(obj, msg.restart_child);
+                case PR_CMD_CLOUD_CONN: {
+                    create_alert_head(cobj, msg.cmd_cloud.alert_type, msg.cmd_cloud.command_type, 0);
+                    cJSON *p = create_par_map(cobj);
+                    add_str_2_par_map(p, cmd_conn_string, msg.cmd_cloud.conn_string);
+                    add_str_2_par_map(p, cmd_device_id, msg.cmd_cloud.device_id);
+                    add_str_2_par_map(p, cmd_auth_token, msg.cmd_cloud.auth_token);
                     break;
-                case PR_PRESTO_INFO:
-                    create_presto_info_msg(obj, msg.presto_info);
+                }
+                case PR_CMD_STOP:
+                    create_alert_head(cobj, msg.cmd_stop.alert_type,msg.cmd_stop.command_type, 0);
                     break;
                 default:
                     break;
@@ -428,222 +227,295 @@ int pr_make_message(char** buf, pr_message_t msg) {
         default:
             break;
     }
-    *buf = strdup(cJSON_PrintUnformatted(obj));
+    strncpy(buf, cJSON_PrintUnformatted(obj), size-1);
 
     cJSON_Delete(obj);
     pthread_mutex_unlock(&own_mutex);
     return 1;
 }
 ////////////////////////////////////////////////////////////////////////
-int wa_child_t_range_check(int item) {
-    return (item >= 0) && (item < WA_SIZE);
+//Enum range chackers
+///////////////////////
+int pr_child_t_range_check(int item) {
+    return (item >= 0) && (item < PR_CHILD_SIZE);
 }
-int pr_command_id_t_range_check(int item) {
-    return (item >= 0) && (item < PR_CMD_SIZE);
+int pr_alert_type_range_check(int item) {
+    return (item >= 0) && (item < PR_ALERT_SIZE);
 }
-int pr_msg_type_t_range_check(int item) {
-    return (item >= 0) && (item < PR_MSG_SIZE);
+int pr_error_alert_t_range_check(int item) {
+    return (item >= 0) && (item < PR_ERROR_SIZE);
 }
-int pr_fwu_msg_t_range_check(int item) {
+int pr_monitor_alert_t_range_check(int item) {
+    return (item >= 0) && (item < PR_MONITOR_SIZE);
+}
+int pr_watchdog_alert_t_range_check(int item) {
+    return (item >= 0) && (item < PR_WATCHDOG_SIZE);
+}
+int pr_fwu_alert_t_range_check(int item) {
     return (item >= 0) && (item < PR_FWU_SIZE);
 }
-int pr_wud_msg_t_range_check(int item) {
-    return (item >= 0) && (item < PR_WUD_SIZE);
+int pr_url_alert_t_range_check(int item) {
+    return (item >= 0) && (item < PR_URL_SIZE);
 }
-int pr_mon_alert_t_range_check(int item) {
-    return (item >= 0) && (item < PR_MON_ALERT_SIZE);
+int pr_cmd_fwu_t_range_check(int item) {
+    return (item == PR_CMD_FWU_START)||(item == PR_CMD_FWU_CANCEL);
+}
+int pr_cmd_restart_t_range_check(int item) {
+    return item == PR_CMD_RESTART_CHILD;
+}
+int pr_cmd_cloud_t_range_check(int item) {
+    return item == PR_CMD_CLOUD_CONN;
+}
+int pr_cmd_stop_range_check(int item) {
+    return (item == PR_CMD_STOP);
 }
 //
-int pr_make_wud_alert(char** buf, pr_wud_msg_t wud_msg_type, const char* proc_name) {
-    pr_message_t msg;
-    pthread_mutex_lock(&own_mutex);
-    msg.wud_alert.message_type = PR_WUD_ALERT;
-    msg.wud_alert.timestamp = time(NULL);
-    msg.wud_alert.error = (pr_wud_msg_t_range_check(wud_msg_type))?strdup(WUD_MESSAGES[wud_msg_type]):strdup("Message type range error");
-    msg.wud_alert.proc_name = strdup(proc_name);
+//Make the JSON alert from valuable data
+int pr_make_error_alert(const char* error_text, const char* deviceID, unsigned int seqNum, char* json, size_t size) {
+    pr_alert_t a;
+    a.error.alert_type = PR_ERROR_ALERT;
+    a.error.error_alert_type = PR_ERROR_TYPE;
+    a.error.tmestamp = time(NULL);
+    strncpy(a.error.error_text, error_text, sizeof(a.error.error_text));
 
-    pr_make_message(buf, msg);
-    pr_erase_msg(msg);
-    pthread_mutex_unlock(&own_mutex);
-    return 1;
+    return pr_struct_2_json(json, size, a, deviceID, seqNum);
 }
-int pr_make_fwu_alert(char** buf, pr_fwu_msg_t fwu_alert, const char* proc_name) {
-    pr_message_t msg;
-
-    pthread_mutex_lock(&own_mutex);
-    msg.fw_upgrade_alert.message_type = PR_FWU_ALERT;
-    msg.fw_upgrade_alert.alert_type = fwu_alert;
-    msg.fw_upgrade_alert.error = (pr_fwu_msg_t_range_check(fwu_alert))?strdup(FWU_MESSAGES[fwu_alert]):strdup("Alert error type range error");
-    msg.fw_upgrade_alert.timestamp = time(NULL);
-
-    pr_make_message(buf, msg);
-    pr_erase_msg(msg);
-    pthread_mutex_unlock(&own_mutex);
-    return 1;
+int pr_make_monitor_alert(pr_monitor_alert_t mat, const char* comp, const char* rsn, const char* deviceID, unsigned int seqNum, char* json, size_t size) {
+    pr_alert_t a;
+    a.monitor.alert_type = PR_MONITOR_ALERT;
+    a.monitor.monitor_alert_type = mat;
+    a.monitor.timestamp = time(NULL);
+    strncpy(a.monitor.component, comp, sizeof(a.monitor.component));
+    strncpy(a.monitor.reason, rsn, sizeof(a.monitor.reason));
+    return pr_struct_2_json(json, size, a, deviceID, seqNum);
 }
+int pr_make_wd_alert(const char* component, const char* deviceID, unsigned int seqNum, char* json, size_t size) {
+    pr_alert_t a;
+    a.watchdog.alert_type = PR_WATCHDOG_ALERT;
+    a.watchdog.watchdog_alert_type = PR_WATCHDOG_TYPE;
+    a.watchdog.timestamp = time(NULL);
+    strncpy(a.watchdog.component, component, sizeof(a.watchdog.component));
+    return pr_struct_2_json(json, size, a, deviceID, seqNum);
+}
+int pr_make_fwu_alert(pr_fwu_alert_t fwua_type, const char* alert_txt, const char* deviceID, unsigned int seqNum, char* json, size_t size) {
+    pr_alert_t a;
+    a.fwu.alert_type = PR_FWU_ALERT;
+    a.fwu.fwu_alert_type = fwua_type;
+    a.fwu.timestamp = time(NULL);
+    strncpy(a.fwu.alert_text, alert_txt, sizeof(a.fwu.alert_text));
+    return pr_struct_2_json(json, size, a, deviceID, seqNum);
+}
+int pr_make_url_alert(pr_url_alert_t urla_type, const char* alert_txt, const char* deviceID, unsigned int seqNum, char* json, size_t size) {
+    pr_alert_t a;
+    a.url.alert_type = PR_URL_ALERT;
+    a.url.url_alert_type = urla_type;
+    a.url.timestamp = time(NULL);
+    strncpy(a.url.alert_text, alert_txt, sizeof(a.url.alert_text));
+    return pr_struct_2_json(json, size, a, deviceID, seqNum);
+}
+int pr_make_cmd_fwu(pr_cmd_t cmd_type, const char* fs_url, char* json, size_t size) {
+    pr_alert_t a;
+    a.cmd_fwu.alert_type = PR_COMMAND;
+    a.cmd_fwu.command_type = cmd_type;
+    if(cmd_type == PR_CMD_FWU_START) strncpy(a.cmd_fwu.file_server_url, fs_url, sizeof(a.cmd_fwu.file_server_url));
+    return pr_struct_2_json(json, size, a, NULL, 0);
+}
+int pr_make_cmd_restart(const char* component, char* json, size_t size) {
+    pr_alert_t a;
+    a.cmd_restart.alert_type = PR_COMMAND;
+    a.cmd_restart.command_type = PR_CMD_RESTART_CHILD;
+    strncpy(a.cmd_restart.component, component, sizeof(a.cmd_restart.component));
+    return pr_struct_2_json(json, size, a, NULL, 0);
+}
+int pr_make_cmd_cloud(const char* cs, const char* di, const char* at, char* json, size_t size) {
+    pr_alert_t a;
+    a.cmd_cloud.alert_type = PR_COMMAND;
+    a.cmd_cloud.command_type = PR_CMD_CLOUD_CONN;
+    strncpy(a.cmd_cloud.conn_string, cs, sizeof(a.cmd_cloud.conn_string));
+    strncpy(a.cmd_cloud.device_id, di, sizeof(a.cmd_cloud.device_id));
+    strncpy(a.cmd_cloud.auth_token, at, sizeof(a.cmd_cloud.auth_token));
+    return pr_struct_2_json(json, size, a, NULL, 0);
+}
+int pr_make_cmd_stop(char* json, size_t size) {
+    pr_alert_t a;
+    a.cmd_stop.alert_type = PR_COMMAND;
+    a.cmd_stop.command_type = PR_CMD_STOP;
+    return pr_struct_2_json(json, size, a, NULL, 0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
-//returns NULL in fot found
-static const char* find_str_value(cJSON* obj, const char* field) {
+//returns 1 if OK
+static int find_str_value(cJSON* obj, const char* field, char* val, size_t size) {
     cJSON *it = cJSON_GetObjectItem(obj, field);
-    if (it == NULL) return NULL;
-    if(it->type != cJSON_String) return NULL;
-    return it->valuestring;
+    if (it == NULL) return 0;
+    if(it->type != cJSON_String) return 0;
+    strncpy(val, it->valuestring, size-1);
+    return 1;
 }
 //return -1 if smth wrong
-static int find_int_value(cJSON* obj, const char* field) { //return -1 if smth wrong
+static int find_int_value(cJSON* obj, const char* field, int* val) { //return 1 if OK
     cJSON *it = cJSON_GetObjectItem(obj, field);
-    if (it == NULL) return -1;
-    if(it->type != cJSON_Number) return -1;
-    return it->valueint;
+    if (it == NULL) return 0;
+    if(it->type != cJSON_Number) return 0;
+    *val = it->valueint;
+    return 1;
 }
-static void pr_json_2_command(cJSON* obj, pr_message_t *msg, const char* json_string) {
-    const char* err_msg;
-    const char* str_value;
-    int int_value;
 
-    if(int_value = find_int_value(obj, cmd_commandID), !pr_command_id_t_range_check(int_value)) {
-        err_msg = "\"commandID\" item not found or not an int type or has bad value in json string ";
-        goto on_error;
+static cJSON* skip_alert_head(cJSON* obj) {
+    cJSON* ret = cJSON_GetObjectItem(obj, alerts);
+    if(!ret) return NULL;
+    if(cJSON_GetArraySize(ret) < 1) return NULL;    //empty alerts array
+//NB! Currently I'm ready to have just one item in array. Fuck the rest!
+    return cJSON_GetArrayItem(ret, 0);
+}
+static int get_head(cJSON* obj, pr_alert_head_t* header, char** err_text) {
+    char alert_type[PR_MAX_ALERT_TYPE_SIZE];
+
+    if(!find_str_value(obj, alertType, alert_type, sizeof(alert_type))) {
+        *err_text = "\"alertType\" item not found";
+        return 0;
     }
-    pr_command_id_t command_id = (pr_command_id_t)int_value;
-
-    cJSON* cb;
-    if(cb = cJSON_GetObjectItem(obj, cmd_commandBody), cb == NULL) {
-        err_msg = "\"commandBody\" item not found in json string ";
-        goto on_error;
+    alert_type[PR_ALERT_TYPE_PREFFIX_LEN] = '\0'; // instead of delimeter
+    header->alert_type = -1;
+    for(unsigned int i = 0; i < PR_ALERT_SIZE; i++) {
+        if(!strcmp(alert_type, ALERT_TYPES[i])) {
+            header->alert_type = i;
+            break;
+        }
     }
-    switch(command_id) {
-        case PR_FW_UPGRADE_START:
-            msg->fw_start.message_type = PR_COMMAND;
-            if(str_value = find_str_value(cb, cmd_conn_string), str_value == NULL) {
-                err_msg = "\"conn_string\" item not found or not a string type in json string ";
-                goto on_error;
+    char* endptr;
+    header->alert_subtype = (int)strtol(alert_type+PR_ALERT_TYPE_PREFFIX_LEN+PR_ALERT_TYPE_DELIM_LEN, &endptr, 10);
+    if(header->alert_type == PR_COMMAND) return 1;  //command hasn't timestamp
+//Else get timestamp
+    if(!find_int_value(obj, timestamp, (int*)(&header->timestamp))) {
+        *err_text = "\"timestamp\" item not found";
+        return 0;
+    }
+    return 1;
+}
+static int make_struct_head(pr_alert_t* alert, pr_alert_head_t header, char** err_text) {
+    if(!pr_alert_type_range_check(header.alert_type)) {
+        *err_text = "alert type value is out of range";
+        return 0;
+    }
+    switch(header.alert_type) {
+        case PR_ERROR_ALERT:
+            if(!pr_error_alert_t_range_check(header.alert_subtype)) {
+                *err_text = "error type number out of range";
+                return 0;
             }
-            msg->fw_start.cmd = command_id;
-            msg->fw_start.file_server_url = strdup(str_value);
+            alert->error.alert_type = PR_ERROR_ALERT;
+            alert->error.error_alert_type = (pr_error_alert_t)header.alert_subtype;
+            alert->error.tmestamp = header.timestamp;
             break;
-        case PR_FW_UPGRADE_CANCEL:
-            msg->fw_cancel.message_type = PR_COMMAND;
-            msg->fw_cancel.cmd = command_id;
-            break;
-        case PR_STOP:
-            msg->stop_req.message_type = PR_COMMAND;
-            msg->stop_req.cmd = command_id;
-            break;
-        case PR_RESTART_CHILD:
-            msg->restart_child.message_type = PR_COMMAND;
-            msg->restart_child.cmd = command_id;
-            if(int_value = find_int_value(cb, cmd_child_idx), !wa_child_t_range_check(int_value)) {
-                err_msg = "\"child_index\" item not found or not an int type or has bad value in json string ";
-                goto on_error;
+        case PR_MONITOR_ALERT:
+            if(!pr_monitor_alert_t_range_check(header.alert_subtype)) {
+                *err_text = "monitor alert type number out of range";
+                return 0;
             }
-            msg->restart_child.process_idx = (wa_child_t)int_value;
+            alert->monitor.alert_type = PR_MONITOR_ALERT;
+            alert->monitor.monitor_alert_type = (pr_monitor_alert_t)header.alert_subtype;
+            alert->monitor.timestamp = header.timestamp;
             break;
-        case PR_PRESTO_INFO:
-            msg->presto_info.message_type = PR_COMMAND;
-            msg->presto_info.cmd = command_id;
+        case PR_WATCHDOG_ALERT:
+            if(!pr_watchdog_alert_t_range_check(header.alert_subtype)) {
+                *err_text = "watchdog alert type number out of range";
+                return 0;
+            }
+            alert->watchdog.alert_type = PR_WATCHDOG_ALERT;
+            alert->watchdog.watchdog_alert_type = (pr_watchdog_alert_t)header.alert_subtype;
+            alert->watchdog.timestamp = header.timestamp;
+            break;
+        case PR_FWU_ALERT:
+            if(!pr_fwu_alert_t_range_check(header.alert_subtype)) {
+                *err_text = "firmware upgrage alert type number out of range";
+                return 0;
+            }
+            alert->fwu.alert_type = PR_FWU_ALERT;
+            alert->fwu.fwu_alert_type = (pr_fwu_alert_t)header.alert_subtype;
+            alert->fwu.timestamp = header.timestamp;
+            break;
+        case PR_URL_ALERT:
+            if(!pr_url_alert_t_range_check(header.alert_subtype)) {
+                *err_text = "URL update alert type number out of range";
+                return 0;
+            }
+            alert->url.alert_type = PR_URL_ALERT;
+            alert->url.url_alert_type = (pr_url_alert_t)header.alert_subtype;
+            alert->url.timestamp = header.timestamp;
+            break;
+        case PR_COMMAND:
+            switch(header.alert_subtype) {
+                case PR_CMD_FWU_START:
+                case PR_CMD_FWU_CANCEL:
+                    alert->cmd_fwu.alert_type = PR_COMMAND;
+                    alert->cmd_fwu.command_type = (pr_cmd_t)header.alert_subtype;
+                    break;
+                case PR_CMD_RESTART_CHILD:
+                    alert->cmd_restart.alert_type = PR_COMMAND;
+                    alert->cmd_restart.command_type = PR_CMD_RESTART_CHILD;
+                    break;
+                case PR_CMD_CLOUD_CONN:
+                    alert->cmd_cloud.alert_type = PR_COMMAND;
+                    alert->cmd_cloud.command_type = PR_CMD_CLOUD_CONN;
+                    break;
+                case PR_CMD_STOP:
+                    alert->cmd_stop.alert_type = PR_COMMAND;
+                    alert->cmd_stop.command_type = PR_CMD_STOP;
 
-            if(str_value = find_str_value(cb, cmd_cloud_conn_string), str_value == NULL) {
-                err_msg = "\"cloud_conn_string\" item not found or not a string type in json string ";
-                goto on_error;
+                default:
+                    *err_text = "Unsupported command type";
+                    return 0;
             }
-            msg->presto_info.cloud_conn_string = strdup(str_value);
-
-            if(str_value = find_str_value(cb, cmd_device_id), str_value == NULL) {
-                err_msg = "\"device_id\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            msg->presto_info.device_id = strdup(str_value);
-
-            if(str_value = find_str_value(cb, cmd_activation_token), str_value == NULL) {
-                err_msg = "\"activation_token\" item not found or not a string type in json string ";
-                goto on_error;
-            }
-            msg->presto_info.activation_token = strdup(str_value);
             break;
         default:
-            err_msg = "pr_json_2_command: Unsupported command ID!";
-            goto on_error;
+            *err_text = "Unsupported alert type";
+            return 0;
     }
-    return;
-    on_error: {
-        char *err = malloc(strlen(err_msg) + strlen(json_string) + 1);
-        sprintf(err, "%s%s", err_msg, json_string);
-        msg->err.message_type = PR_MSG_ERROR;
-        msg->err.err_msg = err;
-        return;
+    return 1;
+}
+static int get_str_par(cJSON* obj, const char* field, char* value, size_t size, char** err_text) {
+    cJSON* p_map = cJSON_GetObjectItem(obj, paramsMap);
+    if(!p_map) {
+        *err_text = "\"paramsMap\" item not found";
+        return 0;
     }
-}
-static int create_err_msg(cJSON* obj, pr_err_alert_msg_t err) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(err.message_type));
-    cJSON_AddItemToObject(obj, error_text, cJSON_CreateString(err.err_msg));
+    if(!find_str_value(obj, field, value, size)) {
+        *err_text = "item in \"paramsMap\" not found";
+        return 0;
+    }
     return 1;
 }
-static int create_monitor_alert(cJSON* obj, pr_mon_alert_msg_t monitor_alert) {
-    cJSON* array = cJSON_CreateArray();
-    cJSON* arr_item = cJSON_CreateObject();
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(monitor_alert.message_type));
-    cJSON_AddItemToObject(arr_item, mn_alertId, cJSON_CreateNumber(monitor_alert.alertId));
-    cJSON_AddItemToObject(arr_item, mn_alertType, cJSON_CreateNumber(monitor_alert.alertType));
-    cJSON_AddItemToObject(arr_item, mn_alertTimestamp, cJSON_CreateNumber(monitor_alert.alertTimestamp));
-    cJSON* params_map = cJSON_CreateObject();
-    cJSON_AddItemToObject(params_map, mn_component, cJSON_CreateString(monitor_alert.proc_name));
-    cJSON_AddItemToObject(params_map, mn_errorCode, cJSON_CreateString(monitor_alert.errorCode));
-//Attaching pieces
-    cJSON_AddItemToObject(arr_item, mn_paramsMap, params_map);
-    cJSON_AddItemToArray(array, arr_item);
-    cJSON_AddItemToObject(obj, mn_alerts, array);
+
+static const char* create_alert_type(int prefix, char delim, int postfix, char* buf, size_t size) {
+    strcpy(buf, ALERT_TYPES[prefix]);
+    buf[PR_ALERT_TYPE_PREFFIX_LEN] = delim;
+    sprintf(buf+PR_ALERT_TYPE_PREFFIX_LEN+PR_ALERT_TYPE_DELIM_LEN, "%d", postfix);
+    return buf;
+}
+
+static cJSON* add_alert_head(cJSON* obj, const char* deviceID, unsigned int seqNo) {
+    cJSON* arr = cJSON_CreateArray();
+    cJSON_AddItemToObject(obj, alerts, arr);    //attach array to object
+    cJSON* elem = cJSON_CreateObject();
+    cJSON_AddItemToArray(arr, elem);            //add one element into aray
+    cJSON_AddItemToObject(elem, alertId, cJSON_CreateNumber(seqNo));        //add alertId and deviceId to element
+    cJSON_AddItemToObject(elem, deviceId, cJSON_CreateString(deviceID));
+    return elem;    // return the array's element for further info adding
+}
+static int create_alert_head(cJSON* obj, int prefix, int postfix, time_t ts) {
+    char buf[PR_MAX_ALERT_TYPE_SIZE];
+    cJSON_AddItemToObject(obj, alertType, cJSON_CreateString(create_alert_type(prefix, ALERT_DELIM, postfix, buf, sizeof(buf))));
+    if(ts) cJSON_AddItemToObject(obj, timestamp, cJSON_CreateNumber(ts));
     return 1;
 }
-static int create_watchdog_alert(cJSON* obj, pr_wd_alert_msg_t watchdog_alert) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(watchdog_alert.message_type));
-    cJSON_AddItemToObject(obj, wd_component, cJSON_CreateString(watchdog_alert.process_name));
-    return 1;
+static cJSON* create_par_map(cJSON* obj) {
+    cJSON* p_map = cJSON_CreateObject();
+    cJSON_AddItemToObject(obj, paramsMap, p_map);
+    return p_map;
 }
-static int create_fwu_alert(cJSON* obj, pr_fwu_alert_msg_t fw_upgrade_alert) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(fw_upgrade_alert.message_type));
-    cJSON_AddItemToObject(obj, fw_timestamp, cJSON_CreateNumber(fw_upgrade_alert.timestamp));
-    cJSON_AddItemToObject(obj, fw_alertType, cJSON_CreateNumber(fw_upgrade_alert.alert_type));
-    cJSON_AddItemToObject(obj, fw_error, cJSON_CreateString(fw_upgrade_alert.error));
-    return 1;
-}
-static int create_wud_alert(cJSON* obj, pr_wud_alert_msg_t wud_alert) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(wud_alert.message_type));
-    cJSON_AddItemToObject(obj, wud_timestamp, cJSON_CreateNumber(wud_alert.timestamp));
-    cJSON_AddItemToObject(obj, wud_process_name, cJSON_CreateString(wud_alert.proc_name));
-    cJSON_AddItemToObject(obj, wud_error, cJSON_CreateString(wud_alert.error));
-    return 1;
-}
-static int create_presto_info_msg(cJSON* obj, pr_presto_info_msg_t presto_info) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(presto_info.message_type));
-    cJSON_AddItemToObject(obj, cmd_commandID, cJSON_CreateNumber(presto_info.cmd));
-    cJSON* body = cJSON_CreateObject();
-    cJSON_AddItemToObject(body, cmd_cloud_conn_string, cJSON_CreateString(presto_info.cloud_conn_string));
-    cJSON_AddItemToObject(body, cmd_device_id, cJSON_CreateString(presto_info.device_id));
-    cJSON_AddItemToObject(body, cmd_activation_token, cJSON_CreateString(presto_info.activation_token));
-    cJSON_AddItemToObject(obj, cmd_commandBody, body);
-    return 1;
-}
-static int create_fw_start_msg(cJSON* obj, pr_fw_start_msg_t fw_start) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(fw_start.message_type));
-    cJSON_AddItemToObject(obj, cmd_commandID, cJSON_CreateNumber(fw_start.cmd));
-    cJSON* body = cJSON_CreateObject();
-    cJSON_AddItemToObject(body, cmd_conn_string, cJSON_CreateString(fw_start.file_server_url));
-    cJSON_AddItemToObject(obj, cmd_commandBody, body);
-    return 1;
-}
-static int create_restart_child_msg(cJSON* obj, pr_restart_child_msg_t restart_child) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(restart_child.message_type));
-    cJSON_AddItemToObject(obj, cmd_commandID, cJSON_CreateNumber(restart_child.cmd));
-    cJSON* body = cJSON_CreateObject();
-    cJSON_AddItemToObject(body, cmd_child_idx, cJSON_CreateNumber(restart_child.process_idx));
-    cJSON_AddItemToObject(obj, cmd_commandBody, body);
-    return 1;
-}
-//currently for PR_FW_UPGRADE_CANCEL, PR_STOP commands
-static int create_nopar_cmd_msg(cJSON* obj, pr_nopar_cmd_msg_t nopar_cmd) {
-    cJSON_AddItemToObject(obj, messageType, cJSON_CreateNumber(nopar_cmd.message_type));
-    cJSON_AddItemToObject(obj, cmd_commandID, cJSON_CreateNumber(nopar_cmd.cmd));
+static int add_str_2_par_map(cJSON* pm, const char* field, const char* value) {
+    cJSON_AddItemToObject(pm, field, cJSON_CreateString(value));
     return 1;
 }
 

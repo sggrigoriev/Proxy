@@ -7,11 +7,11 @@
 
 #include "pu_queue.h"
 
-#define WT_MIN_QUEUE WT_ProxyAgentMessage
-#define WT_MAX_QUEUE WT_AlertsToCloud
+#define WT_MIN_QUEUE WT_to_Main
+#define WT_MAX_QUEUE WT_to_Cloud
 
 typedef enum {WT_Timeout = PQ_TIMEOUT,
-    WT_ProxyAgentMessage = 1, WT_WatchDogQueue = 2, WT_MonitorAlerts = 3, WT_FWInfo = 4, WT_AlertsToCloud = 5,
+    WT_to_Main = 1, WT_to_Cloud = 2,
     WT_STOP = PQ_STOP} wt_queue_events_t;
 
 

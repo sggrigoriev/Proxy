@@ -3,10 +3,10 @@
 //
 #include <pthread.h>
 #include <string.h>
+#include <ph_manager.h>
 
 #include "pc_defaults.h"
 #include "pu_logger.h"
-#include "pt_http_utl.h"
 #include "pt_queues.h"
 #include "pt_server_read.h"
 
@@ -44,20 +44,17 @@ static void* read_proc(void* params) {
     to_main = pt_get_gueue(PS_FromServerQueue);
     stop = 0;
 
-    char buf[PROXY_MAX_MSG_LEN];
-
-    if (!pt_http_read_init()) {
-        pu_log(LL_ERROR, "%s: Cloud info read initiation failed. Stop.", PT_THREAD_NAME);
-        pthread_exit(NULL);
-    }
+    char buf[LIB_HTTP_MAX_MSG_SIZE];
 
 //Main read loop
     while(!stop) {
         int out = 0;
         while(!out && !stop) {
-            switch(pt_http_read(buf, sizeof(buf))) {
+            switch(ph_read(buf, sizeof(buf))) {
                 case -1:        //error
-                    sleep(1);   //just not to have cycling
+                    pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
+                    ph_reconnect();    //loop again the succ inside
+                    out = 0;
                     break;
                 case 0:     //timeout - read again
                     break;
@@ -77,7 +74,6 @@ static void* read_proc(void* params) {
             pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
         }
     }
-    pt_http_read_destroy();
     pthread_exit(NULL);
 }
 

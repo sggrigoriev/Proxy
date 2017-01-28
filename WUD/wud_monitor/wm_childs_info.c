@@ -13,13 +13,13 @@
 
 //Local data
 
-static wm_child_descriptor_t child_array[WA_SIZE] = {0};
+static wm_child_descriptor_t child_array[PR_CHILD_SIZE] = {0};
 
-//Return cd if OK, NULL if error
-wa_child_t  wm_create_cd(const char* pn, const char* bn, const char* wd, char* const* sp, unsigned int wd_to, pid_t pid) {
+//Return idx if OK, PR_CHILD_SIZE if error
+pr_child_t  wm_create_cd(const char* pn, const char* bn, const char* wd, char* const* sp, unsigned int wd_to, pid_t pid) {
     assert(pn);
     assert(bn);
-    for(unsigned int i = 0; i < WA_SIZE; i++) {
+    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
         if (child_array[i].process_name) continue;
         child_array[i].pid = pid;
         child_array[i].working_directory = (wd) ? strdup(wd) : strdup("./");
@@ -28,32 +28,42 @@ wa_child_t  wm_create_cd(const char* pn, const char* bn, const char* wd, char* c
         child_array[i].process_name = strdup(pn);
         pr_store_child_name(i, pn);                     // Not nice, but the library level hasn't the access to configuration :-(
         child_array[i].watchdog_to = wd_to;
-        return (wa_child_t) i;
+        return (pr_child_t) i;
     }
-    return WA_SIZE;
+    return PR_CHILD_SIZE;
 }
-pid_t pr_child_get_pid(wa_child_t idx) { // return pid or 0
-    if(!wa_child_t_range_check(idx)) return 0;
+pid_t wm_child_get_pid(pr_child_t idx) { // return pid or 0
+    if(!pr_child_t_range_check(idx)) return 0;
     return child_array[idx].pid;
 }
-int pr_child_set_pid(wa_child_t idx, pid_t pid) {
-    if(!wa_child_t_range_check(idx)) return 0;
+int wm_child_set_pid(pr_child_t idx, pid_t pid) {
+    if(!pr_child_t_range_check(idx)) return 0;
     child_array[idx].pid = pid;
     return 1;
 }
-const char* pr_child_get_binary_name(wa_child_t idx) {
-    if(!wa_child_t_range_check(idx)) return NULL;
+const char* wm_child_get_binary_name(pr_child_t idx) {
+    if(!pr_child_t_range_check(idx)) return NULL;
     return child_array[idx].binary_name;
 }
-char** const pr_child_get_start_parameters(wa_child_t idx) {
-    if(!wa_child_t_range_check(idx)) return NULL;
+char** const wm_child_get_start_parameters(pr_child_t idx) {
+    if(!pr_child_t_range_check(idx)) return NULL;
     return child_array[idx].start_parameters;
 }
-const char* pr_child_get_working_directory(wa_child_t idx) {
-    if(!wa_child_t_range_check(idx)) return NULL;
+const char* wm_child_get_working_directory(pr_child_t idx) {
+    if(!pr_child_t_range_check(idx)) return NULL;
     return child_array[idx].working_directory;
 }
-unsigned int pr_child_get_child_to(wa_child_t idx) {
-    if(!wa_child_t_range_check(idx)) return 0;
+unsigned int wm_child_get_child_to(pr_child_t idx) {
+    if(!pr_child_t_range_check(idx)) return 0;
     return child_array[idx].watchdog_to;
+}
+const char* wm_get_child_name(pr_child_t idx) {
+    if(!pr_child_t_range_check(idx)) return NULL;
+    return child_array[idx].process_name;
+}
+pr_child_t wm_get_child_descr(const char* name) {
+    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+        if(strcmp(name, child_array[i].process_name)== 0) return i;
+    }
+    return PR_CHILD_SIZE;
 }

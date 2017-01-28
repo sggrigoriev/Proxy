@@ -26,11 +26,13 @@
     #define PROXY_LL_ERROR          "ERROR"
 
 #define PROXY_PROCESS_NAME      "PROXY_PROCESS_NAME"
-#define PROXY_ACTIVATION_TOKEN  "ACTIVATION_TOKEN"
+
 #define PROXY_DEVICE_ID         "DEVICE_ID"
 #define PROXY_DEVICE_TYPE       "DEVICE_TYPE"
-#define PROXY_CLOUD_URL         "CLOUD_URL"
+#define PROXY_ACTIVATION_TOKEN  "ACTIVATION_TOKEN"
 #define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
+
+#define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
 
 #define PROXY_UPLOAD_TO_SEC     "UPLOAD_TO_SEC"
 #define PROXY_QUEUES_REC_AMT    "QUEUES_REC_AMT"
@@ -45,11 +47,15 @@ static char             proxy_name[PROXY_MAX_PROC_NAME];
 static char             log_name[PROXY_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
+
 static char             activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
 static char             device_id[PROXY_DEVICE_ID_SIZE];
 static unsigned int     device_type;
 static char             cloud_url[PROXY_MAX_PATH];
 static char             main_cloud_url[PROXY_MAX_PATH];
+
+static unsigned int     cloud_url_req_to_hrs;
+
 static unsigned int     long_get_to;
 static unsigned int     queue_rec_amt;
 static unsigned int     agent_port;
@@ -122,8 +128,11 @@ unsigned int pc_getWUDPort() {
 const char* pc_getProxyName() {
     PC_RET(PROXY_PROCESS_NAME, proxy_name);
 }
-unsigned int pc_getAgentWDTO() {
+unsigned int pc_getProxyWDTO() {
     PC_RET(DEFAULT_PROXY_WATCHDOG_TO_SEC, proxy_wd_to);
+}
+unsigned int pc_getCloudURLTOHrs() {
+    PC_RET(DEFAULT_CLOUD_URL_REQ_TO_HRS, cloud_url_req_to_hrs);
 }
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
@@ -148,10 +157,13 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, PROXY_LOG_NAME, log_name, sizeof(log_name)))                           fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_LOG_REC_AMT, &log_rec_amt))                                     fprintf(stderr, "Default value will be used instead\n");
     getLLTValue(cfg, PROXY_LOG_LEVEL, &log_level);
-    if(!getStrValue(cfg, PROXY_ACTIVATION_TOKEN, activation_token, sizeof(activation_token)))   fprintf(stderr, "Default value will be used instead\n");
-    if(!getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                        fprintf(stderr, "Default value will be used instead\n");
+
+    if(getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                         fprintf(stderr, "DeviceID get from config file\n");
+    if(getStrValue(cfg, PROXY_ACTIVATION_TOKEN, activation_token, sizeof(activation_token)))    fprintf(stderr, "Activation token get from config file\n");
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
-    if(!getStrValue(cfg, PROXY_CLOUD_URL, cloud_url, sizeof(cloud_url)))                        fprintf(stderr, "Default value will be used instead\n");
+    if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL, main_cloud_url, sizeof(cloud_url)))              fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   fprintf(stderr, "Default value will be used instead\n");
+
     if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       fprintf(stderr, "Default value will be used instead\n");
@@ -213,30 +225,29 @@ void pc_getProxyDeviceID(char* ret, size_t size) {
     pthread_mutex_unlock(&local_mutex);
 }
 
-//Update/insert new activation token. Update the current value in memory as well
+//Update the current value in memory
 //Return 1 of success, return 0 if not
 int pc_saveActivationToken(const char* new_at) {
-    int ret;
 
     pthread_mutex_lock(&local_mutex);
 
-    ret = saveStrValue("saveActivationToken", conf_fname, PROXY_ACTIVATION_TOKEN, new_at, activation_token, sizeof(activation_token));
+    strncpy(activation_token, new_at, sizeof(activation_token)-1);
+    int ret = saveStrValue("pc_saveActivationToken", conf_fname, PROXY_ACTIVATION_TOKEN, new_at, activation_token, sizeof(activation_token));
 
     pthread_mutex_unlock(&local_mutex);
     return ret;
 }
 
-//Update/insert new device address (deviceID). Update the current value in memory as well
+//Update the current value in memory
 //Return 1 of success, return 0 if not
 int pc_saveProxyDeviceID(const char* new_da) {
-    int ret;
 
     pthread_mutex_lock(&local_mutex);
 
-    ret = saveStrValue("pc_saveDeviceAddress", conf_fname, PROXY_DEVICE_ID, new_da, device_id, sizeof(device_id));
+    strncpy(device_id, new_da, sizeof(device_id));
 
     pthread_mutex_unlock(&local_mutex);
-    return ret;
+    return 1;
 }
 
 //Update/insert new default Cloud connection point. Update the current value in memory as well
@@ -252,17 +263,16 @@ int pc_saveMainCloudURL(const char* new_main_url) {
     return ret;
 }
 
-//Update/insert new Cloud connection point. Update the current value in memory as well
+//Update the current value in memory only!
 //Return 1 of success, return 0 if not
 int pc_saveCloudURL(const char* new_url) {
-    int ret;
 
     pthread_mutex_lock(&local_mutex);
 
-    ret = saveStrValue("pc_saveCloudURL", conf_fname, PROXY_CLOUD_URL, new_url, cloud_url, sizeof(cloud_url));
+    strncpy(cloud_url, new_url, sizeof(cloud_url)-1);
 
     pthread_mutex_unlock(&local_mutex);
-    return ret;
+    return 1;
 }
 
 //Update/insert the port for communicating with the Agent. Update the current value in memory as well
@@ -298,7 +308,7 @@ int pc_existsCloudURL() {
 int pc_existsActivationToken() {
     return (initiated && strlen(activation_token));
 }
-int ps_existsProxyDeviceID() {
+int pc_existsProxyDeviceID() {
     return (initiated && strlen(device_id));
 }
 
@@ -310,10 +320,11 @@ static void initiate_defaults() {
     log_rec_amt = DEFAULT_LOG_RECORDS_AMT;
     log_level = DEFAULT_LOG_LEVEL;
 
-    strncpy(activation_token, DEFAULT_ACTIVATION_TOKEN, sizeof(activation_token));         //NB! default is empty string!
-    strncpy(device_id, DEFAULT_DEVICE_ID, sizeof(device_id));                           //NB! default is empty string!
-    strncpy(cloud_url, DEFAULT_CLOUD_URL, sizeof(cloud_url));                       //NB! default is empty string!
+    activation_token[0] = '\0';
+    device_id[0] = '\0';
+    cloud_url[0] = '\0';
     strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url));
+    cloud_url_req_to_hrs = DEFAULT_CLOUD_URL_REQ_TO_HRS;
 
     long_get_to = DEFAULT_UPLOAD_TIMEOUT_SEC;
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;

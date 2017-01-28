@@ -45,18 +45,18 @@ void wt_stop_monitor() {
 ////////////////////////////////////////////////////
 static unsigned int monitor_to;
 
-static pu_queue_t* monitor_alerts;
+static pu_queue_t* to_main;
 
 static void* monitor(void* params) {
     monitor_to = wc_getWUDMonitoringTO();
 
     stop = 0;
-    monitor_alerts = wt_get_gueue(WT_MonitorAlerts);
+    to_main = wt_get_gueue(WT_to_Main);
 
     while(!stop && wakeup(monitor_to)) {
         const char* msg = wm_monitor();
         if(msg) {   //Got smth to send to
-            pu_queue_push(monitor_alerts, msg, strlen(msg) + 1);
+            pu_queue_push(to_main, msg, strlen(msg) + 1);
             pu_log(LL_INFO, "%s: Alert %s sent to the Request Processor", PT_THREAD_NAME, msg);
         }
     }

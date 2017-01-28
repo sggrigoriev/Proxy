@@ -58,7 +58,7 @@ int main() {
     pu_log(LL_DEBUG, "WUD: Agent descriptor entries: process name = %s, binary name = %s, working directory = %s, run_parameters = %s, wd to = %d",
            wc_getAgentProcessName(), wc_getAgentBinaryName(), wc_getAgentWorkingDirectory(),
            pr_ptr_list2string(buf, sizeof(buf), wc_getAgentRunParameters()), wc_getAgentWDTimeoutSec());
-    wa_child_t agent_cd = wm_create_cd(
+    pr_child_t agent_cd = wm_create_cd(
                                         wc_getAgentProcessName(),
                                         wc_getAgentBinaryName(),
                                         wc_getAgentWorkingDirectory(),
@@ -69,7 +69,7 @@ int main() {
     pu_log(LL_DEBUG, "WUD: Proxy descriptor entries: process name = %s, binary name = %s, working directory = %s, run_parameters = %s, wd to = %d",
            wc_getProxyProcessName(), wc_getProxyBinaryName(), wc_getProxyWorkingDirectory(),
            pr_ptr_list2string(buf, sizeof(buf), wc_getProxyRunParameters()), wc_getProxyWDTimeoutSec());
-    wa_child_t proxy_cd = wm_create_cd(
+    pr_child_t proxy_cd = wm_create_cd(
                                         wc_getProxyProcessName(),
                                         wc_getProxyBinaryName(),
                                         wc_getProxyWorkingDirectory(),

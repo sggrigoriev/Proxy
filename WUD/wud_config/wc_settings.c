@@ -3,12 +3,12 @@
 //
 #include <assert.h>
 #include <pthread.h>
-#include "string.h"
-#include "stdio.h"
+#include <string.h>
+#include <stdio.h>
 #include "stdlib.h"
 
 #include "cJSON.h"
-
+#include "lib_http.h"
 #include "pc_config.h"
 
 #include "wc_defaults.h"
@@ -77,6 +77,10 @@ static unsigned int proxy_wd_timeout_sec;
 static unsigned int wud_monitoring_timeout_sec;
 
 static char conf_fname[WC_MAX_PATH];
+//The data from Proxy
+static char     proxy_device_id[LIB_HTTP_DEVICE_ID_SIZE] = "";
+static char     cloud_url[LIB_HTTP_MAX_URL_SIZE] = "";
+static char     proxy_auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE] = "";
 
 static char** null_list = {NULL};   //used for arg lists initiation
 
@@ -217,7 +221,38 @@ int wc_load_config(const char* cfg_file_name) {
     pthread_mutex_unlock(&local_mutex);
     return 1;
 }
-
+void wc_getDeviceID(char* di, size_t size) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(di, proxy_device_id, size-1);
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_setDeviceID(const char* di) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(proxy_device_id, di, sizeof(proxy_device_id));
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_getURL(char* url, size_t size) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(url, cloud_url, size-1);
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_setURL(const char* url) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(cloud_url, url, sizeof(cloud_url));
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_getAuthToken(char* at, size_t size) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(at, proxy_auth_token, size-1);
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_setAuthToken(const char* at) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(proxy_auth_token, at, sizeof(proxy_auth_token));
+    pthread_mutex_unlock(&local_mutex);
+}
+///////////////////////////////////////////////////////////////////
+//Local helpers
 static void initiate_defaults() {
     initiated = 1;
     strcpy(log_name, WC_DEFAULT_LOG_NAME);

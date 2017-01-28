@@ -3,6 +3,7 @@
 //
 //Local eut test
 //
+#include <stdio.h>
 #include <memory.h>
 
 #include "pc_settings.h"

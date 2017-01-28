@@ -19,7 +19,7 @@ static pthread_t id;
 static pthread_attr_t attr;
 
 
-static char out_buf[PROXY_MAX_MSG_LEN] = {0};
+static char out_buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
 
 int read_socket;
 static pu_queue_t* to_main;

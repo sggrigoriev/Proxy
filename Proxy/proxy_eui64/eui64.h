@@ -36,11 +36,7 @@
 
 #include "lib_http.h"
 
-#ifndef EUI64_STRING_SIZE
-#define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE // store for new device ID ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} = 12+1+8+1+4
-#endif
-
-
+#define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE // store for new deviceID ${Preffix}-${MAC_ADDR} = 6+1+16(?)
 
 /***************** Public Prototypes ****************/
 

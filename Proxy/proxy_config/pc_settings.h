@@ -18,12 +18,19 @@ const char* pc_getProxyName();      //Return process name
 const char*     pc_getLogFileName();        //Return LOG-file name
 size_t          pc_getLogRecordsAmt();     //Return max capacity of log file
 log_level_t     pc_getLogVevel();           //Return the min log level to be stored in LOG_FILE
-unsigned int    pc_getLongGetTO();         //Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage
-unsigned int    pc_getAgentPort();         //Return the port# for communications with the Agent
+
 size_t          pc_getQueuesRecAmt();      //Return max amount of records kept in Presto queues
-unsigned int    pc_getProxyDeviceType();   //Used in eui64 - to make the deviceID string
+
+unsigned int    pc_getProxyDeviceType();
+unsigned int    pc_getProxyWDTO();          // timeout for watchdog sending
+unsigned int    pc_getLongGetTO();         //Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage
+unsigned int    pc_getCloudURLTOHrs();      // timeout for new contact URL request
+
 unsigned int    pc_getWUDPort();            //
-unsigned int    pc_getAgentWDTO();          // timeout for watchdog sending
+
+// For Agent emulator
+unsigned int    pc_getAgentPort();         //Return the port# for communications with the Agent
+
 
 //////////////////////////////////////////////////////////////////////////
 //Thread-protected functions
@@ -35,17 +42,21 @@ void pc_getMainCloudURL(char* ret, size_t size);       //return empty string if 
 void pc_getActivationToken(char* ret, size_t size);    //return empty string if no value or the value > max_len
 void pc_getProxyDeviceID(char* ret, size_t size);
 
+//Update the current value in memory only!
 int pc_saveActivationToken(const char* new_at);     //Return 1 of success, return 0 if not
+
 int pc_saveProxyDeviceID(const char* new_da);       //Return 1 of success, return 0 if not
 int pc_saveMainCloudURL(const char* new_main_url);
+
+//Update the current value in memory only!
 int pc_saveCloudURL(const char* new_url);           //Return 1 of success, return 0 if not
+
 int pc_saveCfgFileName(const char* new_file_name);  //Return 1 of success, return 0 if not
 int pc_saveAgentPort(unsigned int new_port);        //Return 1 of success, return 0 if not
 
 //Activation-related stuff
 //
-int pc_existsCloudURL();
+int pc_existsProxyDeviceID();
 int pc_existsActivationToken();
-int ps_existsProxyDeviceID();
 
 #endif //PRESTO_PC_SETTINGS_H

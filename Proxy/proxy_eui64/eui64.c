@@ -169,9 +169,6 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
  */
 error_t eui64_toString(char *dest, size_t destLen) {
   uint8_t byteAddress[EUI64_BYTES_SIZE], i;
-  uint16_t checksum= 0;
-  char deviceType[DEVICE_TYPE_SIZE];
-  char *tmp = NULL;
 
   assert(dest);
 
@@ -180,51 +177,18 @@ error_t eui64_toString(char *dest, size_t destLen) {
   }
 
   /* new format: ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} */
+// New format again: ${Preffix}-0000${MAC_ADDR}
   if (eui64_toBytes(byteAddress, sizeof(byteAddress)) == SUCCESS) {
-    memset(deviceType, 0x0, DEVICE_TYPE_SIZE);
-    readDeviceType(deviceType);
 
     memset(dest, 0x0, destLen);
-// yctung
-// uuid = 12345678-1234-1234-1234-123456789abc --> upnp (36 + 1)
-// uuid = ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} = 12 + 1 + 8 + 1 + 4 = 26 --> presto (26 + 1)
-// yctung
-    snprintf(dest, destLen, "%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X-%s-",
+    memcpy(dest, LIB_HTTP_DEVICE_ID_PREFFIX, strlen(LIB_HTTP_DEVICE_ID_PREFFIX)+1);
+
+    snprintf(dest+strlen(LIB_HTTP_DEVICE_ID_PREFFIX), destLen-strlen(LIB_HTTP_DEVICE_ID_PREFFIX),
+             "0000%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
         byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
-        byteAddress[4], byteAddress[5], deviceType);
-
-    for(i = 0; i < strlen(dest) ; i++ ) {
-        checksum+= dest[i];
-    }
-
-    tmp = strdup(dest);
-
-    if ( tmp != NULL )
-    {
-// yctung
-//	snprintf(dest, destLen, "%s%X", tmp, checksum);
-	snprintf(dest, destLen, "%s%04X", tmp, checksum);
-// yctung
-	free(tmp);
-    }
-
+        byteAddress[4], byteAddress[5]);
 
     return 1;
   }
-
   return 0;
-}
-
-// yctung
-
-/**
- * Read deviceType from configuration
- *
- * @return deviceType if can get via proxy.conf or
- */
-error_t readDeviceType(char *deviceType)
-{
-    snprintf(deviceType, DEVICE_TYPE_SIZE, "%08d", pc_getProxyDeviceType());
-
-    return SUCCESS;
 }

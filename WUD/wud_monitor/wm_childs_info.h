@@ -21,15 +21,18 @@ typedef struct {
 
 // Child descriptors just updates their PIDs during the start, so created in WUD startup they'd never been deleted!
 
-wa_child_t wm_create_cd(const char* pn, const char* bn, const char* wd, char* const* sp, unsigned int wd_to, pid_t pid); //Return cd if OK, NULL if error
+pr_child_t wm_create_cd(const char* pn, const char* bn, const char* wd, char* const* sp, unsigned int wd_to, pid_t pid); //Return cd if OK, NULL if error
 
-pid_t pr_child_get_pid(wa_child_t idx); // return pid or 0
-int pr_child_set_pid(wa_child_t idx, pid_t pid);
+pid_t wm_child_get_pid(pr_child_t idx); // return pid or 0
+int wm_child_set_pid(pr_child_t idx, pid_t pid);
 
-const char* pr_child_get_binary_name(wa_child_t idx);
-char** const pr_child_get_start_parameters(wa_child_t idx);
-const char* pr_child_get_working_directory(wa_child_t idx);
-unsigned int pr_child_get_child_to(wa_child_t idx);
+const char* wm_child_get_binary_name(pr_child_t idx);
+char** const wm_child_get_start_parameters(pr_child_t idx);
+const char* wm_child_get_working_directory(pr_child_t idx);
+unsigned int wm_child_get_child_to(pr_child_t idx);
+const char* wm_get_child_name(pr_child_t idx);
+//return idx or PR_CHILD_SIZE
+pr_child_t wm_get_child_descr(const char* name);
 
 
 

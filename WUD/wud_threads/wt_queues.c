@@ -12,7 +12,7 @@ void wt_init_queues() {
     pthread_mutex_lock(&own_mutex);
 
     pu_queues_init(WT_MAX_QUEUE-WT_MIN_QUEUE+1);
-    for(unsigned int i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
+    for(pu_queue_event_t i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
         qu_arr[i] = pu_queue_create(wc_getQueuesRecAmt(),i+WT_MIN_QUEUE);
         pu_log(LL_DEBUG, "wt_init_queues: queue# %d - %lu", i, qu_arr[i]);
     }

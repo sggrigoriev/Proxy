@@ -8,9 +8,9 @@
 #include "pc_cli.h"
 #include "pc_settings.h"
 #include "pc_defaults.h"
-#include "pt_http_utl.h"
 #include "pt_threads.h"
-#include "pf_proxy_activation.h"
+#include "ph_manager.h"
+#include "pf_cloud_conn_params.h"
 
 int main(int argc, char* argv[]) {
 
@@ -22,28 +22,18 @@ int main(int argc, char* argv[]) {
     else {
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    //Run w/o input parameters
     }
-
  
-//Initiation steps:
-// 1. Start logger & cURL
-// 2. Get settings
-// 2.1 Get configuration parameters
-// 2.2 Get argv parameters & override config parameters in memory
-// 2.3 Get device EUI if not set in configuration
-// 2.4 Seth the signe "activate" to 0 or 1 if activation needed
-// 3. Activation step- do be discussed
-// 4. Get permanent URL for work - NB! each time!
-
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
 
-    if(!pt_http_curl_start()) exit(-1);
+    if(!pf_get_cloud_conn_params()) exit(-1);
 
-//    if(!pf_proxy_activation()) exit(-1);
+    ph_mgr_start();
+
 ////////
     pt_main_thread();
 
 //cURL stop
-    pt_http_curl_stop();
+    ph_mgr_stop();
 //Logger stop
     pu_stop_logger();
     exit(0);

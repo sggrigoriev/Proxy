@@ -22,7 +22,7 @@ static pthread_attr_t attr;
 static volatile int stop;
 static pu_queue_msg_t msg[WC_MAX_MSG_LEN];
 
-static pu_queue_t* to_server;       //to write
+static pu_queue_t* to_cloud;       //to write
 
 static void* write_proc(void* params);
 
@@ -48,18 +48,18 @@ static void* write_proc(void* params){
     pu_queue_event_t events;
 
     stop = 0;
-    to_server = wt_get_gueue(WT_AlertsToCloud);
-    events = pu_add_queue_event(pu_create_event_set(), WT_AlertsToCloud);
+    to_cloud = wt_get_gueue(WT_to_Cloud);
+    events = pu_add_queue_event(pu_create_event_set(), WT_to_Cloud);
     while(!stop) {
         pu_queue_event_t ev;
         switch (ev = pu_wait_for_queues(events, WUD_DEFAULT_SERVER_WRITE_TO_SEC)) {
-            case WT_AlertsToCloud: {
+            case WT_to_Cloud: {
                 size_t len = sizeof(msg);
-                while (pu_queue_pop(to_server, msg, &len)) {
+                while (pu_queue_pop(to_cloud, msg, &len)) {
                     pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
 //Sending with retries loop
                     int out = 0;
-                    int retries = LIBB_HTTP_MAX_POST_RETRIES;
+                    int retries = LIB_HTTP_MAX_POST_RETRIES;
     //Adding head to the message
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
                     wt_get_device_id(devid, sizeof(devid));

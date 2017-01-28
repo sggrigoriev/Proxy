@@ -7,8 +7,9 @@ add_definitions( -DGIT_FIRMWARE_VERSION=301 )
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
 add_definitions( -DPROXY_SEPARATE_RUN )
+
 #Eneble CURL debug option for POST operations
-#add_definitions( -DLIBHTTP_CURL_DEBUG)
+add_definitions( -DLIBHTTP_CURL_DEBUG)
 
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
@@ -32,8 +33,9 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
 	message(STATUS "Compiling for the X86")
-	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
@@ -47,6 +49,7 @@ endif()
 
 #all include paths
 include_directories(
+		proxy_http
         proxy_functions
         proxy_threads
         proxy_config
@@ -59,11 +62,13 @@ include_directories(
         ../lib/pu_queues
         ../lib/libhttpcomm
         ../lib/json
+		../lib/libtimer
 )
 
 #Presto
 file(GLOB SOURCE_FILES
         main.c
+		proxy_http/*.c
         proxy_functions/*.c
         proxy_threads/*.c
         proxy_config/pc_settings.c
@@ -76,11 +81,13 @@ file(GLOB SOURCE_FILES
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
+		../lib/libtimer/*.c
         )
 
 #Test client
 file(GLOB SOURCE_FILES_TEST_CLIENT
         test_client/comm_client.c
+		proxy_http/*.c
         proxy_functions/*.c
         proxy_threads/*.c
         proxy_config/pc_settings.c
@@ -92,6 +99,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
+		../lib/libtimer/*.c
         )
 #Test server
 #file(GLOB SOURCE_FILES_TEST_SERVER
@@ -124,7 +132,6 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 #        proxy_config/pc_settings.c
 #        proxy_eui64/*.c
 #        ../lib/pu_queues/*.c
-#        ../lib/pt_tcp_utl/*.c
 #        ../lib/pu_logger/*.c
 #        ../lib/pc_config/pc_config.c
 #        )

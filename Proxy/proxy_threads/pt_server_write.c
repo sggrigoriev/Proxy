@@ -3,13 +3,13 @@
 //
 #include <pthread.h>
 #include <string.h>
-#include <pc_settings.h>
-#include <pf_traffic_proc.h>
 
-#include "pc_defaults.h"
 #include "pu_logger.h"
-#include "pt_http_utl.h"
 #include "pt_queues.h"
+#include "pc_defaults.h"
+#include "pc_settings.h"
+#include "pf_traffic_proc.h"
+#include "ph_manager.h"
 #include "pt_server_write.h"
 
 #define PT_THREAD_NAME "SERVER_WRITE"
@@ -61,10 +61,8 @@ static void* write_proc(void* params) {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(from_main, msg, &len)) {
                     pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
-
 //Sending with retries loop
                     int out = 0;
-                    int retries = LIBB_HTTP_MAX_POST_RETRIES;
     //Adding the head to message
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
                     pc_getProxyDeviceID(devid, sizeof(devid));
@@ -73,37 +71,21 @@ static void* write_proc(void* params) {
                     while(!stop && !out) {
                         char resp[PROXY_MAX_MSG_LEN];
 
-                        switch (pt_http_write(msg, sizeof(msg), resp, sizeof(resp))) {
-                            case LIB_HTTP_POST_ERROR:
-                                pu_log(LL_ERROR, "%s: Error sending", PT_THREAD_NAME);
-                                out = 1;
-                                break;
-                            case LIB_HTTP_POST_RETRY:
-                                pu_log(LL_WARNING, "%s: Connectivity problems, retry", PT_THREAD_NAME);
-                                if(retries-- == 0) {
-                                    char conn_str[LIB_HTTP_MAX_URL_SIZE];
-                                    pc_getCloudURL(conn_str, sizeof(conn_str));
-                                    pu_log(LL_ERROR,  "%s: can't connect to %s. Message is not sent. %s",
-                                           PT_THREAD_NAME, conn_str, msg);
-                                    out = 1;
-                                }
-                                else {
-                                    sleep(1);
-                                }
-                                break;
-                            case LIB_HTTP_POST_OK:
-                                pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
-                                if (strlen(resp) > 0) {
-                                    pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
-                                    pu_queue_push(to_main, resp, strlen(resp)+1);
-                                    out = 1;
-                                }
-                                len = sizeof(msg);
-                                break;
-                            default:
-                                break;
+                        if(!ph_write(msg, resp, sizeof(resp))) {    //no connection: reconnect forever
+                            pu_log(LL_ERROR, "%s: Error sending. Reconnect", PT_THREAD_NAME);
+                            ph_reconnect();    //loop until the succ inside
+                            out = 0;
                         }
-                     }
+                        else {  //data has been written
+                            pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
+                            if (strlen(resp) > 0) {
+                                pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
+                                pu_queue_push(to_main, resp, strlen(resp)+1);
+                                out = 1;
+                            }
+                            len = sizeof(msg);
+                        }
+                    }
                 }
                 break;
             }

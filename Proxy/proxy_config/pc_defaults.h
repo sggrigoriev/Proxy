@@ -7,6 +7,7 @@
 #define PRESTO_PC_DEFAULTS_H
 
 #include "lib_http.h"
+#include "pr_commands.h"
 #include "eui64.h"
 
 #define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"
@@ -28,23 +29,23 @@
 #define PROXY_HEADER_PASSWORD_LEN                               64
 #define PROXY_HEADER_KEY_LEN                                    256
 
-#define PROXY_URL_SIZE                  256
-#define PROXY_MAX_HTTP_SEND_MESSAGE_LEN 32768U
-#define PROXY_MAX_ACTIVATION_TOKEN_SIZE 128
+#define PROXY_URL_SIZE                  LIB_HTTP_MAX_URL_SIZE
+#define PROXY_MAX_HTTP_SEND_MESSAGE_LEN LIB_HTTP_MAX_MSG_SIZE
+#define PROXY_MAX_ACTIVATION_TOKEN_SIZE LIB_HTTP_AUTHENTICATION_STRING_SIZE
 #define PROXY_DEVICE_ID_SIZE            LIB_HTTP_DEVICE_ID_SIZE
-#define PROXY_MAX_PATH                 4097
-#define PROXY_MAX_PROC_NAME            17   //TASK_SCHED_LEN+1
+#define PROXY_MAX_PATH                  LIB_HTTP_MAX_URL_SIZE
+#define PROXY_MAX_PROC_NAME             PR_MAX_PROC_NAME_SIZE
 
 #define DEFAULT_PROXY_PROCESS_NAME  "Proxy"
 #define DEFAULT_PROXY_WATCHDOG_TO_SEC   600
 #define DEFAULT_AGENT_PROCESS_NAME  "Agent"
 
-#define DEFAULT_MAIN_CLOUD_URL      ""
-#define DEFAULT_CLOUD_URL           ""
+#define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com/deviceio/mljson"
+#define DEFAULT_CLOUD_URL_REQ_TO_HRS    24
+
 #define DEFAULT_UPLOAD_TIMEOUT_SEC  120
-#define DEFAULT_ACTIVATION_TOKEN    ""
-#define DEFAULT_DEVICE_ID           ""
 #define DEFAULT_PROXY_DEV_TYPE      31
+
 
 #define DEFAULT_HTTP_CONNECT_TIMEOUT_SEC    HTTPCOMM_DEFAULT_CONNECT_TIMEOUT_SEC
 #define DEFAULT_HTTP_TRANSFER_TIMEOUT_SEC   HTTPCOMM_DEFAULT_TRANSFER_TIMEOUT_SEC
@@ -62,7 +63,7 @@
 #define DEFAULT_AGENT_THREAD_TO_SEC         1
 #define DEFAULT_WUD_WRITE_THREAD_TO_SEC     0
 
-#define DEFAULT_WUD_PORT                8887
+#define DEFAULT_WUD_PORT                    8887
 
 
 

@@ -7,7 +7,7 @@
 #include <errno.h>
 
 #include "lib_tcp.h"
-#include "pf_proxy_watchdog.h"
+#include "lib_timer.h"
 #include "pr_commands.h"
 #include "pc_defaults.h"
 #include "pc_settings.h"
@@ -41,28 +41,22 @@ const char* write_source() {
     "]"
 "}"
 );
-    sleep(30);
+    sleep(10);
     return wr_src;
 }
 #ifndef PROXY_SEPARATE_RUN
-static pf_clock_t wd_clock = {0};
+static lib_timer_clock_t wd_clock = {0};
 static char wd_alert[100];
 // make Watchdog for the WUD
 static void make_wd() {
-    char *agent_info;
-    pr_message_t msg;
-
-    msg.watchdog_alert.message_type = PR_WATCHDOG_ALERT;
-    msg.watchdog_alert.process_name = strdup("Agent");
-
-    pr_make_message(&agent_info, msg);
-    strncpy(wd_alert, agent_info, sizeof(wd_alert)-1);
-    pr_erase_msg(msg);
-    free(agent_info);
+    char di[LIB_HTTP_DEVICE_ID_SIZE];
+    pc_getProxyDeviceID(di, sizeof(di));
+    pr_make_wd_alert("Agent", wd_alert, sizeof(wd_alert), di, 11040);
 }
 static const char* wud_source() {
     sleep(1);
-    if(!pf_wd_time_to_send(&wd_clock)) return NULL;
+    if(!lib_timer_alarm(wd_clock)) return NULL;
+    lib_timer_init(&wd_clock, pc_getProxyWDTO());
     make_wd();
     return wd_alert;
 }
@@ -106,7 +100,7 @@ static char out_buf[500];
 static void* read_proc(void* socket) {
     int read_socket = *(int *)socket;
 
-    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, 500, 100);
+    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, 500, 10000);
     if(!all_conns) {
         pu_log(LL_ERROR, "%s: memory allocation error.", "read_proc");
         rw_stop = 1;
@@ -182,6 +176,7 @@ static void* main_client_proc(void* dummy) {
 #ifndef PROXY_SEPARATE_RUN
 
         int wud = -1;
+        lib_timer_init(&wd_clock, pc_getProxyWDTO());
 
         while(wud = lib_tcp_get_client_socket(pc_getWUDPort(), 1), wud <= 0) {
             pu_log(LL_ERROR, "Client: connection error to WUD %d %s", errno, strerror(errno));

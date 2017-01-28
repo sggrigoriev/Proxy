@@ -4,9 +4,13 @@
 #include <pthread.h>
 #include <errno.h>
 #include <memory.h>
-#include <pr_commands.h>
-#include <pf_proxy_watchdog.h>
-#include <pf_traffic_proc.h>
+
+#include "pr_commands.h"
+#include "pf_traffic_proc.h"
+#include <lib_timer.h>
+#include <pf_cloud_conn_params.h>
+#include <pf_proxy_commands.h>
+#include <ph_manager.h>
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
@@ -26,6 +30,7 @@
 static int main_thread_startup();
 static void main_thread_shutdown();
 
+static void update_cloud_url();
 #ifndef PROXY_SEPARATE_RUN
 static int initiate_wud();     //Send to WUD cloud connection info
 static void send_wd();          // Send Watchdog to thw WUD
@@ -43,8 +48,9 @@ static pu_queue_t* to_agent;
 
 #ifndef PROXY_SEPARATE_RUN
 static pu_queue_t* to_wud;
-pf_clock_t wd_clock = {0};
+lib_timer_clock_t wd_clock = {0};
 #endif
+lib_timer_clock_t cloud_url_update_clock = {0};
 
 static pu_queue_event_t events;
 
@@ -56,6 +62,10 @@ void pt_main_thread() { //Starts the main thread.
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
+#ifndef PROXY_SEPARATE_RUN
+    lib_timer_init(&wd_clock, pc_getProxyWDTO());   //Initiating the timer for watchdog sendings
+#endif
+    lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);    //Initiating the tomer for cloud URL request TO
 
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
@@ -68,11 +78,14 @@ void pt_main_thread() { //Starts the main thread.
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
                     pu_log(LL_DEBUG, "%s: got from server_read %s", PT_THREAD_NAME, mt_msg);
-                    if(pf_command_came(mt_msg)) {
+                    pf_cmd_t* pf_cmd = pf_parse_cloud_commands(mt_msg);
+                    if(pf_cmd) {
                         char resp[PROXY_MAX_MSG_LEN];
                         pu_queue_push(to_server, pf_answer_to_command(resp, sizeof(resp), mt_msg), strlen(resp)+1);
                     }
+                    if(pf_are_proxy_commands(pf_cmd)) pf_process_proxy_commands(pf_cmd);
                     pu_queue_push(to_agent, mt_msg, len);
+                    pf_close_cloud_commands(pf_cmd);
                     len = sizeof(mt_msg);
                 }
                 break;
@@ -94,8 +107,9 @@ void pt_main_thread() { //Starts the main thread.
 //Place for own actions
 //1. Wathchdog
 #ifndef PROXY_SEPARATE_RUN
-        if(pf_wd_time_to_send(&wd_clock)) send_wd();
+        if(lib_timer_alarm(wd_clock)) { send_wd(); lib_timer_init(&wd_clock, pc_getProxyWDTO()); }
 #endif
+        if(lib_timer_alarm(cloud_url_update_clock)) { ph_update_contact_url(); lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600); }
         }
 
     main_thread_shutdown();
@@ -169,43 +183,33 @@ static void main_thread_shutdown() {
 #ifndef PROXY_SEPARATE_RUN
 //Send to WUD cloud connection info
 static int initiate_wud() {
-    char *proxy_info;
-    pr_message_t msg;
-    char buf[PROXY_MAX_PATH];
+    char json[LIB_HTTP_MAX_MSG_SIZE];
+    char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char url[LIB_HTTP_MAX_URL_SIZE];
+    char di[LIB_HTTP_DEVICE_ID_SIZE];
 
-    msg.presto_info.message_type = PR_COMMAND;
-    msg.presto_info.cmd = PR_PRESTO_INFO;
-    pc_getActivationToken(buf, sizeof(buf));
-    msg.presto_info.activation_token = strdup(buf);
+    pc_getActivationToken(at, sizeof(at));
+    pc_getCloudURL(url, sizeof(url));
+    pc_getProxyDeviceID(di, sizeof(di));
 
-    pc_getCloudURL(buf, sizeof(buf));
-    msg.presto_info.cloud_conn_string = strdup(buf);
+    pr_make_cmd_cloud(url, di, at, json, sizeof(json));
 
-    pc_getProxyDeviceID(buf, sizeof(buf));
-    msg.presto_info.device_id = strdup(buf);
-
-    pr_make_message(&proxy_info, msg);
-    pu_queue_push(to_wud, proxy_info, strlen(proxy_info)+1);
-
-    pr_erase_msg(msg);
-    free(proxy_info);
+    pu_queue_push(to_wud, json, strlen(json)+1);
 
     return 1;
 }
 
 // Send Watchdog to the WUD
 static void send_wd() {
-    char *proxy_info;
-    pr_message_t msg;
+    char json[LIB_HTTP_MAX_MSG_SIZE];
+    char pn[PROXY_MAX_PROC_NAME];
+    char di[LIB_HTTP_DEVICE_ID_SIZE];
 
-    msg.watchdog_alert.message_type = PR_WATCHDOG_ALERT;
-    msg.watchdog_alert.process_name = strdup(pc_getProxyName());
+    pc_getProxyDeviceID(di, sizeof(di));
+    strncpy(pn, pc_getProxyName(), sizeof(pn)-1);
+    pr_make_wd_alert(pn, json, sizeof(json), di, 11041);
 
-    pr_make_message(&proxy_info, msg);
-    pu_queue_push(to_wud, proxy_info, strlen(proxy_info)+1);
-
-    pr_erase_msg(msg);
-    free(proxy_info);
+    pu_queue_push(to_wud, json, strlen(json)+1);
 }
 
 #endif

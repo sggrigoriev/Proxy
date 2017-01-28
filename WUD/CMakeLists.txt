@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
-
-
-
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
 	message(STATUS "Compiling for the MIPS")
@@ -26,8 +22,9 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 elseif($ENV{PLATFORM} STREQUAL "host")
 	    message(STATUS "Compiling for the X86")
 	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
-	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+#	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+#	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	    set(REQUIRED_LIBRARIES
 		m
 		pthread
@@ -42,6 +39,7 @@ endif()
 
 #all include paths
 include_directories(
+		wud_http
         wud_config
         wud_fw_upgrade
         wud_monitor
@@ -57,12 +55,14 @@ include_directories(
         ../lib/pu_queues
         ../lib/libhttpcomm
         ../lib/json
+		../lib/libtimer
 )
 
 #WUD
 file(GLOB SOURCE_FILES
         main.c
-        wud_config/wc_settings.c
+		wud_http/*.c
+        wud_config/*.c
         wud_fw_upgrade/*.c
         wud_monitor/*.c
         wud_startup/*.c
@@ -77,6 +77,7 @@ file(GLOB SOURCE_FILES
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
+		../lib/libtimer/*.c
         )
 
 
