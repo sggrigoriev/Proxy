@@ -30,7 +30,6 @@ int start_agent_main() {
     if(pthread_create(&id, &attr, &agent_main, NULL)) return 0;
     return 1;
 }
-
 void stop_agent_main() {
     void *ret;
 
