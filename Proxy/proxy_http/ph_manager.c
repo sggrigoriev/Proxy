@@ -65,8 +65,8 @@ void ph_mgr_start() {
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
     no_conn = 1;
+    if(!lib_http_init(2)) goto on_err;
     while (err) {
-        if(!lib_http_init(2)) goto on_err;
 //1. Get main url & deviceId from config
         pc_getMainCloudURL(main_url, sizeof(main_url));
         pc_getProxyDeviceID(device_id, sizeof(device_id));
@@ -106,7 +106,7 @@ on_err:
     lib_http_close();
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
-    pf_reboot;
+    pf_reboot();
 }
 void ph_mgr_stop() {
     pthread_mutex_lock(&rd_mutex);

@@ -30,7 +30,7 @@ int pf_get_cloud_conn_params() {  //return 0 if proxy was not activated
             pu_log(LL_WARNING, "pf_get_cloud_conn_params: Unable to store Device ID into configuration file");
         }
         else {
-            pu_log(LL_INFO, "Proxy Device ID %s succesfully saved into the Proxy Confoguration file", pf_get_cloud_conn_params);
+            pu_log(LL_INFO, "Proxy Device ID %s succesfully generated", eui_string);
         }
     }
     return 1;

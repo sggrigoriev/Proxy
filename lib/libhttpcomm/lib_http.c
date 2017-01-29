@@ -76,7 +76,7 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp);
 int lib_http_init(unsigned int max_conns_amount) {
     assert(max_conns_amount);
 
-    if(CONN_ARRAY || CONN_ARRAY_SIZE) {
+    if((CONN_ARRAY != NULL) || (CONN_ARRAY_SIZE > 0)) {
         pu_log(LL_ERROR, "lib_http_init: connections pool already initiated");
         return 0;
     }
@@ -94,6 +94,7 @@ void lib_http_close() {
     }
     free(CONN_ARRAY);
     CONN_ARRAY = NULL;
+    CONN_ARRAY_SIZE = 0;
 
     curl_global_cleanup();
 }
@@ -414,12 +415,16 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
             else if(!strcmp(item->valuestring, "UNAUTHORIZED")) {
                 cJSON* item = cJSON_GetObjectItem(obj, "authToken");
                 if((!item) || (item->type != cJSON_String)) {
-                    ret = LIB_HTTP_POST_RETRY;
+                    ret = LIB_HTTP_POST_ERROR;
                 }
                 else {
                     strcpy(result, (const char * restrict)item->valuestring);
                     ret = LIB_HTTP_POST_AUTH_TOKEN;
                 }
+            }
+            else if(!strcmp(item->valuestring, "UNKNOWN")) {
+                pu_log(LL_ERROR, "Cloud received unknown request from Proxy");
+                ret = LIB_HTTP_POST_ERROR;
             }
             else {  //UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem
                 ret = LIB_HTTP_POST_RETRY;
