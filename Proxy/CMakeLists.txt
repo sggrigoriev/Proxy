@@ -39,6 +39,9 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
 	message(STATUS "Compiling for the X86")
+#	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+#	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
@@ -94,12 +97,14 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         proxy_threads/*.c
         proxy_config/pc_settings.c
         proxy_eui64/eui64.c
+		proxy_http/*.c
         ../lib/presto_commands/*.c
         ../lib/libtcp/*.c
         ../lib/pu_logger/*.c
         ../lib/pc_config/pc_config.c
         ../lib/pu_queues/*.c
         ../lib/libhttpcomm/*.c
+		../lib/libtimer/*.c
         ../lib/json/*.c
         )
 #Test server
