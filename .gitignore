@@ -5,3 +5,4 @@ Proxy/build/*
 WUD/build/*
 !WUD/build/.gitkeep
 .idea/
+cmake-build-debug/*
