@@ -13,8 +13,8 @@ add_definitions( -DPROXY_SEPARATE_RUN )
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
 	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY build/$ENV{PLATFORM})
-configure_file(proxyJSON.conf build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+	configure_file(proxyJSON.conf $ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 
 
 #staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
