@@ -384,6 +384,20 @@ static http_handler_t* check_conn(lib_http_conn_t conn) {
 }
 //Calc http_write (POST) result; fill the reply if needed.
 //Return 1 if OK, 0 if connectivity problems, -1 if error
+/*  TODO! Here is the place to react on message status level!
+
+ACK             The message was received and parsed successfully. The device or gateway should send the next message
+                    according to its upload interval.
+CONT            The message was received and parsed successfully. The device or gateway should continue sending measured
+                    data because the user is actively watching the screen and expecting real-time feedback.
+ERR	            Error reading this data, retry sending it.
+ERR_FORMAT      The server couldn't parse your data. Check your XML or JSON format.
+UNKNOWN	        The server doesn't recognize your device, it isn't registered to anybody's account.
+UNAUTHORIZED	When the device is registered with bidirectional authentication enabled (authToken=true), you must
+                        include your device's original cryptographic authentication token in the HTTP header of every
+                        request it sends to the server. This error indicates the authentication token you provided does
+                        not match the authentication token stored on the server.
+ */
 static lib_http_post_result_t calc_post_result(char* result, int rc) {
     lib_http_post_result_t ret;
 
@@ -407,26 +421,23 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
                 ret = LIB_HTTP_POST_OK;
             }
             else if(!strcmp(item->valuestring, "ERR")) {
+                pu_log(LL_WARNING, "Cloud couldn't read the request from Proxy %s", result);
                 ret = LIB_HTTP_POST_RETRY;
             }
             else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
-                ret = LIB_HTTP_POST_ERROR;
+                pu_log(LL_WARNING, "Cloud answered for bad request from Proxy %s", result);
+                ret = LIB_HTTP_POST_OK;
             }
             else if(!strcmp(item->valuestring, "UNAUTHORIZED")) {
-                cJSON* item = cJSON_GetObjectItem(obj, "authToken");
-                if((!item) || (item->type != cJSON_String)) {
-                    ret = LIB_HTTP_POST_ERROR;
-                }
-                else {
-                    strcpy(result, (const char * restrict)item->valuestring);
-                    ret = LIB_HTTP_POST_AUTH_TOKEN;
-                }
+                pu_log(LL_WARNING, "Cloud answered for unauthorized request from Proxy %s", result);
+                ret = LIB_HTTP_POST_OK;
             }
             else if(!strcmp(item->valuestring, "UNKNOWN")) {
-                pu_log(LL_ERROR, "Cloud received unknown request from Proxy");
-                ret = LIB_HTTP_POST_ERROR;
+                pu_log(LL_WARNING, "Cloud answered for received unknown request from Proxy %s", result);
+                ret = LIB_HTTP_POST_OK;
             }
             else {  //UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem
+                pu_log(LL_WARNING, "Cloud answered strange request from Proxy %s", result);
                 ret = LIB_HTTP_POST_RETRY;
             }
             cJSON_Delete(obj);

@@ -80,8 +80,10 @@ void pt_main_thread() { //Starts the main thread.
                     pu_log(LL_DEBUG, "%s: got from server_read %s", PT_THREAD_NAME, mt_msg);
                     pf_cmd_t* pf_cmd = pf_parse_cloud_commands(mt_msg);
                     if(pf_cmd) {
-                        char resp[PROXY_MAX_MSG_LEN];
-                        pu_queue_push(to_server, pf_answer_to_command(resp, sizeof(resp), mt_msg), strlen(resp)+1);
+                        char resp[LIB_HTTP_MAX_MSG_SIZE];
+
+                        pf_answer_to_command(resp, sizeof(resp), mt_msg);
+                        pu_queue_push(to_server, resp, strlen(resp)+1);
                     }
                     if(pf_are_proxy_commands(pf_cmd)) pf_process_proxy_commands(pf_cmd);
                     pu_queue_push(to_agent, mt_msg, len);

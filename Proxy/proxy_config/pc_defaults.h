@@ -40,7 +40,7 @@
 #define DEFAULT_PROXY_WATCHDOG_TO_SEC   600
 #define DEFAULT_AGENT_PROCESS_NAME  "Agent"
 
-#define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com/deviceio/mljson"
+#define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com"
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24
 
 #define DEFAULT_UPLOAD_TIMEOUT_SEC  120

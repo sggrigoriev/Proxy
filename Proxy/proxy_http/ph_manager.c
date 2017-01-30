@@ -5,6 +5,7 @@
 #include <memory.h>
 #include <pthread.h>
 #include <assert.h>
+#include <cJSON.h>
 
 #include "lib_http.h"
 #include "pu_logger.h"
@@ -119,12 +120,13 @@ void ph_mgr_stop() {
 //Case when the main url came from the cloud
 //0. Close permanent connections
 //1. Get contact url from main
-//2. Get auth token
+//2. Get auth token if we got really new main URL
 //2. Reopen connections
 //3. save new main & new contact & auth token
 //if error - close evrything and make the step "initiation connections"; return 0
 int ph_update_main_url(const char* new_main) {
     char contact_url[LIB_HTTP_MAX_URL_SIZE];
+    char old_main[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
@@ -133,14 +135,22 @@ int ph_update_main_url(const char* new_main) {
     pthread_mutex_lock(&wr_mutex);
     no_conn = 1;
 
+    pc_getMainCloudURL(old_main, sizeof(old_main));
     pc_getProxyDeviceID(device_id, sizeof(device_id));  //No check: device ID is Ok if we're here
+    pc_getActivationToken(auth_token, sizeof(auth_token));
+
 //0. Close permanent connections
     lib_http_eraseConn(post_conn);
     lib_http_eraseConn(get_conn);
 //1. Get contact url from main
     if(!get_contact(new_main, device_id, contact_url, sizeof(contact_url))) goto on_err;
 //2. Get auth token
-    if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) goto on_err;
+    if(strcmp(new_main, old_main)) {    //new main URL is different - we really need new auth token
+        if (!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) goto on_err;
+    }
+    else {
+        pu_log(LL_WARNING, "ph_update_main_url: main URL remains the same: %s", new_main);
+    }
 //3. Open connections
     if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) goto on_err;
 
@@ -150,6 +160,7 @@ int ph_update_main_url(const char* new_main) {
     pc_saveMainCloudURL(new_main);
     pc_saveCloudURL(contact_url);
     pc_saveActivationToken(auth_token);
+
     no_conn = 0;    //Allow read/write operations
 
     pthread_mutex_unlock(&rd_mutex);
@@ -297,7 +308,6 @@ static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t
                 }
                 break;
             case LIB_HTTP_POST_OK:
-            case LIB_HTTP_POST_AUTH_TOKEN:
                 out = 1;
                 ret = 1;
                 break;
@@ -363,16 +373,44 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
     }
 //Get the reply with auth token
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
+    char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
+    cJSON* obj = NULL;
 
     pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
-    if(!_post(post_d, buf, auth_token, size, "")) {
-        pu_log(LL_ERROR, "get_auth_token: auth token request failed");
-        lib_http_eraseConn(post_d);
-        return 0;
-    }
+    if(!_post(post_d, buf, reply, sizeof(reply), "")) goto on_err;
 
+    if(obj = cJSON_Parse(reply), !obj) {
+        pu_log(LL_ERROR, "get_auth_token: Can't parse the cloud reply: %s", reply);
+        goto on_err;
+    }
+    cJSON* item = cJSON_GetObjectItem(obj, "status");
+    if(!item) {
+        pu_log(LL_ERROR, "get_auth_token: Can't find the item \"status\" in the cloud reply: %s", reply);
+        goto on_err;
+    }
+    if(strcmp(item->valuestring, "UNAUTHORIZED")) {
+        pu_log(LL_ERROR, "get_auth_token: Wrong value of \"status\" field in the cloud reply. \"UNAUTHORIZED\" expected: %s", reply);
+        goto on_err;
+    }
+    cJSON* token = cJSON_GetObjectItem(obj, "authToken");
+    if(!token) {
+        pu_log(LL_ERROR, "get_auth_token: \"authToken\" field is not found in the cloud reply.%s", reply);
+        goto on_err;
+    }
+    if((token->type != cJSON_String) || (!strlen(token->valuestring))) {
+        pu_log(LL_ERROR, "get_auth_token: Wrong authToken was pased in the cloud reply.%s", reply);
+        goto on_err;
+    }
+    strncpy(auth_token, token->valuestring, size-1);
+
+    cJSON_Delete(obj);
     lib_http_eraseConn(post_d);
     return 1;
+on_err:
+    pu_log(LL_ERROR, "get_auth_token: auth token request failed");
+    if(obj) cJSON_Delete(obj);
+    lib_http_eraseConn(post_d);
+    return 0;
 }
 
 
