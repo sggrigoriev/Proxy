@@ -22,9 +22,10 @@
 static pthread_mutex_t rd_mutex = PTHREAD_MUTEX_INITIALIZER;        //Mutex to stop r/w operation if connection params are changing
 static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;       //To prevent double penetration
 
+static unsigned int CONNECTIONS_TOTAL = 3;    //Regular post, regular get & immediate post (God bess the HTTP!)
 static lib_http_conn_t post_conn = -1;
 static lib_http_conn_t get_conn = -1;
-static volatile int no_conn = 1;
+static lib_http_conn_t immediate_post = -1;
 //////////////////////////////////////
 static const char* authToken = "authToken";
 //////////////////////////////////////////////////////////////////////
@@ -43,7 +44,7 @@ static int _get(lib_http_conn_t post_conn, char* resp, size_t size);
 static int get_contact(const char* main, const char* device_id, char* conn, size_t conn_size);
 //1. Close previous connections (if any)
 //2. Open POST& GET conns to cloud
-static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get);
+static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* quick_post);
 //1. Open POST connection w/o auth token
 //2. get auth token as an answer to POST
 //3 Close POST connectopm
@@ -65,8 +66,8 @@ void ph_mgr_start() {
     int err = 1;
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
-    no_conn = 1;
-    if(!lib_http_init(2)) goto on_err;
+
+    if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
     while (err) {
 //1. Get main url & deviceId from config
         pc_getMainCloudURL(main_url, sizeof(main_url));
@@ -88,7 +89,7 @@ void ph_mgr_start() {
         }
         else if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) continue;
 //4. Open connections
-        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) continue;
+        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
         err = 0;    //Bon vouage!
     }
     pu_log(LL_INFO, "Proxy connected to cloud by URL %s", contact_url);
@@ -97,8 +98,6 @@ void ph_mgr_start() {
 //Save all parameters updated
     pc_saveCloudURL(contact_url);
     pc_saveActivationToken(auth_token);
-
-    no_conn = 0;    //Allow read/write operations
 
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
@@ -112,8 +111,7 @@ on_err:
 void ph_mgr_stop() {
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
-    no_conn = 1;
-    lib_http_close();
+        lib_http_close();
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
 }
@@ -133,7 +131,6 @@ int ph_update_main_url(const char* new_main) {
     assert(new_main);
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
-    no_conn = 1;
 
     pc_getMainCloudURL(old_main, sizeof(old_main));
     pc_getProxyDeviceID(device_id, sizeof(device_id));  //No check: device ID is Ok if we're here
@@ -152,7 +149,7 @@ int ph_update_main_url(const char* new_main) {
         pu_log(LL_WARNING, "ph_update_main_url: main URL remains the same: %s", new_main);
     }
 //3. Open connections
-    if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) goto on_err;
+    if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) goto on_err;
 
     pu_log(LL_INFO, "Proxy reconnected with the main url = %s; contact url = %s", new_main, contact_url);
     pu_log(LL_DEBUG, "ph_update_main_url: auth_token = %s", auth_token);
@@ -160,8 +157,6 @@ int ph_update_main_url(const char* new_main) {
     pc_saveMainCloudURL(new_main);
     pc_saveCloudURL(contact_url);
     pc_saveActivationToken(auth_token);
-
-    no_conn = 0;    //Allow read/write operations
 
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
@@ -192,7 +187,6 @@ void ph_reconnect() {
 
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
-    no_conn = 1;
 
     int err = 1;
     while(err) {
@@ -203,13 +197,12 @@ void ph_reconnect() {
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  //Lets try again and again
 //2. open connections
 
-        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) continue;
+        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
         pu_log(LL_INFO, "Proxy reconnected with the main url = %s; contact url = %s", main_url, contact_url);
 
         err = 0;
         pc_saveCloudURL(contact_url);
     }
-    no_conn = 0;
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
 }
@@ -232,21 +225,20 @@ void ph_update_contact_url() {
 
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
-    no_conn = 1;
 
+//0. Close permament conections
+    lib_http_eraseConn(post_conn);
+    lib_http_eraseConn(get_conn);
     int err = 1;
     while(err) {
-//0. Close permament conections
-        lib_http_eraseConn(post_conn);
-        lib_http_eraseConn(get_conn);
 //1. Get contact url from main url
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  //Lets try again and again
 //2. Open connections
 //If error - open connections with previous contact url
-        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) {
+        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
             pc_getCloudURL(contact_url, sizeof(contact_url));
 //If error again - start from step 1
-            if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn)) continue;
+            if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
             pu_log(LL_ERROR, "ph_update_contact_url: get back to the prevoius contact url %s", contact_url);
         }
         else {
@@ -256,7 +248,6 @@ void ph_update_contact_url() {
         }
         err = 0;
     }
-    no_conn = 0;
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
 }
@@ -273,11 +264,19 @@ int ph_read(char* in_buf, size_t size) {
 //Returns 0 if error, 1 if OK
 //In all cases when the return is <=0 the resp contains some diagnostics
 int ph_write(char* buf, char* resp, size_t resp_size) {
-
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     pthread_mutex_lock(&wr_mutex);
         pc_getActivationToken(auth_token, sizeof(auth_token));
         int ret = _post(post_conn, buf, resp, resp_size, auth_token);
+    pthread_mutex_unlock(&wr_mutex);
+
+    return ret;
+}
+int ph_respond(char* buf, char* resp, size_t resp_size) {
+    char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    pthread_mutex_lock(&wr_mutex);
+    pc_getActivationToken(auth_token, sizeof(auth_token));
+    int ret = _post(post_conn, buf, resp, resp_size, auth_token);
     pthread_mutex_unlock(&wr_mutex);
 
     return ret;
@@ -349,7 +348,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
 //0. Close old connections
 //1. Open POST connection to contact
 //2. Open GET conn to cloud
-static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get) {
+static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* post1) {
 
     if(*post = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *post < 0) {
         pu_log(LL_ERROR, "get_connections: Can't create POST connection descriptor for %s", conn);
@@ -359,6 +358,11 @@ static int get_connections(char* conn, char* auth, char* device_id, lib_http_con
     if(*get = lib_http_createConn(LIB_HTTP_CONN_GET, conn, auth, device_id, pc_getLongGetTO()), *get < 0) {
         pu_log(LL_ERROR, "get_connections: Can't create GET connection descriptor for %s", conn);
         lib_http_eraseConn(*get);
+        return 0;
+    }
+    if(*post1 = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *post1 < 0) {
+        pu_log(LL_ERROR, "get_connections: Can't create IMMEDIATE POST connection descriptor for %s", conn);
+        lib_http_eraseConn(*post);
         return 0;
     }
     return 1;

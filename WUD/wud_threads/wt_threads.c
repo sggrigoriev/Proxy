@@ -4,20 +4,22 @@
 
 #include <string.h>
 #include <errno.h>
-#include <curl/curl.h>
-
-#include <wt_http_utl.h>
-#include <pr_commands.h>
-#include <wm_childs_info.h>
-#include <wa_manage_children.h>
-#include <wf_upgrade.h>
 #include <stdlib.h>
-#include <wa_alarm.h>
 
 #include "pu_queue.h"
 #include "pu_logger.h"
+#include "pr_commands.h"
+
 #include "wc_defaults.h"
 #include "wc_settings.h"
+
+#include "wm_childs_info.h"
+#include <wa_manage_children.h>
+#include "wf_upgrade.h"
+#include "wa_alarm.h"
+#include "wh_manager.h"
+
+
 
 #include "wt_queues.h"
 #include "wt_threads.h"
@@ -154,8 +156,8 @@ int wt_request_processor() {
                                     break;
                                 case PR_CMD_CLOUD_CONN:
                                     pu_log(LL_INFO, "%s: Cloud connection info received", PT_THREAD_NAME);
-                                    wt_set_connection_info(alert.cmd_cloud.conn_string, alert.cmd_cloud.device_id, alert.cmd_cloud.auth_token);
-                                    if (!run_server_writer()) { //it could be already run - the op will be skip
+                                    wh_connect(alert.cmd_cloud.conn_string, alert.cmd_cloud.device_id, alert.cmd_cloud.auth_token);
+                                     if (!run_server_writer()) { //it could be already run - the op will be skip
                                         pu_log(LL_ERROR, "%s: server write thread start failed. Abort", PT_THREAD_NAME);
                                         stop = 1;
                                     }
@@ -190,7 +192,7 @@ int wt_request_processor() {
 //////////////////////////////////////////////////////////////////////////////
 static int routine_startup() {
 //cURL init
-    if(!wt_http_curl_init()) {
+    if(wh_mgr_start()) {
         pu_log(LL_ERROR, "%s: Error on cUrl initialiation. Something goes wrong. Exiting.", PT_THREAD_NAME);
         return 0;
     }

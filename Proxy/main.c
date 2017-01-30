@@ -14,7 +14,7 @@
 
 int main(int argc, char* argv[]) {
 
-    printf("%s", "Hi, I\'m new Presto!\n");
+    printf("Presto v %d\n", GIT_FIRMWARE_VERSION);
     
     if(argc > 1) {
         if(!pc_cli_process_params(argc, argv)) exit(0); //Run from command line

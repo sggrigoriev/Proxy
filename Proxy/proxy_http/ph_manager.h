@@ -46,5 +46,6 @@ int ph_read(char* in_buf, size_t size);
 
 //Returns 0 if error, 1 if OK
 int ph_write(char* buf, char* resp, size_t resp_size);
+int ph_respond(char* buf, char* resp, size_t resp_size);
 
 #endif //PH_MANAGER_H

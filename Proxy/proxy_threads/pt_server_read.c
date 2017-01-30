@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <ph_manager.h>
+#include <pf_proxy_commands.h>
 
 #include "pc_defaults.h"
 #include "pu_logger.h"
@@ -66,6 +67,23 @@ static void* read_proc(void* params) {
                     break;
             }
         }
+//And hurray!! If the cloud sends command array to us we have to answer immediately! Promandablyadskayapizdoproushnaspizdorazjobannojrez'boy!
+        pf_cmd_t* pf_cmd = pf_parse_cloud_commands(buf);
+        if(pf_cmd) {
+            char resp[LIB_HTTP_MAX_MSG_SIZE];
+            char resp_to_resp[LIB_HTTP_MAX_MSG_SIZE] = {0};
+            pf_answer_to_command(pf_cmd->obj, resp, sizeof(resp));
+            if(strlen(resp)) {
+                if(!ph_respond(resp, resp_to_resp, sizeof(resp_to_resp))) {
+                    pu_log(LL_ERROR, "%s: Error responding. Reconnect", PT_THREAD_NAME);
+                    ph_reconnect();
+                }
+                else {
+                    pu_log(LL_INFO, "%s: Received from cloud back to the proxy command respond: %s", PT_THREAD_NAME, resp_to_resp);
+                }
+            }
+        }
+//
         if(!stop) {
             pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!
             pu_log(LL_INFO, "%s: Received from cloud: %s", PT_THREAD_NAME, buf);

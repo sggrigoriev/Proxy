@@ -30,7 +30,7 @@ static char* get_activation_token(char* buf, size_t len);
 // Initiate cURL
 //Return 1 if success, 0 if error
 int wt_http_curl_init() {        //Global cUrl init. Returns 0 if failed
-    if(!lib_http_init()) {
+    if(!lib_http_init(1)) {
         pu_log(LL_ERROR, "Error on cUrl initialiation. Something goes wrong. Exiting.");
         return 0;
     }

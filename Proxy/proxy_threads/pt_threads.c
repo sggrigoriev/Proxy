@@ -30,7 +30,6 @@
 static int main_thread_startup();
 static void main_thread_shutdown();
 
-static void update_cloud_url();
 #ifndef PROXY_SEPARATE_RUN
 static int initiate_wud();     //Send to WUD cloud connection info
 static void send_wd();          // Send Watchdog to thw WUD
@@ -81,13 +80,20 @@ void pt_main_thread() { //Starts the main thread.
                     pf_cmd_t* pf_cmd = pf_parse_cloud_commands(mt_msg);
                     if(pf_cmd) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];
-
-                        pf_answer_to_command(resp, sizeof(resp), mt_msg);
-                        pu_queue_push(to_server, resp, strlen(resp)+1);
+                        pf_answer_to_command(pf_cmd->obj, resp, sizeof(resp));
+                        if(strlen(resp)) {
+                            pu_queue_push(to_server, resp, strlen(resp) + 1);
+                        }
+                        pf_process_proxy_commands(pf_cmd);
+                        pf_encode_agent_commands(pf_cmd, resp, sizeof(resp));
+                        if(strlen(resp)) {
+                            pu_queue_push(to_agent, resp, strlen(resp) + 1);
+                        }
+                        pf_close_cloud_commands(pf_cmd);
                     }
-                    if(pf_are_proxy_commands(pf_cmd)) pf_process_proxy_commands(pf_cmd);
-                    pu_queue_push(to_agent, mt_msg, len);
-                    pf_close_cloud_commands(pf_cmd);
+                    else {
+                        pu_queue_push(to_agent, mt_msg, len);
+                    }
                     len = sizeof(mt_msg);
                 }
                 break;
@@ -109,10 +115,18 @@ void pt_main_thread() { //Starts the main thread.
 //Place for own actions
 //1. Wathchdog
 #ifndef PROXY_SEPARATE_RUN
-        if(lib_timer_alarm(wd_clock)) { send_wd(); lib_timer_init(&wd_clock, pc_getProxyWDTO()); }
-#endif
-        if(lib_timer_alarm(cloud_url_update_clock)) { ph_update_contact_url(); lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600); }
+        if(lib_timer_alarm(wd_clock)) {
+            send_wd();
+            lib_timer_init(&wd_clock, pc_getProxyWDTO());
         }
+#endif
+//2. Regular contact url update
+        if(lib_timer_alarm(cloud_url_update_clock)) {
+            pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
+            ph_update_contact_url();
+            lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
+        }
+    }
 
     main_thread_shutdown();
 }
