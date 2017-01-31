@@ -98,7 +98,7 @@ void pf_process_proxy_commands(pf_cmd_t* cmd) { //NB! currntly we got just one c
 void pf_encode_agent_commands(pf_cmd_t* cmd, char* resp, size_t size) {
     resp[0] = '\0';
     if((!cmd) || (!cmd->agent_cmd_array) || (!cmd->header)) return;
-    cJSON_AddItemToObject(cmd->header, CLOUD_COMMANDS, cmd->agent_cmd_array);
+    cJSON_AddItemReferenceToObject(cmd->header, CLOUD_COMMANDS, cmd->agent_cmd_array);
     char* result = cJSON_PrintUnformatted(cmd->header);
     strncpy(resp, result, size-1);
     resp[size-1] = '\0';
