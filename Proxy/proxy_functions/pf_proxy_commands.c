@@ -148,7 +148,7 @@ static void split_arrays(cJSON* hdr, cJSON* arr, cJSON** agent, cJSON** proxy) {
             pu_log(LL_ERROR, "Error extratcing %d command's item %s from commands array. Skip", i, CMD_PARAMETERS);
             continue;
         }
-        cJSON* par_item = cJSON_GetArrayItem(arr, 0);   //Check the name of the first param - the command could be for Proxy - Command which defines by its parameters - amaizing way to make others fucking hard...
+        cJSON* par_item = cJSON_GetArrayItem(par_array, 0);   //Check the name of the first param - the command could be for Proxy - Command which defines by its parameters - amaizing way to make others fucking hard...
         cJSON* par_name = cJSON_GetObjectItem(par_item, CMD_PAR_NAME);
         if(!par_name) {
             pu_log(LL_ERROR, "Error extratcing %d command's 1st param name from commands array. Skip", i);
