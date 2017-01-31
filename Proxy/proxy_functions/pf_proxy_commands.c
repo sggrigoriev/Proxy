@@ -16,6 +16,8 @@
 
 #include "pf_proxy_commands.h"
 
+#define NOREF(a) (a&0xF)
+
 static const char* HDR_VERSION = "version";
 static const char* HDR_STATUS = "status";
 
@@ -204,7 +206,7 @@ static int is_proxy_cmd(cJSON* cmd_arr_item) {
         pu_log(LL_WARNING, "Parameter item %s is not found", CMD_PAR_NAME);
         return 0;
     }
-    if(par_name->type != cJSON_String) {
+    if(NOREF(par_name->type) != cJSON_String) {
         pu_log(LL_WARNING, "Parameter item %s is not a string", CMD_PAR_NAME);
         return 0;
     }
@@ -215,7 +217,7 @@ static int is_proxy_cmd(cJSON* cmd_arr_item) {
         pu_log(LL_WARNING, "Parameter item %s is not found", CMD_DEVICE_ID);
         return 0;
     }
-    if(d_id->type != cJSON_String) {
+    if(NOREF(d_id->type) != cJSON_String) {
         pu_log(LL_WARNING, "Parameter item %s should has a string type", CMD_DEVICE_ID);
         return 0;
     }
@@ -240,7 +242,7 @@ static const char* getUrlParam(cJSON* cmd_arr) {
                 pu_log(LL_ERROR, "Main URL update: parameter %s value %s is not found", CMD_PAR_NAME, CMD_PAR_VALUE);
                 return "";
             }
-            if(val->type != cJSON_String) {
+            if(NOREF(val->type) != cJSON_String) {
                 pu_log(LL_ERROR, "Main URL update: parameter %s value %s is not a string", CMD_PAR_NAME, CMD_PAR_VALUE);
                 return "";
             }
