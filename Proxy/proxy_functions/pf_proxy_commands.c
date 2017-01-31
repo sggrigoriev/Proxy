@@ -3,6 +3,7 @@
 //
 
 #include <string.h>
+#include <pf_traffic_proc.h>
 
 #include "cJSON.h"
 
@@ -116,6 +117,10 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
     strncpy(buf, res, buf_size-1);
     free(res);
     cJSON_Delete(cmds);
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+    pf_add_proxy_head(buf, buf_size, device_id, 11037);
+
     return buf;
 }
 

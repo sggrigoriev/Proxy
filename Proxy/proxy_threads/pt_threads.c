@@ -80,10 +80,6 @@ void pt_main_thread() { //Starts the main thread.
                     pf_cmd_t* pf_cmd = pf_parse_cloud_commands(mt_msg);
                     if(pf_cmd) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];
-                        pf_answer_to_command(pf_cmd->obj, resp, sizeof(resp));
-                        if(strlen(resp)) {
-                            pu_queue_push(to_server, resp, strlen(resp) + 1);
-                        }
                         pf_process_proxy_commands(pf_cmd);
                         pf_encode_agent_commands(pf_cmd, resp, sizeof(resp));
                         if(strlen(resp)) {
