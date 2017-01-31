@@ -83,6 +83,7 @@ static void* read_proc(void* params) {
                 }
             }
         }
+        pf_close_cloud_commands(pf_cmd);
 //
         if(!stop) {
             pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!
