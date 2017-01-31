@@ -62,7 +62,7 @@ static void* read_proc(void* params) {
                     break;
                 case 0:     //timeout - read again
 //                    strcpy(buf, emu);
-                    out = 1;
+//                    out = 1;
                     break;
                 case 1:     //got smth
                     out = 1;
