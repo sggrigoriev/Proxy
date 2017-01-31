@@ -41,7 +41,7 @@ const char* write_source() {
     "]"
 "}"
 );
-    sleep(10);
+    sleep(100);
     return wr_src;
 }
 #ifndef PROXY_SEPARATE_RUN
@@ -147,6 +147,7 @@ static void* write_proc(void* socket) {
 //Main loop
     while(!rw_stop) {
         //Get smth to write
+        sleep(100);
         const char* info = write_source(); //should be wait for info from queue(s)
 
         //Prepare write operation

@@ -82,8 +82,8 @@ static void* read_proc(void* params) {
                     pu_log(LL_INFO, "%s: Received from cloud back to the proxy command respond: %s", PT_THREAD_NAME, resp_to_resp);
                 }
             }
+            pf_close_cloud_commands(pf_cmd);
         }
-        pf_close_cloud_commands(pf_cmd);
 //
         if(!stop) {
             pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!

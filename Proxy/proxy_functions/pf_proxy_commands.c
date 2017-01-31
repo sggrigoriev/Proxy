@@ -82,6 +82,7 @@ void pf_close_cloud_commands(pf_cmd_t* cmd) {
         if(cmd->agent_cmd_array) cJSON_Delete(cmd->agent_cmd_array);
         free(cmd);
     }
+    cmd = NULL;
 }
 
 void pf_process_proxy_commands(pf_cmd_t* cmd) { //NB! currntly we got just one command: update main URL
