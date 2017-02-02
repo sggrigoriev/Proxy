@@ -14,7 +14,7 @@
 #define LIB_HTTP_MAX_URL_SIZE               4097
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 128
 #define LIB_HTTP_DEVICE_ID_SIZE             31
-//Proxy will send to the Server connection timeout less on LIB_HTTP_PROXY_SERVER_TO_DELTA sec during the long GET
+//Long GET from Proxy's side will be less on LIB_HTTP_PROXY_SERVER_TO_DELTA than the cloud conn timeout
 #define LIB_HTTP_PROXY_SERVER_TO_DELTA      20
 /** Maximum time for an HTTP connection, including name resolving */
 #define LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC    30

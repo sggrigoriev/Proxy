@@ -19,8 +19,11 @@ void init_queues() {
 }
 void erase_queues() {
     pthread_mutex_lock(&own_mutex);
-    for(unsigned int i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
-        pu_queue_erase(qu_arr[i+PS_MIN_QUEUE]);
+    for(int i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waggressive-loop-optimizations"
+        pu_queue_erase(qu_arr[i+PS_MIN_QUEUE]);             //There are no arrays like [1..4] in C ...
+#pragma GCC diagnostic pop
     }
     pu_queues_destroy();
     pthread_mutex_unlock(&own_mutex);

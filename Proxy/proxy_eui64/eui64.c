@@ -50,7 +50,6 @@
 
 /////////////////////////////////////////////////////////////////
 //
-static error_t readDeviceType(char *deviceType);
 /**
  * Obtain the 48-bit MAC dest and convert to an EUI-64 value from the
  * hardware NIC
@@ -168,7 +167,7 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
  * @return 1 if we are able to capture the EUI64 else return 0
  */
 error_t eui64_toString(char *dest, size_t destLen) {
-  uint8_t byteAddress[EUI64_BYTES_SIZE], i;
+  uint8_t byteAddress[EUI64_BYTES_SIZE];
 
   assert(dest);
 

@@ -127,9 +127,11 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
     strncat(handler->url, deviceID, sizeof(handler->url)-strlen(handler->url)-1);   //Add device id (all have it)
     if(conn_type == LIB_HTTP_CONN_GET) {                    //Add timeout for routine GET
         char buf[20];
-        snprintf(buf, sizeof(buf), "&timeout=%d", conn_to-LIB_HTTP_PROXY_SERVER_TO_DELTA);
-        strncat(handler->url, buf, sizeof(handler->url)-strlen(handler->url)-1);
+        snprintf(buf, sizeof(buf), "&timeout=%d", conn_to);
+        strncat(handler->url, buf, sizeof(handler->url) - strlen(handler->url) - 1);
+        conn_to += LIB_HTTP_PROXY_SERVER_TO_DELTA;
     }
+
 //Handler initiation
     if(handler->hndlr = curl_easy_init(), !handler->hndlr) {
         pu_log(LL_ERROR, "lib_http_createConn: cURL handler creation failed.");

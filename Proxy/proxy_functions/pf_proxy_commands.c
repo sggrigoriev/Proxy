@@ -249,4 +249,6 @@ static const char* getUrlParam(cJSON* cmd_arr) {
             return val->valuestring;
         }
     }
+    pu_log(LL_ERROR, "Main URL update: connection string is not found");
+    return "";
 }

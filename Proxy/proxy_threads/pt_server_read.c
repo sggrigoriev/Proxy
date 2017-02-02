@@ -14,7 +14,7 @@
 #define PT_THREAD_NAME "SERVER_READ"
 
 //////////////////////////////////////
-static const char* emu = "{\"version\":\"2\",\"status\":\"ACK\",\"commands\":[{\"commandId\":463,\"type\":0,\"deviceId\":\"aioxGW-000040ED98200002\",\"parameters\":[{\"name\":\"permitJoining\",\"value\":\"1\"}]}]}";
+//static const char* emu = "{\"version\":\"2\",\"status\":\"ACK\",\"commands\":[{\"commandId\":463,\"type\":0,\"deviceId\":\"aioxGW-000040ED98200002\",\"parameters\":[{\"name\":\"permitJoining\",\"value\":\"1\"}]}]}";
 
 ////////////////////////////
 static pthread_t id;

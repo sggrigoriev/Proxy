@@ -17,8 +17,6 @@
 
 ////////////////////////////////////////////////////////////
 //Module data
-static unsigned long DEFAULT_REC_AMOUNT = 2048;
-
 static FILE* file;
 
 static unsigned long rec_amt;

@@ -26,8 +26,6 @@ static unsigned int CONNECTIONS_TOTAL = 3;    //Regular post, regular get & imme
 static lib_http_conn_t post_conn = -1;
 static lib_http_conn_t get_conn = -1;
 static lib_http_conn_t immediate_post = -1;
-//////////////////////////////////////
-static const char* authToken = "authToken";
 //////////////////////////////////////////////////////////////////////
 //
 // Local functions
