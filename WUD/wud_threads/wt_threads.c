@@ -192,10 +192,10 @@ int wt_request_processor() {
 //////////////////////////////////////////////////////////////////////////////
 static int routine_startup() {
 //cURL init
-//    if(wh_mgr_start()) {
-//        pu_log(LL_ERROR, "%s: Error on cUrl initialiation. Something goes wrong. Exiting.", PT_THREAD_NAME);
-//        return 0;
-//    }
+    if(wh_mgr_start()) {
+        pu_log(LL_ERROR, "%s: Error on cUrl initialiation. Something goes wrong. Exiting.", PT_THREAD_NAME);
+        return 0;
+    }
 //Queues initiation
     wt_init_queues();
     if(to_cloud = wt_get_gueue(WT_to_Cloud), !to_cloud) return 0;

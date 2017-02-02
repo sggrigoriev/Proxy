@@ -120,8 +120,7 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
     cJSON* resp_arr = cJSON_CreateArray();
     cJSON_AddItemToObject(resp_obj, CMD_RESP_HD, resp_arr);
 
-    unsigned int i;
-    for(i = 0; i < cJSON_GetArraySize(arr); i++) {
+    for(unsigned int i = 0; i < cJSON_GetArraySize(arr); i++) {
         cJSON* arr_item = cJSON_GetArrayItem(arr, i);
         cJSON* cmd_id = cJSON_GetObjectItem(arr_item, CMD_CMD_ID);
         if(!cmd_id) {
@@ -170,8 +169,7 @@ static void split_arrays(cJSON* arr, cJSON** agent, cJSON** proxy) {
 
     *agent = NULL; *proxy = NULL;
 
-    unsigned int i;
-    for(i = 0; i < cJSON_GetArraySize(arr); i++) {
+    for(unsigned int i = 0; i < cJSON_GetArraySize(arr); i++) {
         cJSON *item = cJSON_GetArrayItem(arr, i);
         if (!item) {
             pu_log(LL_ERROR, "Error extratcing %d command from commands array. Skip", i);
@@ -231,11 +229,9 @@ static int is_proxy_cmd(cJSON* cmd_arr_item) {
 }
 
 static const char* getUrlParam(cJSON* cmd_arr) {
-    unsigned int i;
-    for(i = 0; i < cJSON_GetArraySize(cmd_arr); i++) {
+    for(unsigned int i = 0; i < cJSON_GetArraySize(cmd_arr); i++) {
         cJSON* params_arr = cJSON_GetArrayItem(cmd_arr, i);
-        unsigned int j;
-        for(j = 0; j < cJSON_GetArraySize(params_arr); j++) {
+        for(unsigned int j = 0; j < cJSON_GetArraySize(params_arr); j++) {
             cJSON* param_item = cJSON_GetArrayItem(params_arr, j);
             if(!param_item) return "";
             cJSON* param_name = cJSON_GetObjectItem(param_item, CMD_PAR_NAME);
@@ -253,6 +249,4 @@ static const char* getUrlParam(cJSON* cmd_arr) {
             return val->valuestring;
         }
     }
-    pu_log(LL_ERROR, "Main URL update: parameter %s value %s is not found", CMD_PAR_NAME, CMD_PAR_VALUE);
-    return "";
 }

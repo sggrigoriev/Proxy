@@ -19,8 +19,7 @@ static wm_child_descriptor_t child_array[PR_CHILD_SIZE] = {0};
 pr_child_t  wm_create_cd(const char* pn, const char* bn, const char* wd, char* const* sp, unsigned int wd_to, pid_t pid) {
     assert(pn);
     assert(bn);
-    unsigned int i;
-    for(i = 0; i < PR_CHILD_SIZE; i++) {
+    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
         if (child_array[i].process_name) continue;
         child_array[i].pid = pid;
         child_array[i].working_directory = (wd) ? strdup(wd) : strdup("./");
@@ -63,8 +62,7 @@ const char* wm_get_child_name(pr_child_t idx) {
     return child_array[idx].process_name;
 }
 pr_child_t wm_get_child_descr(const char* name) {
-    unsigned int i;
-    for(i = 0; i < PR_CHILD_SIZE; i++) {
+    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
         if(strcmp(name, child_array[i].process_name)== 0) return i;
     }
     return PR_CHILD_SIZE;

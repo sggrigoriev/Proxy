@@ -45,6 +45,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
 //1. Close previous connections (if any)
 //2. Open POST& GET conns to cloud
 static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* quick_post);
+static void erase_connections(lib_http_conn_t post, lib_http_conn_t get, lib_http_conn_t quick_post);
 //1. Open POST connection w/o auth token
 //2. get auth token as an answer to POST
 //3 Close POST connectopm
@@ -137,8 +138,7 @@ int ph_update_main_url(const char* new_main) {
     pc_getActivationToken(auth_token, sizeof(auth_token));
 
 //0. Close permanent connections
-    lib_http_eraseConn(post_conn);
-    lib_http_eraseConn(get_conn);
+    erase_connections(post_conn, get_conn, immediate_post);
 //1. Get contact url from main
     if(!get_contact(new_main, device_id, contact_url, sizeof(contact_url))) goto on_err;
 //2. Get auth token
@@ -191,8 +191,7 @@ void ph_reconnect() {
     int err = 1;
     while(err) {
 //0. Close permanent connections
-        lib_http_eraseConn(post_conn);
-        lib_http_eraseConn(get_conn);
+        erase_connections(post_conn, get_conn, immediate_post);
 //1. Get contact url
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  //Lets try again and again
 //2. open connections
@@ -227,8 +226,7 @@ void ph_update_contact_url() {
     pthread_mutex_lock(&wr_mutex);
 
 //0. Close permament conections
-    lib_http_eraseConn(post_conn);
-    lib_http_eraseConn(get_conn);
+    erase_connections(post_conn, get_conn, immediate_post);
     int err = 1;
     while(err) {
 //1. Get contact url from main url
@@ -366,6 +364,11 @@ static int get_connections(char* conn, char* auth, char* device_id, lib_http_con
         return 0;
     }
     return 1;
+}
+static void erase_connections(lib_http_conn_t post, lib_http_conn_t get, lib_http_conn_t quick_post) {
+    lib_http_eraseConn(post);
+    lib_http_eraseConn(get);
+    lib_http_eraseConn(quick_post);
 }
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size) {
     lib_http_conn_t post_d;

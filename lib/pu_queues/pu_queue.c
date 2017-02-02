@@ -111,8 +111,7 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
         pthread_cond_wait(&ps_all_queues_cond, &ps_all_queues_cond_mutex);
     }
     ret = PQ_TIMEOUT;
-    pu_queue_event_t i;
-    for(i = 1; i < PQ_Size; i++) {
+    for(pu_queue_event_t i = 1; i < PQ_Size; i++) {
         if(((queue_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1) && ((ps_all_queues_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1)) {
             ps_all_queues_events_set &= ~make_event_mask(i);
             ret = i;
@@ -138,8 +137,7 @@ pu_queue_t* pu_queue_create(unsigned long records_amt, pu_queue_event_t my_event
         pu_log(LL_ERROR, "Queue %d creation: not enough memory to create the queue array. Failed.", my_event);
         return NULL;
     }
-    unsigned long i;
-    for(i = 0; i < queue->q_array_size; i++) {
+    for(unsigned long i = 0; i < queue->q_array_size; i++) {
         queue->q_array[i].data = NULL;
         queue->q_array[i].len = 0;
     }
@@ -162,8 +160,7 @@ void pu_queue_erase(pu_queue_t* queue) {
 
     if(!check_ptr(queue, "pu_queue_erase() got NULL \'queue\' parameter. Failed.")) return;
 
-    unsigned long i;
-    for(i = 0; i < queue->q_array_size; i++) erase_element(queue, i);
+    for(unsigned long i = 0; i < queue->q_array_size; i++) erase_element(queue, i);
 }
 
 //send the PQ_STOP to the queue

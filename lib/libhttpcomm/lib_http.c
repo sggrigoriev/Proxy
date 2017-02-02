@@ -89,8 +89,7 @@ int lib_http_init(unsigned int max_conns_amount) {
     return 1;
 }
 void lib_http_close() {
-    unsigned int i;
-    for(i = 0; i < CONN_ARRAY_SIZE; i++) {
+    for(unsigned int i = 0; i < CONN_ARRAY_SIZE; i++) {
         if(CONN_ARRAY[i]) lib_http_eraseConn(i);
     }
     free(CONN_ARRAY);
@@ -349,8 +348,7 @@ static http_handler_t** alloc_conn_pull(unsigned connections_max) {
         pu_log(LL_ERROR, "create_conn_pull: Can't allocate %d bytes memory", connections_max*sizeof(http_handler_t*));
         return NULL;
     }
-    unsigned int i;
-    for(i = 0; i < connections_max; i++) ret[i] = NULL;
+    for(unsigned int i = 0; i < connections_max; i++) ret[i] = NULL;
     return ret;
 }
 static void bzero_conn(http_handler_t* conn) {
@@ -364,8 +362,7 @@ static void bzero_conn(http_handler_t* conn) {
 }
 // Return idx or conn_max if error or no free place
 static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int conn_max) {
-    unsigned int i;
-    for(i = 0; i < conn_max; i++) {
+    for(unsigned int i = 0; i < conn_max; i++) {
         if(conn_array[i] == NULL) {		//Got vacant place
             conn_array[i] = malloc(sizeof(http_handler_t));
             if(!conn_array[i]) {
