@@ -54,18 +54,19 @@ void wt_http_curl_stop() {
 lib_http_post_result_t wt_http_write(char* buf, size_t buf_size, char* resp, size_t resp_size) { //Returns 0 if timeout or error, 1 if OK
     char url[LIB_HTTP_MAX_URL_SIZE];
     char atoken[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-    char deviceID[LIB_HTTP_DEVICE_ID_SIZE];
+//    char deviceID[LIB_HTTP_DEVICE_ID_SIZE];
 
 
     wt_http_get_cloud_conn_string(url, sizeof(url));
     get_activation_token(atoken, sizeof(atoken)-1);
-    wt_get_device_id(deviceID, sizeof(deviceID));
+//    wt_get_device_id(deviceID, sizeof(deviceID));
 
     if(!strlen(url)) {
         pu_log(LL_WARNING, "wt_http_write: no connection info. Wait.");
         return LIB_HTTP_POST_RETRY;
     }
-    return lib_http_post(buf, resp, resp_size, url, atoken, deviceID);
+//    return lib_http_post(buf, resp, resp_size, url, atoken, deviceID);
+    return lib_http_post(buf, resp, resp_size, url, atoken);
 }
 
 void wt_set_connection_info(const char* connection_string, const char* device_id, const char* activation_token) {

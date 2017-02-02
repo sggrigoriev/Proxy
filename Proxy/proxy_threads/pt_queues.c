@@ -12,14 +12,16 @@ static pthread_mutex_t  own_mutex;
 void init_queues() {
     pthread_mutex_lock(&own_mutex);
     pu_queues_init(PS_MAX_QUEUE-PS_MIN_QUEUE+1);
-    for(unsigned int i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
+    unsigned int i;
+    for(i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
         qu_arr[i] = pu_queue_create(pc_getQueuesRecAmt(),i+PS_MIN_QUEUE);
     }
     pthread_mutex_unlock(&own_mutex);
 }
 void erase_queues() {
     pthread_mutex_lock(&own_mutex);
-    for(unsigned int i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
+    unsigned int i;
+    for(i = 0; i < PS_MAX_QUEUE-PS_MIN_QUEUE+1; i++) {
         pu_queue_erase(qu_arr[i+PS_MIN_QUEUE]);
     }
     pu_queues_destroy();

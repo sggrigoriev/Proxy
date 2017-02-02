@@ -75,7 +75,8 @@ const char* pr_chld_2_string(pr_child_t child_name) {
 pr_child_t pr_string_2_chld(const char* child_name) {
     pr_child_t ret = PR_CHILD_SIZE;
 
-    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+    unsigned int i;
+    for(i = 0; i < PR_CHILD_SIZE; i++) {
         if(!strcmp(child_name, PROC_NAMES[i])) {
             ret = (pr_child_t)i;
             break;
@@ -377,7 +378,8 @@ static int get_head(cJSON* obj, pr_alert_head_t* header, char** err_text) {
     }
     alert_type[PR_ALERT_TYPE_PREFFIX_LEN] = '\0'; // instead of delimeter
     header->alert_type = -1;
-    for(unsigned int i = 0; i < PR_ALERT_SIZE; i++) {
+    unsigned int i;
+    for(i = 0; i < PR_ALERT_SIZE; i++) {
         if(!strcmp(alert_type, ALERT_TYPES[i])) {
             header->alert_type = i;
             break;

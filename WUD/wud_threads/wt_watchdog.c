@@ -48,7 +48,8 @@ static void* wd_proc(void* params) {
     unsigned int to = wc_getWUDMonitoringTO();
 
     while(!stop && wd_wait(to)) {
-        for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+        unsigned int i;
+        for(i = 0; i < PR_CHILD_SIZE; i++) {
             if (wa_alarm_wakeup((pr_child_t) i)) {
                 char restart[LIB_HTTP_MAX_MSG_SIZE];
 

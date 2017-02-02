@@ -36,7 +36,8 @@ char** pr_push(char** dest, const char* el, char* const* src) {
     unsigned int len = pr_get_get_ptr_list_len(src);
     dest = (char**)malloc((len+2)*sizeof(char*)); //pace for inserted element and termintator
     dest[0]= strdup(el);
-    for(unsigned int j = 0; j < len; j++) dest[j+1] = strdup(src[j]);
+    unsigned int j;
+    for(j = 0; j < len; j++) dest[j+1] = strdup(src[j]);
     dest[len+1] = NULL;
     return dest;
 
@@ -55,7 +56,8 @@ const char* pr_ptr_list2string(char* buf, size_t size, char* const* list) {
     size_t len = size-1; //reserve space for '\0'
     strncpy(buf, "{", len);
 
-    for(unsigned int i = 0; i < pr_get_get_ptr_list_len(list); i++) {
+    unsigned int i;
+    for(i = 0; i < pr_get_get_ptr_list_len(list); i++) {
         strncat(buf, "<", len-strlen(buf));
         strncat(buf, list[i], len-strlen(buf));
         strncat(buf, ">", len-strlen(buf));

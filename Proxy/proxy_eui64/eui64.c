@@ -1,4 +1,6 @@
-#if 1
+//#define YC_DEVICE_TYPE_32
+#if 0
+#include <stdio.h>
 #define yc_printf_1(format, arg...) printf(format, ##arg)
 #else
 #define yc_printf_1(format, arg...)
@@ -50,7 +52,6 @@
 
 /////////////////////////////////////////////////////////////////
 //
-static error_t readDeviceType(char *deviceType);
 /**
  * Obtain the 48-bit MAC dest and convert to an EUI-64 value from the
  * hardware NIC
@@ -65,7 +66,6 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
   char buf[1024];
   int sock, i;
   int ok = 0;
-  char buf2[64];
 
   assert(dest);
 
@@ -79,11 +79,11 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
   if (sock == -1) {
     return -1;
   }
-
-  ifc.ifc_len = sizeof(buf);
-  ifc.ifc_buf = buf;
-  ioctl(sock, SIOCGIFCONF, &ifc);
 // yctung
+//  ifc.ifc_len = sizeof(buf);
+//  ifc.ifc_buf = buf;
+//  ioctl(sock, SIOCGIFCONF, &ifc);
+//
 //  ifr = ifc.ifc_req;
 //  for (i = 0; i < ifc.ifc_len / sizeof(struct ifreq); ifr++) {
 //      if (strcmp(ifr->ifr_name, "eth0") == 0 || strcmp(ifr->ifr_name, "eth1")
@@ -99,51 +99,51 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
 //	  }
 //      }
 //  }
+    char *ifName[] = {"br-lan", "eth0", "eth1"};    // for aiox mt7688
+    char buf2[64];
+    int j;
+    struct ifreq ifr2;
+
+    // for aiox mt7688
+    printf("%s:search list = ", __FUNCTION__);
+    for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
+        printf("%s, ", ifName[j]);
+    printf("\n");
     buf2[0] = 0;
-    ifr = ifc.ifc_req;
-    for (i = 0; i < ifc.ifc_len / sizeof(struct ifreq); i++, ifr++)
+    ifr = &ifr2;
+    for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
     {
-        strcpy(buf2, ifr->ifr_name);
-        if (!strcmp(ifr->ifr_name, "eth0") ||
-            !strcmp(ifr->ifr_name, "eth1") ||
-            !strcmp(ifr->ifr_name, "wlan0") ||
-            !strcmp(ifr->ifr_name, "br0"))
-        {
-            if (ioctl(sock, SIOCGIFFLAGS, ifr) == 0)
-            {
-                if (!(ifr->ifr_flags & IFF_LOOPBACK))
-                {
-                    if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0)
-                    {
-                        ok = 1;
-                        break;
-                    }
-                }
-            }
+        ifr->ifr_addr.sa_family = AF_INET;
+        strncpy(ifr->ifr_name, ifName[j], IFNAMSIZ - 1);
+        printf("%s:1,%s==========\n", __FUNCTION__, ifr->ifr_name);
+        if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0)
+        {printf("%s:2,hit==========\n", __FUNCTION__);
+            strcpy(buf2, ifr->ifr_name);
+            ok = 1;
+            goto lhit;
         }
     }
     if (!ok)
     {
-        ifr = ifc.ifc_req;
-        for (i = 0; i < ifc.ifc_len / sizeof(struct ifreq); i++, ifr++)
-        {
-            strcpy(buf2, ifr->ifr_name);
-            if (strcmp(ifr->ifr_name, "lo"))
-            {
-                if (ioctl(sock, SIOCGIFFLAGS, ifr) == 0)
-                {
-                    if (!(ifr->ifr_flags & IFF_LOOPBACK))
-                    {
-                        if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0)
-                        {
-                            ok = 1;
-                            break;
-                        }
-                    }
-                }
+        // for intel platform, ubuntu, rpi
+        printf("%s:3,fail to search, so search active interface except loopback interface==========\n", __FUNCTION__);
+        ifc.ifc_len = sizeof(buf);
+        ifc.ifc_buf = buf;
+        ioctl(sock, SIOCGIFCONF, &ifc);
+        for (ifr = ifc.ifc_req, i = 0; i < ifc.ifc_len / sizeof(struct ifreq); i++, ifr++)
+        {printf("%s:4,%s==========\n", __FUNCTION__, ifr->ifr_name);
+            if ((strncmp(ifr->ifr_name, "lo", strlen("lo"))) &&
+                (ioctl(sock, SIOCGIFFLAGS, ifr) == 0) &&
+                (!(ifr->ifr_flags & IFF_LOOPBACK)) &&
+                (ioctl(sock, SIOCGIFHWADDR, ifr) == 0))
+            {printf("%s:5,hit==========\n", __FUNCTION__);
+                strcpy(buf2, ifr->ifr_name);
+                ok = 1;
+                goto lhit;
             }
         }
     }
+lhit :
 // yctung
   close(sock);
   if (ok) {
@@ -156,7 +156,9 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
     */
     pu_log(LL_DEBUG, "%s:use interface %s, %02X:%02X:%02X:%02X:%02X:%02X==========", __FUNCTION__, buf2, dest[0], dest[1], dest[2], dest[3], dest[4], dest[5]);
   } else {
+#ifndef ZBAPL_USE_THREAD
     pu_log(LL_ERROR, "Couldn't read MAC dest to seed EUI64");
+#endif
     return FAIL;
   }
 
@@ -168,27 +170,72 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
  * @return 1 if we are able to capture the EUI64 else return 0
  */
 error_t eui64_toString(char *dest, size_t destLen) {
-  uint8_t byteAddress[EUI64_BYTES_SIZE], i;
+//  uint8_t byteAddress[EUI64_BYTES_SIZE], i;
+//  uint16_t checksum= 0;
+//  char deviceType[DEVICE_TYPE_SIZE];
+//  char *tmp = NULL;
+//
+//  assert(dest);
+//
+//  if(destLen < EUI64_STRING_SIZE) {
+//    return FAIL;
+//  }
+//
+//  /* new format: ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} */
+//  if (eui64_toBytes(byteAddress, sizeof(byteAddress)) == SUCCESS) {
+//    memset(deviceType, 0x0, DEVICE_TYPE_SIZE);
+//    readDeviceType(deviceType);
+//
+//    memset(dest, 0x0, destLen);
+//// yctung
+//// uuid = 12345678-1234-1234-1234-123456789abc --> upnp (36 + 1)
+//// uuid = ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} = 12 + 1 + 8 + 1 + 4 = 26 --> presto (26 + 1)
+//// yctung
+//    snprintf(dest, destLen, "%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X-%s-",
+//        byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
+//        byteAddress[4], byteAddress[5], deviceType);
+//
+//    for(i = 0; i < strlen(dest) ; i++ ) {
+//        checksum+= dest[i];
+//    }
+//
+//    tmp = strdup(dest);
+//
+//    if ( tmp != NULL )
+//    {
+//// yctung
+////	snprintf(dest, destLen, "%s%X", tmp, checksum);
+//	snprintf(dest, destLen, "%s%04X", tmp, checksum);
+//// yctung
+//	free(tmp);
+//    }
+//
+//
+//    return SUCCESS;
+//  }
+//
+//  return FAIL;
+    uint8_t byteAddress[EUI64_BYTES_SIZE];
 
-  assert(dest);
+    memset(dest, 0, destLen);
 
-  if(destLen < EUI64_STRING_SIZE) {
-    return 0;
-  }
+    if (destLen < EUI64_STRING_SIZE)
+        return 0;
 
-  /* new format: ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} */
-// New format again: ${Preffix}-0000${MAC_ADDR}
-  if (eui64_toBytes(byteAddress, sizeof(byteAddress)) == SUCCESS) {
+    // uuid = aioxGW-${MAC_ADDRESS} = 6 + 1 + 12 = 19
+    if (eui64_toBytes(byteAddress, sizeof(byteAddress)) != SUCCESS)
+        return 0;
 
-    memset(dest, 0x0, destLen);
-    memcpy(dest, LIB_HTTP_DEVICE_ID_PREFFIX, strlen(LIB_HTTP_DEVICE_ID_PREFFIX)+1);
-
-    snprintf(dest+strlen(LIB_HTTP_DEVICE_ID_PREFFIX), destLen-strlen(LIB_HTTP_DEVICE_ID_PREFFIX),
-             "0000%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X",
-        byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
-        byteAddress[4], byteAddress[5]);
+    // aioxGW --> device type 31 (voilin gateway)
+    // AX0 --> device type 32 (aiox test gateway)
+#ifndef YC_DEVICE_TYPE_32
+    snprintf(dest, destLen, "aioxGW-%04s%02X%02X%02X%02X%02X%02X",
+#else
+    snprintf(dest, destLen, "AX0-%04s%02X%02X%02X%02X%02X%02X",
+#endif
+             "0000",
+             byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
+             byteAddress[4], byteAddress[5]);
 
     return 1;
-  }
-  return 0;
 }
