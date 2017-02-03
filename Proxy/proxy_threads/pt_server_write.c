@@ -22,8 +22,10 @@ static pu_queue_msg_t msg[PROXY_MAX_MSG_LEN];
 
 static pu_queue_t* to_main;       //to write answers from cloud
 static pu_queue_t* from_main;     //to read and pass
+static pu_queue_t* to_agent;
 
 static void* write_proc(void* params);
+static void conn_state_notf_to_agent(int connect, const char* device_id);  //sends to the cloud notification about the connection state
 
 int start_server_write() {
 
@@ -50,10 +52,15 @@ static void* write_proc(void* params) {
     stop = 0;
     from_main = pt_get_gueue(PS_ToServerQueue);
     to_main = pt_get_gueue(PS_FromServerQueue);
+    to_agent = pt_get_gueue(PS_ToAgentQueue);
 
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
 
+    char devid[LIB_HTTP_DEVICE_ID_SIZE];
+    pc_getProxyDeviceID(devid, sizeof(devid));
+
 //Main write loop
+    conn_state_notf_to_agent(1, devid);
     while(!stop) {
         pu_queue_event_t ev;
         switch (ev = pu_wait_for_queues(events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
@@ -64,16 +71,15 @@ static void* write_proc(void* params) {
 //Sending with retries loop
                     int out = 0;
     //Adding the head to message
-                    char devid[LIB_HTTP_DEVICE_ID_SIZE];
-                    pc_getProxyDeviceID(devid, sizeof(devid));
                     pf_add_proxy_head(msg, sizeof(msg), devid, 11038);
 
                     while(!stop && !out) {
                         char resp[PROXY_MAX_MSG_LEN];
-
                         if(!ph_write(msg, resp, sizeof(resp))) {    //no connection: reconnect forever
                             pu_log(LL_ERROR, "%s: Error sending. Reconnect", PT_THREAD_NAME);
+                            conn_state_notf_to_agent(0, devid);
                             ph_reconnect();    //loop until the succ inside
+                            conn_state_notf_to_agent(1, devid);
                             out = 0;
                         }
                         else {  //data has been written
@@ -102,4 +108,22 @@ static void* write_proc(void* params) {
         }
     }
     pthread_exit(NULL);
+}
+static char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
+static char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
+static char* conn_yes = "connected";
+static char* conn_no = "disconnected";
+static char* conn_msg_3 = "\"}}]}";
+static void conn_state_notf_to_agent(int connect, const char* device_id) {  //sends to the cloud notification about the connection state
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+    strncpy(msg, conn_msg_1, sizeof(msg)-1);
+    strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);
+    strncat(msg, conn_msg_2, sizeof(msg)-strlen(msg)-1);
+    if(connect)
+        strncat(msg, conn_yes, sizeof(msg)-strlen(msg)-1);
+    else
+        strncat(msg, conn_no, sizeof(msg)-strlen(msg)-1);
+    strncat(msg, conn_msg_3, sizeof(msg)-strlen(msg)-1);
+
+    pu_queue_push(to_agent, msg, strlen(msg)+1);
 }
