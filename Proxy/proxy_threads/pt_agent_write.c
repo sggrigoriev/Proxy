@@ -85,6 +85,7 @@ static void* agent_write(void* params) {
         }
     }
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
+    lib_tcp_client_close(write_socket);
     pthread_exit(NULL);
 }
 

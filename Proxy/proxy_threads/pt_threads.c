@@ -29,6 +29,7 @@
 
 static int main_thread_startup();
 static void main_thread_shutdown();
+static void send_device_id_to_agent();
 
 #ifndef PROXY_SEPARATE_RUN
 static int initiate_wud();     //Send to WUD cloud connection info
@@ -65,7 +66,7 @@ void pt_main_thread() { //Starts the main thread.
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   //Initiating the timer for watchdog sendings
 #endif
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);    //Initiating the tomer for cloud URL request TO
-
+    send_device_id_to_agent();  //sending the device id to agent
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
@@ -225,3 +226,19 @@ static void send_wd() {
 }
 
 #endif
+static const char* first_msg_part = "{\"gw_gatewayDeviceId\":[{\"paramsMap\":{\"deviceId\":\"";
+static const char* second_msg_part = "\"}}]}";
+static void send_device_id_to_agent() {
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+    strncpy(msg, first_msg_part, sizeof(msg)-1);
+    strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);
+    strncat(msg, second_msg_part, sizeof(msg)- strlen(msg)-1);
+    msg[LIB_HTTP_MAX_MSG_SIZE-1] = '\0';
+
+    pu_queue_push(to_agent, msg, strlen(msg)+1);
+    pu_log(LL_INFO, "%s: device id was sent to the Agent: %s", PT_THREAD_NAME, msg);
+
+}

@@ -65,6 +65,11 @@ static void* agent_read(void* params) {
             set_stop_agent_children();
             break;
         }
+        if(conn == LIB_TCP_READ_EOF) {
+            pu_log(LL_ERROR, "%s. Read op failed. Nobody on remote side (EOF). Reconnect", PT_THREAD_NAME);
+            set_stop_agent_children();
+            break;
+        }
         if (conn == LIB_TCP_READ_TIMEOUT) {
             continue;   //timeout
         }

@@ -6,6 +6,7 @@
 #include <errno.h>
 
 #include <pc_settings.h>
+#include <sys/socket.h>
 #include "lib_tcp.h"
 #include "pc_defaults.h"
 #include "pu_logger.h"
@@ -59,14 +60,15 @@ static void* agent_main(void* params) {
         chids_stop = 0;
 
         if(server_socket = lib_tcp_get_server_socket(pc_getAgentPort()), server_socket < 0) {
-            pu_log(LL_ERROR, "%s: unable to bind. %d %s", PT_THREAD_NAME, errno, strerror(errno));
+            pu_log(LL_ERROR, "%s: unable to bind. %d %s. Exiting.", PT_THREAD_NAME, errno, strerror(errno));
             stop = 1;
             break;
         }
         do {
             if (read_socket = lib_tcp_listen(server_socket, 1), read_socket < 0) {
-                pu_log(LL_ERROR, "%s: listen error. %d %s", PT_THREAD_NAME, errno, strerror(errno));
-                close(server_socket);
+                pu_log(LL_ERROR, "%s: listen error. %d %s. Exiting", PT_THREAD_NAME, errno, strerror(errno));
+                lib_tcp_client_close(server_socket);
+                server_socket = -1;
                 break;      // Go to bing again
             }
             if (!read_socket) {    //timeout
@@ -93,8 +95,8 @@ static void* agent_main(void* params) {
         stop_agent_read();
         stop_agent_write();
 
-        lib_tcp_client_close(read_socket);
-        lib_tcp_client_close(write_socket);
+//Read & write sockets will be closed inside the agent_read & agent_write
+        lib_tcp_client_close(server_socket);
         pu_log(LL_WARNING, "Agent read/write threads restart");
     }
     pthread_exit(NULL);

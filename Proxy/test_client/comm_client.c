@@ -41,7 +41,7 @@ const char* write_source() {
     "]"
 "}"
 );
-    sleep(100);
+    sleep(30);
     return wr_src;
 }
 #ifndef PROXY_SEPARATE_RUN
@@ -89,6 +89,7 @@ static void* wud_proc(void* socket) {
         }
         pu_log(LL_DEBUG, "wud thread: Sent to WUD: %s", info);
     }
+    lib_tcp_client_close(wud_socket);
     pu_log(LL_INFO, "wud thread is finished");
     pthread_exit(NULL);
 }
@@ -129,7 +130,10 @@ static void* read_proc(void* socket) {
             pu_log(LL_ERROR, "%s: internal error - no ready sockets. Ignored", "read_proc");
             break;
         }
-
+        if (conn == LIB_TCP_READ_EOF) {
+            pu_log(LL_ERROR, "%s: remote connection closed. Restart", "read_proc");
+            break;
+        }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     //Reag all fully incoming messages
             pu_log(LL_INFO, "%s: got from Proxy: %s", "read_proc", out_buf);
         }
@@ -147,7 +151,6 @@ static void* write_proc(void* socket) {
 //Main loop
     while(!rw_stop) {
         //Get smth to write
-        sleep(100);
         const char* info = write_source(); //should be wait for info from queue(s)
 
         //Prepare write operation
@@ -160,6 +163,7 @@ static void* write_proc(void* socket) {
         }
         pu_log(LL_DEBUG, "write_proc: sent to Proxy: %s", info);
     }
+    lib_tcp_client_close(write_socket);
     pu_log(LL_INFO, "Client's write is finished");
     pthread_exit(NULL);
 }
@@ -229,13 +233,6 @@ static void* main_client_proc(void* dummy) {
 
 #ifndef PROXY_SEPARATE_RUN
         pthread_attr_destroy(&wudThreadAttr);
-#endif
-
-        lib_tcp_client_close(read_socket);
-        lib_tcp_client_close(write_socket);
-
-#ifndef PROXY_SEPARATE_RUN
-        lib_tcp_client_close(wud);
 #endif
         pu_log(LL_WARNING, "Client read/write/watchdog threads restart");
     }

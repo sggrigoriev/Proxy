@@ -161,13 +161,14 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     if(!conn) return LIB_TCP_READ_NO_READY_CONNS; //no ready sockets error - they sould be!
 
     conn->in_buf.len = read(conn->socket, conn->in_buf.buf, conn->in_buf.size);  //todo mlevitin
-    if(conn->in_buf.len < 0) {  //Get read error - reconnect required
+    if(conn->in_buf.len <= 0) {  //Get read error or (0) connection lost- reconnect required 
+        lib_tcp_rd_t* ret = (!conn->in_buf.len)?LIB_TCP_READ_EOF:NULL;
 
         pthread_mutex_lock(&own_mutex);
             remove_conn(all_conns, conn);
         pthread_mutex_unlock(&own_mutex);
 
-        return NULL;
+        return ret;
     }
 //Put incoming message into assembling buffer
     pthread_mutex_lock(&own_mutex);
