@@ -71,6 +71,7 @@ void ph_mgr_start() {
 //1. Get main url & deviceId from config
         pc_getMainCloudURL(main_url, sizeof(main_url));
         pc_getProxyDeviceID(device_id, sizeof(device_id));
+        pc_getActivationToken(auth_token, sizeof(auth_token));  //Coud be just "" if undefined...
 
         if(!strlen(main_url)) {
             pu_log(LL_ERROR, "Cloud connection initiation failed. Main Cloud URL is not set.");
@@ -82,11 +83,8 @@ void ph_mgr_start() {
         }
 //2. Get contact url from main
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  //Lets try again and again
-//3. If no auth_token, get auth token
-        if(pc_existsActivationToken()) {
-            pc_getActivationToken(auth_token, sizeof(auth_token));
-        }
-        else if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) continue;
+//3. Make test empty post: if answer OK - use existing one. If answer is not OK - ask for new token
+        if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) continue;
 //4. Open connections
         if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
         err = 0;    //Bon vouage!
@@ -139,13 +137,8 @@ int ph_update_main_url(const char* new_main) {
     erase_connections(post_conn, get_conn, immediate_post);
 //1. Get contact url from main
     if(!get_contact(new_main, device_id, contact_url, sizeof(contact_url))) goto on_err;
-//2. Get auth token
-    if(strcmp(new_main, old_main)) {    //new main URL is different - we really need new auth token
-        if (!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) goto on_err;
-    }
-    else {
-        pu_log(LL_WARNING, "ph_update_main_url: main URL remains the same: %s", new_main);
-    }
+//2. Get auth token. If the existing one is valid it remains the same.
+    if (!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) goto on_err;
 //3. Open connections
     if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) goto on_err;
 
@@ -368,10 +361,13 @@ static void erase_connections(lib_http_conn_t post, lib_http_conn_t get, lib_htt
     lib_http_eraseConn(get);
     lib_http_eraseConn(quick_post);
 }
+//Make test post with empty body using existing auth token. If "errorMessage":"Wrong authentication token" - requesting the new one
+//Case when the auth token is empty covers by "" value of auth_token if it si not found in config file
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size) {
     lib_http_conn_t post_d;
+    int attempts_amt = 0;
 
-    if(post_d = lib_http_createConn(LIB_HTTP_CONN_POST, conn, "", device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post_d < 0) {
+    if(post_d = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post_d < 0) {
         pu_log(LL_ERROR, "get_auth_token: Can't create connection to the %s", conn);
         lib_http_eraseConn(post_d);
         return 0;
@@ -380,9 +376,13 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
     cJSON* obj = NULL;
-
+auth_request:
+    if(attempts_amt > 1) {  //We tried to use current token and we tried to ask for new one. Total prosrosh.
+        pu_log(LL_ERROR, "get_auth_token: The Cloud rejected all attempts to get the auth token.");
+        goto on_err;
+    }
     pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
-    if(!_post(post_d, buf, reply, sizeof(reply), "")) goto on_err;
+    if(!_post(post_d, buf, reply, sizeof(reply), auth_token)) goto on_err;
 
     if(obj = cJSON_Parse(reply), !obj) {
         pu_log(LL_ERROR, "get_auth_token: Can't parse the cloud reply: %s", reply);
@@ -398,6 +398,13 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
         goto on_err;
     }
     cJSON* token = cJSON_GetObjectItem(obj, "authToken");
+    cJSON* err = cJSON_GetObjectItem(obj, "errorMessage");
+    if((!token) && (err) && (!strcmp(err->valuestring, "Wrong authentication token"))) {
+        pu_log(LL_WARNING, "get_auth_token: Proxy configuration fail contains wrong auth token. Re-request.");
+        auth_token[0] = '\0';
+        attempts_amt++;
+        goto auth_request;
+    }
     if(!token) {
         pu_log(LL_ERROR, "get_auth_token: \"authToken\" field is not found in the cloud reply.%s", reply);
         goto on_err;
