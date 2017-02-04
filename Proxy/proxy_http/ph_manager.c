@@ -378,7 +378,7 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
     cJSON* obj = NULL;
 auth_request:
     if(attempts_amt > 1) {  //We tried to use current token and we tried to ask for new one. Total prosrosh.
-        pu_log(LL_ERROR, "get_auth_token: The Cloud rejected all attempts to get the auth token.");
+        pu_log(LL_ERROR, "get_auth_token: The cloud rejected all attempts to get the auth token.");
         goto on_err;
     }
     pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
