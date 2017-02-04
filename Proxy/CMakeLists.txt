@@ -21,6 +21,7 @@ add_definitions( -DPROXY_SEPARATE_RUN )
 #build_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
 
 
+set(GCC_STANDARD $ENV{STANDARD})
 
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
@@ -30,7 +31,7 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
 	set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
@@ -41,7 +42,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
 	message(STATUS "Compiling for the X86")
     file(MAKE_DIRECTORY build/$ENV{PLATFORM})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -D_GNU_SOURCE -O3 -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -O3 -Wall -s")
 #	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
