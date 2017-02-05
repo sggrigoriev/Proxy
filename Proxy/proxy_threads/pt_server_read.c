@@ -14,7 +14,9 @@
 #define PT_THREAD_NAME "SERVER_READ"
 
 //////////////////////////////////////
-//static const char* emu = "{\"version\":\"2\",\"status\":\"ACK\",\"commands\":[{\"commandId\":463,\"type\":0,\"deviceId\":\"aioxGW-000040ED98200002\",\"parameters\":[{\"name\":\"permitJoining\",\"value\":\"1\"}]}]}";
+#ifdef PROXY_AUTH_GET_EMUL
+static const char* emu = "{\"version\":\"2\",\"status\":\"ACK\",\"commands\":[{\"commandId\":463,\"type\":0,\"deviceId\":\"aioxGW-0000080027F78CD0\",\"parameters\":[{\"name\":\"permitJoining\",\"value\":\"1\"}]}]}";
+#endif
 
 ////////////////////////////
 static pthread_t id;
@@ -61,8 +63,10 @@ static void* read_proc(void* params) {
                     out = 0;
                     break;
                 case 0:     //timeout - read again
-//                    strcpy(buf, emu);
-//                    out = 1;
+#ifdef PROXY_AUTH_GET_EMUL
+                    strcpy(buf, emu);
+                    out = 1;
+#endif
                     break;
                 case 1:     //got smth
                     out = 1;

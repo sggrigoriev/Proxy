@@ -393,8 +393,11 @@ auth_request:
         pu_log(LL_ERROR, "get_auth_token: Can't find the item \"status\" in the cloud reply: %s", reply);
         goto on_err;
     }
+    if(!strcmp(item->valuestring, "ACK")) { // Token is acce[ted - nothing to do
+        goto on_ok;
+    }
     if(strcmp(item->valuestring, "UNAUTHORIZED")) {
-        pu_log(LL_ERROR, "get_auth_token: Wrong value of \"status\" field in the cloud reply. \"UNAUTHORIZED\" expected: %s", reply);
+        pu_log(LL_ERROR, "get_auth_token: Wrong value of \"status\" field in the cloud reply. \"UNAUTHORIZED\" expected instead of %s", reply);
         goto on_err;
     }
     cJSON* token = cJSON_GetObjectItem(obj, "authToken");
@@ -415,6 +418,7 @@ auth_request:
     }
     strncpy(auth_token, token->valuestring, size-1);
 
+on_ok:
     cJSON_Delete(obj);
     lib_http_eraseConn(post_d);
     return 1;

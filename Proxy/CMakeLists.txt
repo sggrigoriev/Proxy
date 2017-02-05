@@ -6,10 +6,13 @@ message(STATUS "platform is $ENV{PLATFORM}")
 add_definitions( -DGIT_FIRMWARE_VERSION=301 )
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
+
 add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
+#Shouild be switched off! Just for internel use
+#add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
 	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
@@ -40,8 +43,8 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
 	message(STATUS "Compiling for the X86")
-    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+   file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -O3 -Wall -s")
 #	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
