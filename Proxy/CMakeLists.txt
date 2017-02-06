@@ -42,7 +42,7 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 			mbedtls
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
-	message(STATUS "Compiling for the X86")
+  	message(STATUS "Compiling for the X86")
     file(MAKE_DIRECTORY build/$ENV{PLATFORM})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -Wall")
