@@ -63,7 +63,9 @@ static void* agent_write(void* params) {
                     while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!is_childs_stop());  //run until the timeout
                     if(is_childs_stop()) break; // goto reconnect
                     if(ret < 0) { //op start failed
-                        pu_log(LL_ERROR, "%s. Write op start failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
+                        pu_log(LL_ERROR, "%s. Write op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
+//Put back non-sent message
+                        pu_queue_push(from_main, out_buf, len);
                         set_stop_agent_children();
                         break;
                     }

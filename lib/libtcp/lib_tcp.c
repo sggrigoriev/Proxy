@@ -246,6 +246,7 @@ int lib_tcp_get_client_socket(int port, int to_sec) {
 int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
     struct timeval tv = {to_sec, 0};
     fd_set writedset;
+    FD_ZERO (&writedset);
     FD_SET(wr_socket, &writedset);
 
     int result = select(wr_socket + 1, NULL, &writedset, NULL, &tv);

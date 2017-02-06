@@ -116,6 +116,7 @@ static void* read_proc(void* socket) {
         lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1); //connection removed inside
         if (!conn) {
             pu_log(LL_ERROR, "%s: read error. Reconnect. %d %s", "read_proc", errno, strerror(errno));
+            rw_stop = 1;
             break;
         }
         if (conn == LIB_TCP_READ_TIMEOUT) {
@@ -131,6 +132,7 @@ static void* read_proc(void* socket) {
         }
         if (conn == LIB_TCP_READ_EOF) {
             pu_log(LL_ERROR, "%s: remote connection closed. Restart", "read_proc");
+            rw_stop = 1;
             break;
         }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     //Reag all fully incoming messages

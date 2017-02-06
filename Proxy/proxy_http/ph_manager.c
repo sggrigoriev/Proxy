@@ -27,6 +27,14 @@ static lib_http_conn_t post_conn = -1;
 static lib_http_conn_t get_conn = -1;
 static lib_http_conn_t immediate_post = -1;
 //////////////////////////////////////////////////////////////////////
+typedef enum {
+    PH_TEST_AT_ERR, PH_TEST_AT_OK, PH_TEST_AT_WRONG
+} test_auth_token_rc_t;
+typedef enum{
+    PH_DECODE_CLOUD_REPLY_ERR, PH_DECODE_CLOUD_REPLY_TOKEN, PH_DECODE_CLOUD_REPLY_ACK,
+    PH_DECODE_CLOUD_REPLY_WRONG_TOKEN
+} decode_cloud_reply_rc_t;
+//////////////////////////////////////////////////////////////////////
 //
 // Local functions
 //
@@ -44,10 +52,17 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
 //2. Open POST& GET conns to cloud
 static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* quick_post);
 static void erase_connections(lib_http_conn_t post, lib_http_conn_t get, lib_http_conn_t quick_post);
-//1. Open POST connection w/o auth token
-//2. get auth token as an answer to POST
-//3 Close POST connectopm
+//Case1: Old modem, old token -> OK
+//Case2: Old modem, empty tolen -> ERR
+//Case3: New modem, old token -> OK; new token
+//Case4: Nde modem, empty token-> OK; new token
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size);
+//Returns 0 if error;
+static int get_new_token(lib_http_conn_t post_t, const char* device_id, char* new_token, size_t size);
+//Returns 0 if error, 1 if OK, 2 if wrong token
+static test_auth_token_rc_t test_auth_token(lib_http_conn_t post_t, const char* device_id, const char* old_token);
+//Returns 0 if error, 1 if new AT, 2 if ACK, 3 if wrong AT
+static decode_cloud_reply_rc_t decode_cloud_reply(const char* reply, char* result, size_t size);
 //////////////////////////////////////////////////////////////////////
 //Case of initiation connections:
 //1. Get main url & deviceId from config
@@ -365,70 +380,139 @@ static void erase_connections(lib_http_conn_t post, lib_http_conn_t get, lib_htt
 //Case when the auth token is empty covers by "" value of auth_token if it si not found in config file
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size) {
     lib_http_conn_t post_d;
-    int attempts_amt = 0;
 
     if(post_d = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post_d < 0) {
         pu_log(LL_ERROR, "get_auth_token: Can't create connection to the %s", conn);
-        lib_http_eraseConn(post_d);
-        return 0;
+        goto on_err;
     }
-//Get the reply with auth token
+    if(strlen(auth_token)) {    //We got auth_token in config
+        switch(test_auth_token(post_d, device_id, auth_token)) {
+            case PH_TEST_AT_OK: //existing token works
+                goto on_ok;
+            case PH_TEST_AT_WRONG:
+                pu_log(LL_ERROR, "get_auth_token: Exisiting auth token doesn't suit - Re-request");
+                break;
+            case PH_TEST_AT_ERR:
+            default:
+                goto on_err;
+        }
+    }
+//Request and/or re-request for new token
+    if(!get_new_token(post_d, device_id, auth_token, size)) goto on_err;
+//We have to send the empty post with the new token to cloud
+    if(test_auth_token(post_d, device_id, auth_token) != PH_TEST_AT_OK) {
+        pu_log(LL_ERROR, "get_auth_token: New auth token was not approved by cloud");
+        goto on_err;
+    }
+on_ok:
+    lib_http_eraseConn(post_d);
+    return 1;
+on_err:
+    lib_http_eraseConn(post_d);
+    return 0;
+}
+//Returns 0 if error;
+static int get_new_token(lib_http_conn_t post_d, const char* device_id, char* new_token, size_t size) {
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
-    cJSON* obj = NULL;
-auth_request:
-    if(attempts_amt > 1) {  //We tried to use current token and we tried to ask for new one. Total prosrosh.
-        pu_log(LL_ERROR, "get_auth_token: The cloud rejected all attempts to get the auth token.");
-        goto on_err;
-    }
+
     pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
-    if(!_post(post_d, buf, reply, sizeof(reply), auth_token)) goto on_err;
+    if(!_post(post_d, buf, reply, sizeof(reply), "")) {
+        pu_log(LL_ERROR, "get_new_token: auth token request failed");
+        return 0;
+    }
+    switch(decode_cloud_reply(reply, buf, sizeof(buf))) {
+        case PH_DECODE_CLOUD_REPLY_ERR:
+            return 0;
+        case PH_DECODE_CLOUD_REPLY_TOKEN:
+            strncpy(new_token, buf, size-1);
+            return 1;
+        case PH_DECODE_CLOUD_REPLY_WRONG_TOKEN:
+            pu_log(LL_ERROR, "get_new_token: no token from cloud: %s", buf);
+            return 0;
+        case PH_DECODE_CLOUD_REPLY_ACK :
+        default:
+            pu_log(LL_ERROR, "get_new_token: unexpected answer from cloud %s", buf);
+            return 0;
+    }
+    return 0;   //just on case...
+}
+//Returns 0 if error, 1 if token, 2 if empty token
+//PH_TEST_AT_ERR, PH_TEST_AT_OK, PH_TEST_AT_WRONG
+static test_auth_token_rc_t test_auth_token(lib_http_conn_t post_d, const char* device_id, const char* old_token) {
+    char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
+    char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
+
+    pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
+    if(!_post(post_d, buf, reply, sizeof(reply), old_token)) {
+        pu_log(LL_ERROR, "get_new_token: auth token request failed");
+        return PH_TEST_AT_ERR;
+    }
+    switch(decode_cloud_reply(reply, buf, sizeof(buf))) {
+         case PH_DECODE_CLOUD_REPLY_ACK :
+             return PH_TEST_AT_OK;
+        case PH_DECODE_CLOUD_REPLY_WRONG_TOKEN:
+            return PH_TEST_AT_WRONG;
+        case PH_DECODE_CLOUD_REPLY_ERR:
+        case PH_DECODE_CLOUD_REPLY_TOKEN:
+        default:
+            pu_log(LL_ERROR, "get_new_token: unexpected answer from cloud %s", buf);
+            return PH_TEST_AT_ERR;
+    }
+    return PH_TEST_AT_ERR; //Just on case...
+}
+//Returns 0 if error, 1 if new AT, 2 if ACK, 3 if wrong AT
+//PH_DECODE_CLOUD_REPLY_ERR, PH_DECODE_CLOUD_REPLY_TOKEN, PH_DECODE_CLOUD_REPLY_ACK,
+//PH_DECODE_CLOUD_REPLY_WRONG_TOKEN, PH_DECODE_CLOUD_REPLY_T
+static decode_cloud_reply_rc_t decode_cloud_reply(const char* reply, char* result, size_t size) {
+    cJSON *obj = NULL;
+    decode_cloud_reply_rc_t ret;
+
+    result[0] = '\0';
 
     if(obj = cJSON_Parse(reply), !obj) {
-        pu_log(LL_ERROR, "get_auth_token: Can't parse the cloud reply: %s", reply);
-        goto on_err;
+        pu_log(LL_ERROR, "decode_cloud_reply: Can't parse the cloud reply: %s", reply);
+        ret = PH_DECODE_CLOUD_REPLY_ERR;
+        goto on_exit;
     }
     cJSON* item = cJSON_GetObjectItem(obj, "status");
     if(!item) {
-        pu_log(LL_ERROR, "get_auth_token: Can't find the item \"status\" in the cloud reply: %s", reply);
-        goto on_err;
+        pu_log(LL_ERROR, "decode_cloud_reply: Can't find the item \"status\" in the cloud reply: %s", reply);
+        ret = PH_DECODE_CLOUD_REPLY_ERR;
+        goto on_exit;
     }
-    if(!strcmp(item->valuestring, "ACK")) { // Token is acce[ted - nothing to do
-        goto on_ok;
+    if(!strcmp(item->valuestring, "ACK")) { // Token is accepted - nothing to do
+        ret = PH_DECODE_CLOUD_REPLY_ACK;
+        goto on_exit;
     }
     if(strcmp(item->valuestring, "UNAUTHORIZED")) {
-        pu_log(LL_ERROR, "get_auth_token: Wrong value of \"status\" field in the cloud reply. \"UNAUTHORIZED\" expected instead of %s", reply);
-        goto on_err;
+        pu_log(LL_ERROR, "decode_cloud_reply: Wrong value of \"status\" field in the cloud reply. \"UNAUTHORIZED\" expected instead of %s", reply);
+        ret = PH_DECODE_CLOUD_REPLY_ERR;
+        goto on_exit;
     }
     cJSON* token = cJSON_GetObjectItem(obj, "authToken");
     cJSON* err = cJSON_GetObjectItem(obj, "errorMessage");
     if((!token) && (err) && (!strcmp(err->valuestring, "Wrong authentication token"))) {
-        pu_log(LL_WARNING, "get_auth_token: Proxy configuration fail contains wrong auth token. Re-request.");
-        auth_token[0] = '\0';
-        attempts_amt++;
-        goto auth_request;
+        pu_log(LL_WARNING, "decode_cloud_reply: Cloud replied by \"%s\"", err->valuestring);
+        ret = PH_DECODE_CLOUD_REPLY_WRONG_TOKEN;
+        goto on_exit;
     }
     if(!token) {
-        pu_log(LL_ERROR, "get_auth_token: \"authToken\" field is not found in the cloud reply.%s", reply);
-        goto on_err;
+        pu_log(LL_ERROR, "decode_cloud_reply: \"authToken\" field is not found in the cloud reply.%s", reply);
+        ret = PH_DECODE_CLOUD_REPLY_ERR;
+        goto on_exit;
     }
-    if((token->type != cJSON_String) || (!strlen(token->valuestring))) {
-        pu_log(LL_ERROR, "get_auth_token: Wrong authToken was pased in the cloud reply.%s", reply);
-        goto on_err;
+    if((token->type != cJSON_String)) {
+        pu_log(LL_ERROR, "decode_cloud_reply: Wrong authToken type pased in the cloud reply.%s", reply);
+        ret = PH_DECODE_CLOUD_REPLY_ERR;
+        goto on_exit;
     }
-    strncpy(auth_token, token->valuestring, size-1);
-
-on_ok:
-    cJSON_Delete(obj);
-    lib_http_eraseConn(post_d);
-    return 1;
-on_err:
-    pu_log(LL_ERROR, "get_auth_token: auth token request failed");
+    strncpy(result, token->valuestring, size-1);
+    ret = PH_DECODE_CLOUD_REPLY_TOKEN;
+on_exit:
     if(obj) cJSON_Delete(obj);
-    lib_http_eraseConn(post_d);
-    return 0;
+    return ret;
 }
-
 
 
 
