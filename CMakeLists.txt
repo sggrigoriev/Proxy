@@ -3,6 +3,7 @@ project(Presto C)
 
 add_subdirectory(Proxy)
 add_subdirectory(WUD)
+add_subdirectory(FWinstall)
 
 #NB! do not forget put it into top-level include file!
 #if STDC_VERSION >= 199901L

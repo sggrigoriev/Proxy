@@ -4,6 +4,7 @@
 
 
 #include <errno.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 #include <curl/curl.h>
@@ -71,6 +72,8 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
 //if the size of the data to read, equal to size*nmemb, the function can return what was read
 // and the function will be called again by libcurl.
 static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp);
+//Callback for file upload
+static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream);
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //return 1 of OK, 0 if not
 int lib_http_init(unsigned int max_conns_amount) {
@@ -102,7 +105,10 @@ void lib_http_close() {
 lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *purl, const char* auth_token, const char* deviceID, unsigned int conn_to) {
     lib_http_conn_t conn;
 
-    assert(purl); assert(auth_token), assert(deviceID);
+    assert(purl);
+    if(conn_type != LIB_HTTP_FILE_GET) {
+        assert(auth_token); assert(deviceID);
+    }
 
     if(conn = get_free_conn(CONN_ARRAY, CONN_ARRAY_SIZE), conn >= CONN_ARRAY_SIZE) {
         pu_log(LL_ERROR, "lib_http_createConn: no free slots to create the HTTP connection");
@@ -118,13 +124,19 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
 
 //URL string creation
     strncpy(handler->url, purl, sizeof(handler->url));
-    if(conn_type == LIB_HTTP_CONN_INIT_MAIN) {              //Get contact url from the main url
-        strncat(handler->url, LIB_HTTP_MAIN_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
+    switch(conn_type) {
+        case LIB_HTTP_CONN_INIT_MAIN:                       //Get contact url from the main url
+            strncat(handler->url, LIB_HTTP_MAIN_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
+            break;
+        case LIB_HTTP_FILE_GET:                             //No interface - just the link
+            break;
+        default:                                            //Rest of cases
+            strncat(handler->url, LIB_HTTP_ROUTINE_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
+            break;
     }
-    else {                                                  //Rest of cases
-        strncat(handler->url, LIB_HTTP_ROUTINE_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
+    if(conn_type != LIB_HTTP_FILE_GET) {                    //Add device id (all have it)
+        strncat(handler->url, deviceID, sizeof(handler->url) - strlen(handler->url) - 1);
     }
-    strncat(handler->url, deviceID, sizeof(handler->url)-strlen(handler->url)-1);   //Add device id (all have it)
     if(conn_type == LIB_HTTP_CONN_GET) {                    //Add timeout for routine GET
         char buf[20];
         snprintf(buf, sizeof(buf), "&timeout=%d", conn_to);
@@ -138,11 +150,13 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
         goto out;
     }
 // slist creation for LIB_HTTP_CONN_GET only: slist for POST should be created for each POST call: it depends on posting message size
-    if(conn_type == LIB_HTTP_CONN_GET) {
+    if((conn_type == LIB_HTTP_CONN_GET) || (conn_type == LIB_HTTP_FILE_GET)) {
         handler->slist = curl_slist_append(handler->slist, "User-Agent: IOT Proxy");
-        char buf[LIB_HTTP_AUTHENTICATION_STRING_SIZE+50];
-        snprintf(buf, sizeof(buf), "PPCAuthorization: esp token=%s", auth_token);
-        handler->slist = curl_slist_append(handler->slist, buf);
+        if(conn_type == LIB_HTTP_CONN_GET) {
+            char buf[LIB_HTTP_AUTHENTICATION_STRING_SIZE + 50];
+            snprintf(buf, sizeof(buf), "PPCAuthorization: esp token=%s", auth_token);
+            handler->slist = curl_slist_append(handler->slist, buf);
+        }
         if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_HTTPHEADER, handler->slist), curlResult != CURLE_OK) goto out;
     }
 
@@ -158,22 +172,28 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_CONNECTTIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_ERRORBUFFER, handler->err_buf), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_URL, handler->url), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &handler->inBoundCommInfo), curlResult != CURLE_OK) goto out;
-    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_BUFFERSIZE, sizeof(handler->rx_buf)), curlResult != CURLE_OK) goto out;
-
-    if(conn_type == LIB_HTTP_CONN_POST) {
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POST, 1L), curlResult != CURLE_OK) goto out;
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POSTFIELDS, 0L), curlResult != CURLE_OK) goto out;
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC), curlResult != CURLE_OK) goto out;
+    if(conn_type != LIB_HTTP_FILE_GET) {    //for file get we'll do it inside the get itself
+        if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
+        if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &handler->inBoundCommInfo), curlResult != CURLE_OK) goto out;
+        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_BUFFERSIZE, sizeof(handler->rx_buf)), curlResult != CURLE_OK) goto out;
     }
-    else {	//LIB_HTTP_GET
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPIDLE, (long)conn_to+1), curlResult != CURLE_OK) goto out;
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, (long)conn_to+1), curlResult != CURLE_OK) goto out;
+    switch (conn_type) {
+        case LIB_HTTP_CONN_POST:
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POST, 1L), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POSTFIELDS, 0L), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC), curlResult != CURLE_OK) goto out;
+            break;
+        case LIB_HTTP_CONN_GET:
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPIDLE, (long)conn_to+1), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, (long)conn_to+1), curlResult != CURLE_OK) goto out;
+            break;
+        default:
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
+            break;
     }
-    out:
+out:
     if(curlResult != CURLE_OK) {
         pu_log(LL_ERROR, "lib_http_createConn: %s", curl_easy_strerror(curlResult));
         lib_http_eraseConn(conn);
@@ -341,6 +361,65 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
         return calc_post_result(reply, ret);
     }
 }
+//Return 1 if OK, 0 if timeout, -1 if error.
+int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
+    CURLcode curlResult;
+    long httpResponseCode = 0;
+    long httpConnectCode = 0;
+    long curlErrno = 0;
+    http_handler_t* handler = NULL;
+
+    double connectDuration = 0.0;
+    double nameResolvingDuration = 0.0;
+    double transferDuration = 0.0;
+
+    assert(rx_file);
+
+    if(handler = check_conn(gf_conn), handler == NULL) return -1;
+
+    if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, file_writer), curlResult != CURLE_OK) goto out;
+    if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &rx_file), curlResult != CURLE_OK) goto out;
+
+    curlResult = curl_easy_perform(handler->hndlr);
+
+    curl_easy_getinfo(handler->hndlr, CURLINFO_APPCONNECT_TIME, &connectDuration );
+    curl_easy_getinfo(handler->hndlr, CURLINFO_NAMELOOKUP_TIME, &nameResolvingDuration );
+    curl_easy_getinfo(handler->hndlr, CURLINFO_TOTAL_TIME, &transferDuration );
+    curl_easy_getinfo(handler->hndlr, CURLINFO_RESPONSE_CODE, &httpResponseCode );
+    curl_easy_getinfo(handler->hndlr, CURLINFO_HTTP_CONNECTCODE, &httpConnectCode );
+
+    if (httpResponseCode >= 300 || httpConnectCode >= 300) {
+        pu_log(LL_ERROR, "lib_http_get_file: HTTP error response code:%ld, connect code:%ld", httpResponseCode, httpConnectCode);
+        curlErrno = EHOSTUNREACH;
+        goto out;
+    }
+    if (nameResolvingDuration >= 2.0) {
+        pu_log(LL_WARNING, "lib_http_get_file: connectDuration=%.2lf, nameResolvingDuration=%.2lf, transferDuration=%.2lf", connectDuration, nameResolvingDuration, transferDuration);
+    }
+    else {
+        pu_log(LL_DEBUG, "lib_http_get_file: connectDuration=%.2lf, nameResolvingDuration=%.2lf, transferDuration=%.2lf", connectDuration, nameResolvingDuration, transferDuration);
+    }
+    if (curlResult != CURLE_OK) {
+        if (curlResult == CURLE_ABORTED_BY_CALLBACK) {
+            curlErrno = EAGAIN;
+            pu_log(LL_DEBUG, "lib_http_get_file: quitting curl transfer: %d %s", curlErrno, strerror((int)curlErrno));
+        }
+        else {
+            if (curl_easy_getinfo(handler->hndlr, CURLINFO_OS_ERRNO, &curlErrno) != CURLE_OK) {
+                curlErrno = ENOEXEC;
+                pu_log(LL_ERROR, "lib_http_get_file: curl_easy_getinfo");
+            }
+            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /// time out error must be distinctive
+            else if (curlErrno == 0) curlErrno = ENOEXEC; /// can't be equalt to 0 if curlResult != CURLE_OK
+
+            pu_log(LL_WARNING, "lib_http_get_file: %s, %s for url %s", curl_easy_strerror(curlResult), strerror((int) curlErrno), handler->url);
+        }
+    }
+out:
+    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   //timrout case
+    if(!curlErrno) return 1; //Got smth uploaded
+    return -1;
+}
 ////////////////////////////////////////////////////////////////
 //local functions
 //
@@ -485,6 +564,13 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp) {
     }
     strncat(dataToRead->buffer, data, (size * nmemb));
     return (size * nmemb);
+}
+static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream) {
+    FILE* out= *((FILE **)stream);
+    if(!out) {
+        return -1; /* failure, bad fd passed */
+    }
+    return fwrite(buffer, size, nmemb, out);
 }
 /**
  * @brief   Called when a message has to be sent to the server. this is a standard streamer
