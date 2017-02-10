@@ -26,9 +26,12 @@
 #include <stdio.h>
 #include <getopt.h>
 
+#include "presto_release_version.h"
+
 #include "pc_defaults.h"
 #include "pc_settings.h"
 #include "pc_cli.h"
+
 /***************** Private Prototypes ****************/
 static void _proxycli_printUsage();
 static void _proxycli_printVersion();
@@ -119,5 +122,6 @@ static void _proxycli_printUsage() {
  */
 static void _proxycli_printVersion() {
   printf("Built on %s at %s\n", __DATE__, __TIME__);
-  printf("Git repository version %x\n", GIT_FIRMWARE_VERSION);
+  printf("Git repository version %s\n", PRESTO_FIRMWARE_VERSION
+  );
 }

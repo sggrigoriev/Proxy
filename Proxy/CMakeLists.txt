@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.5)
 project(Proxy C)
 message(STATUS "platform is $ENV{PLATFORM}")
 
-add_definitions( -DGIT_FIRMWARE_VERSION=301 )
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
 
@@ -60,6 +59,7 @@ endif()
 
 #all include paths
 include_directories(
+		./
         proxy_functions
         proxy_threads
         proxy_config
