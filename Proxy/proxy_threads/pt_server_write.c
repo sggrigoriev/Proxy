@@ -57,7 +57,9 @@ static void* write_proc(void* params) {
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
 
     char devid[LIB_HTTP_DEVICE_ID_SIZE];
+    char fwver[DEFAULT_FW_VERSION_SIZE];
     pc_getProxyDeviceID(devid, sizeof(devid));
+    pc_getFWVersion(fwver, sizeof(fwver));
 
 //Main write loop
     conn_state_notf_to_agent(1, devid);
@@ -85,8 +87,8 @@ static void* write_proc(void* params) {
                         else {  //data has been written
                             pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
                             if (strlen(resp) > 0) {
-                                pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
-                                pu_queue_push(to_main, resp, strlen(resp)+1);
+                                pu_log(LL_INFO, "%s: Answer from cloud forwarded to Agent: %s", PT_THREAD_NAME, resp);
+                                pu_queue_push(to_agent, resp, strlen(resp)+1);
                                 out = 1;
                             }
                             len = sizeof(msg);

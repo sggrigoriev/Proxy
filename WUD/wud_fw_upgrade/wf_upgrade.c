@@ -1,10 +1,14 @@
 //
 // Created by gsg on 01/12/16.
 //
+#include <string.h>
+#include <errno.h>
 
-#include <pu_logger.h>
-#include <wu_utils.h>
-#include <wa_reboot.h>
+#include "pu_logger.h"
+#include "lib_sha_256.h"
+
+#include "wc_defaults.h"
+#include "wu_utils.h"
 #include "wf_upgrade.h"
 
 
@@ -25,20 +29,20 @@ int wf_was_download_empty() {
 int wf_was_upgrade_empty() {
     return upgrade_empty;
 }
-//TODO: implement files check function!
-int wf_check_files(const char* path) {
-    char** flist = wu_get_flist(path);
-    if(!flist) {
-        pu_log(LL_ERROR, "wf_check_files: Memory allocation error. Reboot");
-        wa_reboot();
-        return 0;         //Just for pro-forma...
-    }
-    unsigned len = 0;
-    while(flist[len]) {
-        pu_log(LL_ERROR, "I'm wf_check_files(). Please born me! File name = %s", flist[len]);
-        len++;
-    }
-    wu_free_flist(flist);
+int wf_check_file(const char* check_sum, const char* path, const char* file_name) {
+    char full_fname[WC_MAX_PATH];
+    wu_create_file_name(full_fname, sizeof(full_fname), path, file_name, "");
 
-    return 1;
+    if(strlen(check_sum) != LIB_SHA256_BLOCK_SIZE) {
+        pu_log(LL_ERROR, "wf_check_file: incorrect check sum sent by the cloud: %d bytes instead of %d", strlen(check_sum), LIB_SHA256_BLOCK_SIZE);
+        return 0;
+    }
+    FILE* f = fopen(full_fname, "r");
+    if(!f) {
+        pu_log(LL_ERROR, "wf_check_file: error opening %s: %d, %s", full_fname, errno, strerror(errno));
+        return 0;
+    }
+    int ret = lib_sha_file_compare(check_sum, LIB_SHA256_BLOCK_SIZE, f);
+    fclose(f);
+    return ret;
 }

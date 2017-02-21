@@ -20,6 +20,8 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 	    mbedtls
 	    )
 elseif($ENV{PLATFORM} STREQUAL "host")
+	# To separate run on real HW and on server
+		add_definitions(-DWUD_ON_HOST)
 	    message(STATUS "Compiling for the X86")
 	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 #	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
@@ -56,6 +58,7 @@ include_directories(
         ../lib/libhttpcomm
         ../lib/json
 		../lib/libtimer
+		../lib/libsha
 )
 
 #WUD
@@ -78,9 +81,15 @@ file(GLOB SOURCE_FILES
         ../lib/libhttpcomm/*.c
         ../lib/json/*.c
 		../lib/libtimer/*.c
+		../lib/libsha/lib_sha_256.c
         )
-
+#SHA256 test
+#file(GLOB SHA_SOURCE_FILES
+#		../lib/libsha/*.c
+#)
 
 add_executable(WUD ${SOURCE_FILES})
+#add_executable(sha256_test ${SHA_SOURCE_FILES})
 
 target_link_libraries(WUD ${REQUIRED_LIBRARIES})
+#target_link_libraries(sha256_test ${REQUIRED_LIBRARIES})

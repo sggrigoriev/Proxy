@@ -64,5 +64,4 @@ on_finish:
     lib_http_close();
     if(rx_fd) fclose(rx_fd);
     exit(rc);
-
 }

@@ -11,5 +11,6 @@
 int wa_start_child(pr_child_t id);   //return 1 if ok, 0 if not
 int wa_restart_child(pr_child_t id);  //return 1 if ok, 0 if not
 void wa_stop_child(pr_child_t id);
+void wa_stop_children();
 
 #endif //PRESTO_WA_MANAGE_CHILDREN_H

@@ -81,6 +81,7 @@ static char conf_fname[WC_MAX_PATH];
 static char     proxy_device_id[LIB_HTTP_DEVICE_ID_SIZE] = "";
 static char     cloud_url[LIB_HTTP_MAX_URL_SIZE] = "";
 static char     proxy_auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE] = "";
+static char     firmware_version[LIB_HTTP_FW_VERSION_SIZE] = "";
 
 static char** null_list = {NULL};   //used for arg lists initiation
 
@@ -228,7 +229,7 @@ void wc_getDeviceID(char* di, size_t size) {
 }
 void wc_setDeviceID(const char* di) {
     pthread_mutex_lock(&local_mutex);
-    strncpy(proxy_device_id, di, sizeof(proxy_device_id));
+    strncpy(proxy_device_id, di, sizeof(proxy_device_id)-1);
     pthread_mutex_unlock(&local_mutex);
 }
 void wc_getURL(char* url, size_t size) {
@@ -238,7 +239,7 @@ void wc_getURL(char* url, size_t size) {
 }
 void wc_setURL(const char* url) {
     pthread_mutex_lock(&local_mutex);
-    strncpy(cloud_url, url, sizeof(cloud_url));
+    strncpy(cloud_url, url, sizeof(cloud_url)-1);
     pthread_mutex_unlock(&local_mutex);
 }
 void wc_getAuthToken(char* at, size_t size) {
@@ -248,9 +249,20 @@ void wc_getAuthToken(char* at, size_t size) {
 }
 void wc_setAuthToken(const char* at) {
     pthread_mutex_lock(&local_mutex);
-    strncpy(proxy_auth_token, at, sizeof(proxy_auth_token));
+    strncpy(proxy_auth_token, at, sizeof(proxy_auth_token)-1);
     pthread_mutex_unlock(&local_mutex);
 }
+void wc_getFWVersion(char* ver, size_t size) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(ver, firmware_version, size-1);
+    pthread_mutex_unlock(&local_mutex);
+}
+void wc_setFWVersion(const char* ver) {
+    pthread_mutex_lock(&local_mutex);
+    strncpy(firmware_version, ver, sizeof(firmware_version)-1);
+    pthread_mutex_unlock(&local_mutex);
+}
+
 ///////////////////////////////////////////////////////////////////
 //Local helpers
 static void initiate_defaults() {

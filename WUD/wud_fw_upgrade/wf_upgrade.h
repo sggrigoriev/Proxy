@@ -12,7 +12,7 @@
 #define WF_STATE_BUZY 1
 
 
-int wf_check_files(const char* path);
+int wf_check_file(const char* check_sum, const char* path, const char* file_name);
 
 void wf_set_download_state(int empty);
 void wf_set_upgrade_state(int empty);

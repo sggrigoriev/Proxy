@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "cJSON.h"
 
@@ -33,6 +34,7 @@
 #define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
 
 #define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
+#define PROXY_FW_VER_SEND_TO_HRS    "FW_VER_SEND_TO_HRS"
 
 #define PROXY_UPLOAD_TO_SEC     "UPLOAD_TO_SEC"
 #define PROXY_QUEUES_REC_AMT    "QUEUES_REC_AMT"
@@ -55,12 +57,15 @@ static char             cloud_url[PROXY_MAX_PATH];
 static char             main_cloud_url[PROXY_MAX_PATH];
 
 static unsigned int     cloud_url_req_to_hrs;
+static unsigned int     fw_ver_sending_to_hrs;
 
 static unsigned int     long_get_to;
 static unsigned int     queue_rec_amt;
 static unsigned int     agent_port;
 static unsigned int     WUD_port;
 static unsigned int     proxy_wd_to;
+
+static char             fw_version[DEFAULT_FW_VERSION_SIZE];
 
 static char conf_fname[PROXY_MAX_PATH];
 
@@ -134,6 +139,9 @@ unsigned int pc_getProxyWDTO() {
 unsigned int pc_getCloudURLTOHrs() {
     PC_RET(DEFAULT_CLOUD_URL_REQ_TO_HRS, cloud_url_req_to_hrs);
 }
+unsigned int pc_getFWVerSendToHrs() {
+    PC_RET(DEFAULT_FW_VER_SENDING_TO_HRS, fw_ver_sending_to_hrs);
+}
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
 //
@@ -163,6 +171,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL, main_cloud_url, sizeof(cloud_url)))              fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_FW_VER_SEND_TO_HRS, &fw_ver_sending_to_hrs))                    fprintf(stderr, "Default value will be used instead\n");
 
     if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                fprintf(stderr, "Default value will be used instead\n");
@@ -300,6 +309,28 @@ int pc_saveCfgFileName(const char* new_file_name) {
     return 1;
 }
 
+//FW version set/get
+void pc_readFWVersion() {    //Reads the version from DEFAULT_FW_VERSION_FILE
+    FILE* f = fopen(DEFAULT_FW_VERSION_FILE, "rt");
+    if(!f) {
+        fprintf(stderr, "Can't open %s: %d, %s. Firware version is undefined\n", DEFAULT_FW_VERSION_FILE, errno, strerror(errno));
+        return;
+    }
+    if(!fread(fw_version, sizeof(char), DEFAULT_FW_VERSION_SIZE, f)) {
+        fprintf(stderr, "Can't read %s: %d, %s. Firware version is undefined\n", DEFAULT_FW_VERSION_FILE, errno, strerror(errno));
+        return;
+    }
+    fw_version[sizeof(fw_version)-1] = '\0';
+}
+void pc_getFWVersion(char* fw_ver, size_t size) {
+    pthread_mutex_lock(&local_mutex);
+
+    strncpy(fw_ver, fw_version, size-1);
+    fw_ver[size-1] = '\0';
+
+    pthread_mutex_unlock(&local_mutex);
+}
+
 //Activation-related stuff
 //
 int pc_existsCloudURL() {
@@ -329,6 +360,7 @@ static void initiate_defaults() {
     long_get_to = DEFAULT_UPLOAD_TIMEOUT_SEC;
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;
     agent_port = DEFAULT_AGENT_PORT;
+    strncpy(fw_version, DEFAULT_FW_VERSION_NUM, DEFAULT_FW_VERSION_SIZE-1);
 }
 //////////////////////////////////////////////////////////
 //getLLTValue()    - get log_level_t value

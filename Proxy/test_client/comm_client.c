@@ -18,6 +18,8 @@
 //      "params": [{"name": "desc","value": "Send a measurement from an existing device, with no timestamp"},{"name": "power","value": "100"}]
 //  ]
 //}
+#define SEND_TO_SEC 30
+static lib_timer_clock_t send_clock = {0};
 static char wr_src[1000];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
@@ -41,7 +43,13 @@ const char* write_source() {
     "]"
 "}"
 );
-    return wr_src;
+    char* ret = NULL;
+
+    if(lib_timer_alarm(send_clock)) {
+        ret = wr_src;
+        lib_timer_init(&send_clock, SEND_TO_SEC);
+    }
+    return ret;
 }
 #ifndef PROXY_SEPARATE_RUN
 static lib_timer_clock_t wd_clock = {0};
@@ -50,10 +58,9 @@ static char wd_alert[100];
 static void make_wd() {
     char di[LIB_HTTP_DEVICE_ID_SIZE];
     pc_getProxyDeviceID(di, sizeof(di));
-    pr_make_wd_alert("Agent", wd_alert, sizeof(wd_alert), di, 11040);
+    pr_make_wd_alert4WUD(wd_alert, sizeof(wd_alert), "Agent", di);
 }
 static const char* wud_source() {
-    sleep(1);
     if(!lib_timer_alarm(wd_clock)) return NULL;
     lib_timer_init(&wd_clock, pc_getProxyWDTO());
     make_wd();
@@ -77,6 +84,7 @@ static void* wud_proc(void* socket) {
     while(!rw_stop) {
         //Get smth to write
         const char* info = wud_source(); //Return NULL if no need to send WD alert or WD alert
+        sleep(1);
         if(!info) continue;
 //Start write operation
         ssize_t ret;
@@ -148,12 +156,13 @@ static void* read_proc(void* socket) {
 
 static void* write_proc(void* socket) {
     int write_socket = *(int *)socket;
-
+    lib_timer_init(&send_clock, SEND_TO_SEC);
 //Main loop
     while(!rw_stop) {
         //Get smth to write
-        sleep(200);
-        const char* info = write_source(); //should be wait for info from queue(s)
+         const char* info = write_source(); //should be wait for info from queue(s)
+        sleep(1);
+        if(!info) continue;
 
         //Prepare write operation
         ssize_t ret;

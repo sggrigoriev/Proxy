@@ -6,7 +6,7 @@ message(STATUS "platform is $ENV{PLATFORM}")
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
 
-add_definitions( -DPROXY_SEPARATE_RUN )
+#add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
@@ -41,11 +41,13 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 			mbedtls
 		)
 elseif($ENV{PLATFORM} STREQUAL "host")
+    # To separate run on real HW and on server
+    add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+#    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -Wall")
-#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
@@ -55,7 +57,6 @@ else()
 	message(STATUS "Please select PLATFORM host or cross")
 	return()
 endif()
-
 
 #all include paths
 include_directories(

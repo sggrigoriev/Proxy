@@ -48,4 +48,6 @@ void wc_getURL(char* urk, size_t size);
 void wc_setURL(const char* url);
 void wc_getAuthToken(char* at, size_t size);
 void wc_setAuthToken(const char* at);
+void wc_getFWVersion(char* ver, size_t size);
+void wc_setFWVersion(const char* ver);
 #endif //PRESTO_WC_SETTINGS_H

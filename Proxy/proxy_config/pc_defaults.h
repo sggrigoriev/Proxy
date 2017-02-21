@@ -42,6 +42,7 @@
 
 #define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com"
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24
+#define DEFAULT_FW_VER_SENDING_TO_HRS   24
 
 #define DEFAULT_UPLOAD_TIMEOUT_SEC  120
 #define DEFAULT_PROXY_DEV_TYPE      31
@@ -64,6 +65,15 @@
 #define DEFAULT_WUD_WRITE_THREAD_TO_SEC     0
 
 #define DEFAULT_WUD_PORT                    8887
+
+#ifdef PROXY_ON_HOST
+    #define DEFAULT_FW_VERSION_FILE         "./firmware_release"
+#else
+    #define DEFAULT_FW_VERSION_FILE         "/root/Presto/firmware release"
+#endif
+
+#define DEFAULT_FW_VERSION_SIZE             LIB_HTTP_FW_VERSION_SIZE
+#define DEFAULT_FW_VERSION_NUM              "undefined firmware version"
 
 
 

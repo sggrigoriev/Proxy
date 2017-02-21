@@ -26,13 +26,21 @@ int wa_start_child(pr_child_t id) {
     pt_delete_ptr_list(buf);
     return ret;
 }
-void wa_stop_child(pr_child_t id) {
+void wa_stop_child(pr_child_t id) {     //Later. currently we can'r do it
+/*
     kill(wm_child_get_pid(id), SIGTERM);
     sleep(wc_getChildrenShutdownTO());
     kill(wm_child_get_pid(id), SIGKILL);  //In case the process didn't listen SIGTERM carefully...
+*/
+}
+void wa_stop_children() {
+    for(int c = 0; c < PR_CHILD_SIZE; c++) wa_stop_child((pr_child_t)c);
 }
 
 int wa_restart_child(pr_child_t id) {
+/*
     wa_stop_child(id);
     return wa_start_child(id);
+*/
+    return 0;
 }

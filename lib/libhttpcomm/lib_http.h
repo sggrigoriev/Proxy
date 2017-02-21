@@ -6,14 +6,18 @@
 #define PRESTO_LIB_HTTP_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 #define LIB_HTTP_DEVICE_ID_PREFFIX          "aioxGW-"
 
 #define LIB_HTTP_MAX_POST_RETRIES           3
+#define LIB_HTTP_MAX_FGET_RETRIES           5
 #define LIB_HTTP_MAX_MSG_SIZE               8192
 #define LIB_HTTP_MAX_URL_SIZE               4097
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 128
 #define LIB_HTTP_DEVICE_ID_SIZE             31
+#define LIB_HTTP_FW_VERSION_SIZE            129
+#define LIB_HTTP_SHA_256_SIZE               64      //bytes
 //Long GET from Proxy's side will be less on LIB_HTTP_PROXY_SERVER_TO_DELTA than the cloud conn timeout
 #define LIB_HTTP_PROXY_SERVER_TO_DELTA      20
 /** Maximum time for an HTTP connection, including name resolving */

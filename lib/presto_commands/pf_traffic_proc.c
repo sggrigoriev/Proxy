@@ -10,6 +10,7 @@
 #include "pu_logger.h"
 #include "pf_traffic_proc.h"
 
+// {"proxtId":"<deviceId>, "sqeuenceNunber": <sqe_number>, <msg>}
 size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id, unsigned int seq_number) {
 
     if(!strlen(msg)) {

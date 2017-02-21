@@ -5,7 +5,9 @@
 #ifndef PRESTO_WT_FW_UPGRADE_H
 #define PRESTO_WT_FW_UPGRADE_H
 
-int wt_start_fw_upgrade(const char* conn_string);
+#include "pr_commands.h"
+
+int wt_start_fw_upgrade(pr_cmd_fwu_start_t fwu_start);
 
 void wt_stop_fw_upgrade();
 

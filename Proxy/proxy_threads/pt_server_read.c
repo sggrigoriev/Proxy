@@ -3,12 +3,14 @@
 //
 #include <pthread.h>
 #include <string.h>
-#include <ph_manager.h>
-#include <pf_proxy_commands.h>
 
 #include "pc_defaults.h"
-#include "pu_logger.h"
 #include "pt_queues.h"
+#include "pu_logger.h"
+
+#include "pc_settings.h"
+#include "ph_manager.h"
+#include "pf_proxy_commands.h"
 #include "pt_server_read.h"
 
 #define PT_THREAD_NAME "SERVER_READ"
@@ -21,11 +23,15 @@ static const char* emu = "{\"version\":\"2\",\"status\":\"ACK\",\"commands\":[{\
 ////////////////////////////
 static pthread_t id;
 static pthread_attr_t attr;
+
 static volatile int stop;
 
 static pu_queue_t* to_main;
+static pu_queue_t* to_agent;
 
 static void* read_proc(void* params);
+static void send_ack_respond(msg_obj_t* msg);
+static void read_from_cloud(char* buf, size_t size);
 
 int start_server_read() {
     if(pthread_attr_init(&attr)) return 0;
@@ -48,60 +54,82 @@ void set_stop_server_read() {
 static void* read_proc(void* params) {
 
     to_main = pt_get_gueue(PS_FromServerQueue);
+    to_agent = pt_get_gueue(PS_ToAgentQueue);
     stop = 0;
 
     char buf[LIB_HTTP_MAX_MSG_SIZE];
+    char proxy_id[LIB_HTTP_DEVICE_ID_SIZE];
+    pc_getProxyDeviceID(proxy_id, sizeof(proxy_id));
 
 //Main read loop
     while(!stop) {
-        int out = 0;
-        while(!out && !stop) {
-            switch(ph_read(buf, sizeof(buf))) {
-                case -1:        //error
-                    pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
-                    ph_reconnect();    //loop again the succ inside
-                    out = 0;
-                    break;
-                case 0:     //timeout - read again
-#ifdef PROXY_AUTH_GET_EMUL
-                    strcpy(buf, emu);
-                    out = 1;
-#endif
-                    break;
-                case 1:     //got smth
-                    out = 1;
-                    break;
-                default:
-                    pu_log(LL_ERROR, "%s: unexpected rc from pt_http_read");
-                    break;
-            }
-        }
+        read_from_cloud(buf, sizeof(buf));
 //And hurray!! If the cloud sends command array to us we have to answer immediately! Promandablyadskayapizdoproushnaspizdorazjobannojrez'boy!
-        pf_cmd_t* pf_cmd = pf_parse_cloud_commands(buf);
-        if(pf_cmd) {
-            char resp[LIB_HTTP_MAX_MSG_SIZE];
-            char resp_to_resp[LIB_HTTP_MAX_MSG_SIZE] = {0};
-            pf_answer_to_command(pf_cmd->obj, resp, sizeof(resp));
-            if(strlen(resp)) {
-                if(!ph_respond(resp, resp_to_resp, sizeof(resp_to_resp))) {
-                    pu_log(LL_ERROR, "%s: Error responding. Reconnect", PT_THREAD_NAME);
-                    ph_reconnect();
-                }
-                else {
-                    pu_log(LL_INFO, "%s: Received from cloud back to the proxy command respond: %s", PT_THREAD_NAME, resp_to_resp);
-                }
+        msg_obj_t* msg = pr_parse_msg(buf);
+        if(!msg) {
+            pu_log(LL_ERROR, "%s: Incoming message %s ignored", PT_THREAD_NAME, buf);
+            continue;
+        }
+        if(pr_get_message_type(msg) != PR_COMMANDS_MSG) { //currently we're not make business with alerts and/or measuruments in Proxy
+            pr_erase_msg(msg);
+            pu_queue_push(to_main, buf, strlen(buf)+1);
+            pu_log(LL_INFO, "%s: message from cloud to Agent: %s", PT_THREAD_NAME, buf);
+        }
+        else {      //Here are commands!
+            char for_agent[LIB_HTTP_MAX_MSG_SIZE];
+            char for_proxy[LIB_HTTP_MAX_MSG_SIZE];
+            send_ack_respond(msg);
+            pr_split_msg(msg, proxy_id, for_proxy, sizeof(for_proxy), for_agent, sizeof(for_agent));
+            pr_erase_msg(msg);
+            if(strlen(for_agent)) {
+                pu_queue_push(to_agent, for_agent, strlen(for_agent)+1);
+                pu_log(LL_INFO, "%s: from cloud to Agent: %s", PT_THREAD_NAME, for_agent);
             }
-            pf_close_cloud_commands(pf_cmd);
-        }
-//
-        if(!stop) {
-            pu_queue_push(to_main, buf, strlen(buf)+1);  //NB! Possibly needs to split info to 0-terminated strings!
-            pu_log(LL_INFO, "%s: Received from cloud: %s", PT_THREAD_NAME, buf);
-        }
-        else {
-            pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
+            if(strlen(for_proxy)) {
+                pu_queue_push(to_main, for_proxy, strlen(for_proxy)+1);
+                pu_log(LL_INFO, "%s: command(s) array from cloud to Proxy: %s", PT_THREAD_NAME, for_proxy);
+            }
         }
     }
+    pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
     pthread_exit(NULL);
 }
 
+static void send_ack_respond(msg_obj_t* msg) {
+    char resp[LIB_HTTP_MAX_MSG_SIZE];
+    char resp_to_resp[LIB_HTTP_MAX_MSG_SIZE] = {0};
+    pf_answer_to_command(msg, resp, sizeof(resp));
+    if(strlen(resp)) {
+        if(!ph_respond(resp, resp_to_resp, sizeof(resp_to_resp))) {
+            pu_log(LL_ERROR, "%s: Error responding. Reconnect", PT_THREAD_NAME);
+            ph_reconnect();
+        }
+        else {
+            pu_log(LL_INFO, "%s: Received from cloud back to the proxy command respond: %s", PT_THREAD_NAME, resp_to_resp);
+        }
+    }
+}
+static void read_from_cloud(char* buf, size_t size) {
+    int out = 0;
+    while(!out && !stop) {
+        switch(ph_read(buf, size)) {
+            case -1:        //error
+                pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
+                ph_reconnect();    //loop again the succ inside
+                out = 0;
+                break;
+            case 0:     //timeout - read again
+#ifdef PROXY_AUTH_GET_EMUL
+                strcpy(buf, emu);
+                    out = 1;
+#endif
+                break;
+            case 1:     //got smth
+                out = 1;
+                break;
+            default:
+                pu_log(LL_ERROR, "%s: unexpected rc from pt_http_read");
+                break;
+        }
+    }
+}

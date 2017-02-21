@@ -11,6 +11,7 @@
 #include <pf_cloud_conn_params.h>
 #include <pf_proxy_commands.h>
 #include <ph_manager.h>
+#include <pr_commands.h>
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
@@ -30,6 +31,8 @@
 static int main_thread_startup();
 static void main_thread_shutdown();
 static void send_device_id_to_agent();
+static void send_fw_version_to_cloud();
+static void process_proxy_commands(const char* msg);
 
 #ifndef PROXY_SEPARATE_RUN
 static int initiate_wud();     //Send to WUD cloud connection info
@@ -51,12 +54,19 @@ static pu_queue_t* to_wud;
 lib_timer_clock_t wd_clock = {0};
 #endif
 lib_timer_clock_t cloud_url_update_clock = {0};
+lib_timer_clock_t gw_fw_version_sending_clock = {0};
+//TODO! If fw upgrade failed lock should be set to 0 again!!!
+int lock_gw_fw_version_sending = 0;     //set to 1 when the fw upgrade starts.
 
 static pu_queue_event_t events;
 
+static volatile int main_finish;
+/////////////////////////////////////////////////////////////////////////////////
+//Main function
+//
 void pt_main_thread() { //Starts the main thread.
 
-    int main_finish = 0;
+    main_finish = 0;
 
     if(!main_thread_startup()) {
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
@@ -66,7 +76,10 @@ void pt_main_thread() { //Starts the main thread.
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   //Initiating the timer for watchdog sendings
 #endif
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);    //Initiating the tomer for cloud URL request TO
+    lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
+
     send_device_id_to_agent();  //sending the device id to agent
+    send_fw_version_to_cloud(); //sending the fw version to the cloud
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
@@ -77,27 +90,15 @@ void pt_main_thread() { //Starts the main thread.
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: got from server_read %s", PT_THREAD_NAME, mt_msg);
-                    pf_cmd_t* pf_cmd = pf_parse_cloud_commands(mt_msg);
-                    if(pf_cmd) {
-                        char resp[LIB_HTTP_MAX_MSG_SIZE];
-                        pf_process_proxy_commands(pf_cmd);
-                        pf_encode_agent_commands(pf_cmd, resp, sizeof(resp));
-                        if(strlen(resp)) {
-                            pu_queue_push(to_agent, resp, strlen(resp) + 1);
-                        }
-                        pf_close_cloud_commands(pf_cmd);
-                    }
-                    else {
-                        pu_queue_push(to_agent, mt_msg, len);
-                    }
+                    pu_log(LL_DEBUG, "%s: got command(s) array from server_read %s", PT_THREAD_NAME, mt_msg);
+                    process_proxy_commands(mt_msg);
                     len = sizeof(mt_msg);
                 }
                 break;
             case PS_FromAgentQueue:
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
                     pu_log(LL_DEBUG, "%s: got from agent_read %s", PT_THREAD_NAME, mt_msg);
-                    pu_queue_push(to_server, mt_msg, len); //TODO mlevitin
+                    pu_queue_push(to_server, mt_msg, len);
                     len = sizeof(mt_msg);
                 }
                 break;
@@ -123,8 +124,12 @@ void pt_main_thread() { //Starts the main thread.
             ph_update_contact_url();
             lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
         }
+//3. Regular sending the fw version to the cloud
+        if(lib_timer_alarm(gw_fw_version_sending_clock) && !lock_gw_fw_version_sending) {
+            send_fw_version_to_cloud();
+            lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
+        }
     }
-
     main_thread_shutdown();
 }
 /////////////////////////////////////////////////////////////////////////////////
@@ -205,7 +210,7 @@ static int initiate_wud() {
     pc_getCloudURL(url, sizeof(url));
     pc_getProxyDeviceID(di, sizeof(di));
 
-    pr_make_cmd_cloud(url, di, at, json, sizeof(json));
+    pr_make_conn_info_cmd(json, sizeof(json), url, di, at);
 
     pu_queue_push(to_wud, json, strlen(json)+1);
 
@@ -214,31 +219,89 @@ static int initiate_wud() {
 
 // Send Watchdog to the WUD
 static void send_wd() {
-    char json[LIB_HTTP_MAX_MSG_SIZE];
-    char pn[PROXY_MAX_PROC_NAME];
+    char buf[LIB_HTTP_MAX_MSG_SIZE];
     char di[LIB_HTTP_DEVICE_ID_SIZE];
 
     pc_getProxyDeviceID(di, sizeof(di));
-    strncpy(pn, pc_getProxyName(), sizeof(pn)-1);
-    pr_make_wd_alert(pn, json, sizeof(json), di, 11041);
+    pr_make_wd_alert4WUD(buf, sizeof(buf), pc_getProxyName(), di);
 
-    pu_queue_push(to_wud, json, strlen(json)+1);
+    pu_queue_push(to_wud, buf, strlen(buf)+1);
 }
 
 #endif
-static const char* first_msg_part = "{\"gw_gatewayDeviceId\":[{\"paramsMap\":{\"deviceId\":\"";
-static const char* second_msg_part = "\"}}]}";
+//Send DeviceID to the Agent
 static void send_device_id_to_agent() {
+    const char* first_msg_part = "{\"gw_gatewayDeviceId\":[{\"paramsMap\":{\"deviceId\":\"";
+    const char* second_msg_part = "\"}}]}";
+
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char msg[LIB_HTTP_MAX_MSG_SIZE];
     pc_getProxyDeviceID(device_id, sizeof(device_id));
 
-    strncpy(msg, first_msg_part, sizeof(msg)-1);
-    strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);
-    strncat(msg, second_msg_part, sizeof(msg)- strlen(msg)-1);
-    msg[LIB_HTTP_MAX_MSG_SIZE-1] = '\0';
+    snprintf(msg, sizeof(msg)-1, "%s%s%s", first_msg_part, device_id, second_msg_part);
 
     pu_queue_push(to_agent, msg, strlen(msg)+1);
     pu_log(LL_INFO, "%s: device id was sent to the Agent: %s", PT_THREAD_NAME, msg);
 
 }
+//Sending the fw version to the cloud accordinlgy to the schedule
+static void send_fw_version_to_cloud() {
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    char fw_ver[DEFAULT_FW_VERSION_SIZE];
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+    pc_getFWVersion(fw_ver, sizeof(fw_ver));
+
+    pr_make_fw_status4cloud(msg, sizeof(msg), PR_FWU_STATUS_STOP, fw_ver, device_id);
+
+    pu_queue_push(to_server, msg, strlen(msg+1));
+    pu_log(LL_INFO, "%s: firmware version was sent to the Cloud: %s", PT_THREAD_NAME, msg);
+}
+
+static void process_proxy_commands(const char* msg) {
+    msg_obj_t* cmd_array = pr_parse_msg(mt_msg);
+    if(!cmd_array) {
+        pu_log(LL_ERROR, "%s: wrong commands array structure in message %s. Ignored", PT_THREAD_NAME, msg);
+        return;
+    }
+    size_t size = pr_get_array_size(cmd_array);
+    if(!size) {
+        pu_log(LL_WARNING, "%s: empty proxy commands array in message %s. Ignored", PT_THREAD_NAME, msg);
+        pr_erase_msg(cmd_array);
+        return;
+    }
+    for(size_t i = 0; i < size; i++) {
+        msg_obj_t* cmd_arr_elem = pr_get_arr_item(cmd_array, i);
+        pr_cmd_item_t cmd_item = pr_get_cmd_item(cmd_arr_elem);
+        switch (cmd_item.command_type) {
+#ifndef PROXY_SEPARATE_RUN
+            case PR_CMD_FWU_START: {
+                lock_gw_fw_version_sending = 1;
+
+//            case PR_CMD_FWU_CANCEL:    // And who will initiate the cancellation???
+                char for_wud[LIB_HTTP_MAX_MSG_SIZE];
+                pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
+                pu_queue_push(to_wud, msg, sizeof(msg) + 1);
+                break;
+            }
+            case PR_CMD_STOP:
+                pu_log(LL_INFO, "%d: finished because of %s", PT_THREAD_NAME, msg);
+                main_finish = 1;
+#endif
+            case PR_CMD_UPDATE_MAIN_URL:
+                if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
+                    pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
+                }
+                break;
+            case PR_CMD_UNDEFINED:
+                pu_log(LL_ERROR, "%s: bad command syntax command %s in msg %s. Ignored.", PT_THREAD_NAME, cmd_arr_elem, msg);
+                break;
+            default:
+                pu_log(LL_ERROR, "%d: unsopported command %s in message %s. Ignored", PT_THREAD_NAME, cmd_arr_elem, msg);
+                break;
+        }
+    }
+    pr_erase_msg(cmd_array);
+}
+

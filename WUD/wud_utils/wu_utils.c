@@ -9,13 +9,13 @@
 #include <assert.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <errno.h>
 
-
+#include "pu_logger.h"
 #include "wc_defaults.h"
 #include "pr_ptr_list.h"
 #include "wu_utils.h"
 
-static const char* create_file_name(char* buf, size_t buf_len, const char* dir, const char* fname, const char* ext);
 static const char* add_slash(char* buf, size_t buf_size,const char* path); //Add slash to the path's tail if no slash found there
 
 //return 0 if not exisst 1 if exists
@@ -25,7 +25,7 @@ int wu_process_exsists(const char* process_name) {
     FILE *f;
     int ret;
 
-    f = fopen(create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "r");
+    f = fopen(wu_create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "r");
     if(!f) return 0;    //No pid file
     if(fgets(pid, sizeof(fn), f)) {
         snprintf(fn, sizeof(fn), "%s%s", WC_PROC_DIR, pid);
@@ -43,7 +43,7 @@ int wu_create_pid_file(const char* process_name, pid_t process_pid) {
     char fn[4097];
     FILE* f;
 
-    f = fopen(create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "w+");
+    f = fopen(wu_create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "w+");
     if(!f) return 0;
      fprintf(f, "%d", process_pid);
     fclose(f);
@@ -129,6 +129,19 @@ int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1
     return ret;
 }
 
+//Returns 1 if Ok. All diagnostics inside
+int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_dir, const char* new_name) {
+    char new_path[WC_MAX_PATH];
+    char old_path[WC_MAX_PATH];
+    wu_create_file_name(new_path, sizeof(new_path), new_dir, new_name, "");
+    wu_create_file_name(old_path, sizeof(old_path), old_dir, old_name, "");
+    if(rename(old_path, new_path)) {
+        pu_log(LL_ERROR, "wu_move_n_rename: can't move %s to %s: %d, %s", old_path, new_path, errno, strerror(errno));
+        return 0;
+    }
+    return 1;
+}
+
 //return files list from directory. Last element NULL. If no files - return at least one element with NULL
 //return NULL if allocation error
 char** wu_get_flist(const char* path) {
@@ -162,15 +175,21 @@ char** wu_get_flist(const char* path) {
 void wu_free_flist(char** flist) {
     pt_delete_ptr_list(flist);
 }
-//////////////////////////////////////////////////////////////////////////
-//Local finctions definition
-static const char* create_file_name(char* buf, size_t buf_len, const char* dir, const char* fname, const char* ext) {
-    if(strlen(ext))
-        snprintf(buf, buf_len-1, "%s%s.%s", dir, fname, ext);
-    else
-        snprintf(buf, buf_len-1, "%s%s", dir, fname);
+//Creates file name with full path.
+const char* wu_create_file_name(char* buf, size_t buf_size, const char* dir, const char* fname, const char* ext) {
+    assert(buf); assert(dir); assert(fname); assert(ext);
+
+    add_slash(buf, buf_size, dir);
+    strncat(buf, fname, buf_size-1-strlen(buf));
+    if(strlen(ext)) {
+        strncat(buf, ".", buf_size-1-strlen(buf));
+        strncat(buf, ext, buf_size-1-strlen(buf));
+    }
     return buf;
 }
+//////////////////////////////////////////////////////////////////////////
+//Local finctions definition
+
 //Add slash to the path's tail if no slash found there
 static const char* add_slash(char* buf, size_t buf_size, const char* path) {
     if(path[strlen(path)-1] == '/') return strncpy(buf, path, buf_size);

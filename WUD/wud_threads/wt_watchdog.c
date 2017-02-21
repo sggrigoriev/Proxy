@@ -52,7 +52,7 @@ static void* wd_proc(void* params) {
             if (wa_alarm_wakeup((pr_child_t) i)) {
                 char restart[LIB_HTTP_MAX_MSG_SIZE];
 
-                pr_make_cmd_restart(pr_chld_2_string((pr_child_t) i), restart, sizeof(restart));
+                pr_make_restart_child_cmd(restart, sizeof(restart), pr_chld_2_string((pr_child_t) i));
                 pu_queue_push(to_main, restart, strlen(restart) + 1);
                 pu_log(LL_DEBUG, "%s: WD alert sent to main thread %s", PT_THREAD_NAME, restart);
             }

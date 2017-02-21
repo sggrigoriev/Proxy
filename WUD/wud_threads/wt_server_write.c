@@ -1,16 +1,18 @@
 //
 // Created by gsg on 07/12/16.
 //
-#include <pthread.h>
 #include <string.h>
-#include <malloc.h>
-#include <lib_http.h>
-#include <pf_traffic_proc.h>
+#include <pthread.h>
+
+#include "pu_logger.h"
+#include "lib_http.h"
+
+#include "pf_traffic_proc.h"
+#include "wc_settings.h"
 
 #include "wc_defaults.h"
-#include "pu_logger.h"
 #include "wt_queues.h"
-#include "wt_http_utl.h"
+#include "wh_manager.h"
 
 #include "wt_server_write.h"
 
@@ -62,13 +64,13 @@ static void* write_proc(void* params){
                     int retries = LIB_HTTP_MAX_POST_RETRIES;
     //Adding head to the message
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
-                    wt_get_device_id(devid, sizeof(devid));
+                    wc_getDeviceID(devid, sizeof(devid));
                     pf_add_proxy_head(msg, sizeof(msg), devid, 11039);
 
                     while(!stop && !out) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];
 
-                        switch (wt_http_write(msg, sizeof(msg), resp, sizeof(resp))) {
+                        switch (wh_write(msg, resp, sizeof(resp))) {
                             case LIB_HTTP_POST_ERROR:
                                 pu_log(LL_ERROR, "%s: Error sending", PT_THREAD_NAME);
                                 out = 1;
@@ -77,8 +79,9 @@ static void* write_proc(void* params){
                                 pu_log(LL_WARNING, "%s: Connectivity problems, retry", PT_THREAD_NAME);
                                 if(retries-- == 0) {
                                     char conn_str[LIB_HTTP_MAX_URL_SIZE];
-                                    pu_log(LL_ERROR,  "%s: can't connect to %s. Message is not sent. %s",
-                                           PT_THREAD_NAME, wt_http_get_cloud_conn_string(conn_str, sizeof(conn_str)), msg);
+                                    wc_getURL(conn_str, sizeof(conn_str));
+
+                                    pu_log(LL_ERROR,  "%s: can't connect to %s. Message is not sent. %s", PT_THREAD_NAME, conn_str, msg);
                                     out = 1;
                                 }
                                 else {

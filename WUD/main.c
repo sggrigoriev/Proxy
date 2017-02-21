@@ -17,7 +17,7 @@
 #include "wc_settings.h"
 #include "wu_utils.h"
 
-int main() {
+int main(int argc, char* argv[]) {
     printf("WUD launcher start\n");
 
 //WUD must check if /var/run/wud.pid exists
@@ -77,25 +77,21 @@ int main() {
                                         wc_getProxyWDTimeoutSec(),
                                         0
                                     );
-
+#ifdef WUD_ON_HOST
     if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getAgentProcessName());
+#endif
     if(!wa_start_child(proxy_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getProxyProcessName());
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getProxyProcessName());
 
-    if(!wt_request_processor()) {
-        pu_log(LL_ERROR, "WUD startup: request procesor failed. Reboot");
-    }
-    else {
-        pu_log(LL_WARNING, "WUD startup: request procesor finished. Reboot");
-    }
-//If we're here - something really wrong - reboot this zoo with sluts and blackjack!
+    wt_request_processor();
+
     wa_reboot();
 
     printf("WUD stop\n");
