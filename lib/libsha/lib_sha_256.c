@@ -92,7 +92,13 @@ int lib_sha_file_compare(const char* c_sum, size_t c_sum_len, FILE* binary_opene
         sha256_update(&ctx, rd_buf, (size_t)sz.rem);
     }
     sha256_final(&ctx, buf);
-
+/*
+    printf("\n");
+    for(unsigned int i = 0; i < LIB_SHA256_BLOCK_SIZE; i++) {
+        printf("%02x", buf[i]);
+    }
+    printf("\n");
+*/
 //Compare with hash sent and report the result
     return (memcmp(c_sum, buf, LIB_SHA256_BLOCK_SIZE) == 0);
 }

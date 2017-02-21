@@ -18,7 +18,7 @@
 //      "params": [{"name": "desc","value": "Send a measurement from an existing device, with no timestamp"},{"name": "power","value": "100"}]
 //  ]
 //}
-#define SEND_TO_SEC 30
+#define SEND_TO_SEC 3000
 static lib_timer_clock_t send_clock = {0};
 static char wr_src[1000];
 const char* write_source() {

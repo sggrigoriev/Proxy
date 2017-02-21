@@ -84,12 +84,12 @@ file(GLOB SOURCE_FILES
 		../lib/libsha/lib_sha_256.c
         )
 #SHA256 test
-#file(GLOB SHA_SOURCE_FILES
-#		../lib/libsha/*.c
-#)
+file(GLOB SHA_SOURCE_FILES
+		../lib/libsha/*.c
+)
 
 add_executable(WUD ${SOURCE_FILES})
-#add_executable(sha256_test ${SHA_SOURCE_FILES})
+add_executable(sha256_test ${SHA_SOURCE_FILES})
 
 target_link_libraries(WUD ${REQUIRED_LIBRARIES})
-#target_link_libraries(sha256_test ${REQUIRED_LIBRARIES})
+target_link_libraries(sha256_test ${REQUIRED_LIBRARIES})

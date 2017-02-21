@@ -40,6 +40,9 @@ int sha256_test()
     for(idx = 0; idx < 100000; idx++)
         fwrite(text3, strlen(text3), sizeof(char), f);
     fclose(f);
+/*
+    FILE* f = fopen("./test.zip", "rb");
+*/
     f = fopen("./sha_test", "r");
 
     pass = pass && lib_sha_file_compare((const char*)hash3, sizeof(hash3), f);
