@@ -69,7 +69,7 @@
 #ifdef PROXY_ON_HOST
     #define DEFAULT_FW_VERSION_FILE         "./firmware_release"
 #else
-    #define DEFAULT_FW_VERSION_FILE         "/root/Presto/firmware release"
+    #define DEFAULT_FW_VERSION_FILE         "/root/rresto/firmware_release"
 #endif
 
 #define DEFAULT_FW_VERSION_SIZE             LIB_HTTP_FW_VERSION_SIZE
