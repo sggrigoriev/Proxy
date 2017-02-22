@@ -63,8 +63,8 @@ const char* pr_chld_2_string(pr_child_t child_name) {
 }
 pr_child_t pr_string_2_chld(const char* child_name) {
     pr_child_t ret = PR_CHILD_SIZE;
-
-    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+    unsigned int i;
+    for(i = 0; i < PR_CHILD_SIZE; i++) {
         if(!strcmp(child_name, PROC_NAMES[i])) {
             ret = (pr_child_t)i;
             break;
@@ -158,8 +158,8 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
 //Got commands. Let split'em on reds and whites
     cJSON* agent_cmd = NULL;
     cJSON* proxy_cmd = NULL;
-
-    for(unsigned int i = 0; i < cJSON_GetArraySize(array); i++) {
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(array); i++) {
         cJSON *item = cJSON_GetArrayItem(array, i);
         if (!item) {
             pu_log(LL_ERROR, "Error extracting %d command from commands array. Skip", i);
@@ -341,8 +341,8 @@ PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
     pr_cmd_item_t ret;
     ret.command_type = PR_CMD_UNDEFINED;
-
-    for(unsigned int i = 0; i < cJSON_GetArraySize(params_array); i++) {
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(params_array); i++) {
         cJSON* item = cJSON_GetArrayItem(params_array, i);
 
         char *name, *value;

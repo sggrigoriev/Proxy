@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(FWinstall C)
+set (CMAKE_C_STANDARD 90)
 message(STATUS "platform is $ENV{PLATFORM}")
 
 #Eneble CURL debug option for POST operations
@@ -31,8 +32,8 @@ elseif($ENV{PLATFORM} STREQUAL "host")
   	message(STATUS "Compiling for the X86")
 #    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -Wall")
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -std=c90 -Wall")
+#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread

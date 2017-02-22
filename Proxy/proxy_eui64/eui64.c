@@ -228,6 +228,8 @@ error_t eui64_toString(char *dest, size_t destLen) {
 
     // aioxGW --> device type 31 (voilin gateway)
     // AX0 --> device type 32 (aiox test gateway)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat="
 #ifndef YC_DEVICE_TYPE_32
     snprintf(dest, destLen, "aioxGW-%04s%02X%02X%02X%02X%02X%02X",
 #else
@@ -236,6 +238,6 @@ error_t eui64_toString(char *dest, size_t destLen) {
              "0000",
              byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
              byteAddress[4], byteAddress[5]);
-
+#pragma GCC diagnostic pop
     return 1;
 }

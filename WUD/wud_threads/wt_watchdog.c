@@ -48,7 +48,8 @@ static void* wd_proc(void* params) {
     to_main = wt_get_gueue(WT_to_Main);
 
     while(!stop ) {
-        for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+        unsigned int i;
+        for(i = 0; i < PR_CHILD_SIZE; i++) {
              if (wa_alarm_wakeup((pr_child_t) i)) {
                 char restart[LIB_HTTP_MAX_MSG_SIZE];
 

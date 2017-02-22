@@ -229,7 +229,8 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
 }
 //
 static void hex_string_2_hex_bytes(LIB_SHA_BYTE dest[], const char* src) {
-    for(unsigned int i = 0; i < 32; i++) {
+    unsigned int i;
+    for(i = 0; i < 32; i++) {
         sscanf(src+i*2, "%2hhx", &dest[i]);
     }
 }

@@ -12,7 +12,8 @@ void wt_init_queues() {
     pthread_mutex_lock(&own_mutex);
 
     pu_queues_init(WT_MAX_QUEUE-WT_MIN_QUEUE+1);
-    for(pu_queue_event_t i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
+    pu_queue_event_t i;
+    for(i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
         qu_arr[i] = pu_queue_create(wc_getQueuesRecAmt(),i+WT_MIN_QUEUE);
         pu_log(LL_DEBUG, "wt_init_queues: queue# %d - %lu", i, qu_arr[i]);
     }
@@ -20,7 +21,8 @@ void wt_init_queues() {
 }
 void wt_erase_queues() {
     pthread_mutex_lock(&own_mutex);
-    for(unsigned int i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
+    unsigned int i;
+    for(i = 0; i < WT_MAX_QUEUE-WT_MIN_QUEUE+1; i++) {
         pu_queue_erase(qu_arr[i+WT_MIN_QUEUE]);
     }
     pu_queues_destroy();

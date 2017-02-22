@@ -276,7 +276,8 @@ static void process_proxy_commands(const char* msg) {
         pr_erase_msg(cmd_array);
         return;
     }
-    for(size_t i = 0; i < size; i++) {
+    size_t i;
+    for(i = 0; i < size; i++) {
         msg_obj_t* cmd_arr_elem = pr_get_arr_item(cmd_array, i);
         pr_cmd_item_t cmd_item = pr_get_cmd_item(cmd_arr_elem);
         switch (cmd_item.command_type) {
