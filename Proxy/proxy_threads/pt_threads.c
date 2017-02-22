@@ -205,13 +205,15 @@ static int initiate_wud() {
     char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     char url[LIB_HTTP_MAX_URL_SIZE];
     char di[LIB_HTTP_DEVICE_ID_SIZE];
+    char ver[LIB_HTTP_FW_VERSION_SIZE];
 
     pc_getActivationToken(at, sizeof(at));
     pc_getCloudURL(url, sizeof(url));
     pc_getProxyDeviceID(di, sizeof(di));
+    pc_getFWVersion(ver, sizeof(ver));
 
-    pr_make_conn_info_cmd(json, sizeof(json), url, di, at);
-
+    pr_make_conn_info_cmd(json, sizeof(json), url, di, at, ver);
+    pu_log(LL_DEBUG, "%s: gona send to WUD_WRITE %s", PT_THREAD_NAME, json);
     pu_queue_push(to_wud, json, strlen(json)+1);
 
     return 1;
@@ -261,6 +263,7 @@ static void send_fw_version_to_cloud() {
 
 static void process_proxy_commands(const char* msg) {
     msg_obj_t* cmd_array = pr_parse_msg(mt_msg);
+
     if(!cmd_array) {
         pu_log(LL_ERROR, "%s: wrong commands array structure in message %s. Ignored", PT_THREAD_NAME, msg);
         return;
@@ -282,7 +285,7 @@ static void process_proxy_commands(const char* msg) {
 //            case PR_CMD_FWU_CANCEL:    // And who will initiate the cancellation???
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];
                 pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
-                pu_queue_push(to_wud, msg, sizeof(msg) + 1);
+                pu_queue_push(to_wud, for_wud, strlen(for_wud)+1);
                 break;
             }
             case PR_CMD_STOP:

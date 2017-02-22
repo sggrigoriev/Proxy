@@ -54,7 +54,6 @@ int pc_saveCloudURL(const char* new_url);           //Return 1 of success, retur
 int pc_saveCfgFileName(const char* new_file_name);  //Return 1 of success, return 0 if not
 int pc_saveAgentPort(unsigned int new_port);        //Return 1 of success, return 0 if not
 
-//FW version set/get
 void pc_readFWVersion();    //Reads the version from DEFAULT_FW_VERSION_FILE
 void pc_getFWVersion(char* fw_version, size_t size);
 

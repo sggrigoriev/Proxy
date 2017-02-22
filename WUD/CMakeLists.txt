@@ -4,11 +4,13 @@ project(WUD C)
 
 file(MAKE_DIRECTORY ../build/$ENV{PLATFORM}/make)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build/$ENV{PLATFORM})
-configure_file(wud.conf ../build/$ENV{PLATFORM}/wud.conf COPYONLY)
 
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
-	message(STATUS "Compiling for the MIPS")
+		message(STATUS "Compiling for the MIPS")
+#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+	configure_file(wud.conf.mips ../build/$ENV{PLATFORM}/wud.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
@@ -23,12 +25,13 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 	    )
 elseif($ENV{PLATFORM} STREQUAL "host")
 	# To separate run on real HW and on server
+	configure_file(wud.conf ../build/$ENV{PLATFORM}/wud.conf COPYONLY)
 		add_definitions(-DWUD_ON_HOST)
 	    message(STATUS "Compiling for the X86")
 	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -std=c9x -lc -Wall -Werror")
 #	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+#		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	    set(REQUIRED_LIBRARIES
 		m
 		pthread

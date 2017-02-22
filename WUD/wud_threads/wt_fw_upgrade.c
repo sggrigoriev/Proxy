@@ -49,6 +49,8 @@ int wt_start_fw_upgrade(pr_cmd_fwu_start_t fwu_start) {
     file_name = strdup(fwu_start.file_name);
     check_sum = strdup(fwu_start.check_sum);
 
+    pu_log(LL_DEBUG, "%s: connection_string = %s, file_name = %s, check_sum = %s", PT_THREAD_NAME, connection_string, check_sum);
+
     if(pthread_attr_init(&attr)) goto on_error;
     if(pthread_create(&id, &attr, &read_proc, NULL)) goto on_error;
     return 1;

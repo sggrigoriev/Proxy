@@ -6,7 +6,7 @@ message(STATUS "platform is $ENV{PLATFORM}")
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
 
-add_definitions( -DPROXY_SEPARATE_RUN )
+#add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
@@ -14,9 +14,8 @@ add_definitions( -DPROXY_SEPARATE_RUN )
 #add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
-	file(MAKE_DIRECTORY ../build/$ENV{PLATFORM}/make)
+	file(MAKE_DIRECTORY ../build/$ENV{PLATFORM})
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build/$ENV{PLATFORM})
-	configure_file(proxyJSON.conf ../build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 
 
 #staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
@@ -28,6 +27,7 @@ set(GCC_STANDARD $ENV{STANDARD})
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
 	message(STATUS "Compiling for the MIPS")
+	configure_file(proxyJSON.conf.mips ../build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
@@ -44,10 +44,12 @@ elseif($ENV{PLATFORM} STREQUAL "host")
     # To separate run on real HW and on server
     add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+	configure_file(proxyJSON.conf ../build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+
+	#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -Wall")
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread

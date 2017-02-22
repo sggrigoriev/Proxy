@@ -183,8 +183,8 @@ static void routine_shutdown() {
 static int fw_started = 0;
 //
 static int run_fw_upgrade(pr_cmd_fwu_start_t fwu_start) {
+    pu_log(LL_DEBUG, "run_fw_upgrade - berinning");
     if(fw_started) return 1;    //Already run
-    wc_setFWVersion(fwu_start.fw_version);
     if(!wt_start_fw_upgrade(fwu_start)) return 0;
     fw_started = 1;
     pu_log(LL_INFO, "%s: fw_upgrade started", PT_THREAD_NAME);
@@ -207,6 +207,7 @@ static int start_server_writer(pr_cmd_cloud_t conn_info) {
     wc_setURL(conn_info.conn_string);
     wc_setDeviceID(conn_info.device_id);
     wc_setAuthToken(conn_info.auth_token);
+    wc_setFWVersion(conn_info.fw_version);
     wh_mgr_start();
 
     if(wt_start_server_write()) {

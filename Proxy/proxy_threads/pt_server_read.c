@@ -64,6 +64,7 @@ static void* read_proc(void* params) {
 //Main read loop
     while(!stop) {
         read_from_cloud(buf, sizeof(buf));
+        pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
 //And hurray!! If the cloud sends command array to us we have to answer immediately! Promandablyadskayapizdoproushnaspizdorazjobannojrez'boy!
         msg_obj_t* msg = pr_parse_msg(buf);
         if(!msg) {
@@ -73,7 +74,7 @@ static void* read_proc(void* params) {
         if(pr_get_message_type(msg) != PR_COMMANDS_MSG) { //currently we're not make business with alerts and/or measuruments in Proxy
             pr_erase_msg(msg);
             pu_log(LL_INFO, "%s: message from cloud to Agent: %s", PT_THREAD_NAME, buf);
-            pu_queue_push(to_main, buf, strlen(buf)+1);            
+            pu_queue_push(to_main, buf, strlen(buf)+1);
         }
         else {      //Here are commands!
             char for_agent[LIB_HTTP_MAX_MSG_SIZE];
@@ -83,11 +84,11 @@ static void* read_proc(void* params) {
             pr_erase_msg(msg);
             if(strlen(for_agent)) {
                 pu_log(LL_INFO, "%s: from cloud to Agent: %s", PT_THREAD_NAME, for_agent);
-                pu_queue_push(to_agent, for_agent, strlen(for_agent)+1);                
+                pu_queue_push(to_agent, for_agent, strlen(for_agent)+1);
             }
             if(strlen(for_proxy)) {
                 pu_log(LL_INFO, "%s: command(s) array from cloud to Proxy: %s", PT_THREAD_NAME, for_proxy);
-                pu_queue_push(to_main, for_proxy, strlen(for_proxy)+1);                
+                pu_queue_push(to_main, for_proxy, strlen(for_proxy)+1);
             }
         }
     }
