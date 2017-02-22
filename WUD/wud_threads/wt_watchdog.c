@@ -24,7 +24,6 @@ static volatile int stop;
 static pu_queue_t* to_main;
 
 static void* wd_proc(void* params);
-static int wd_wait(unsigned int timeout);
 
 int wt_start_watchdog() {
     if(pthread_attr_init(&attr)) return 0;
@@ -47,26 +46,20 @@ static void* wd_proc(void* params) {
     stop = 0;
 
     to_main = wt_get_gueue(WT_to_Main);
-    unsigned int to = wc_getWUDMonitoringTO();
 
-    while(!stop && wd_wait(to)) {
+    while(!stop ) {
         for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
-            if (wa_alarm_wakeup((pr_child_t) i)) {
+             if (wa_alarm_wakeup((pr_child_t) i)) {
                 char restart[LIB_HTTP_MAX_MSG_SIZE];
 
                 pr_make_restart_child_cmd(restart, sizeof(restart), pr_chld_2_string((pr_child_t) i));
                 pu_queue_push(to_main, restart, strlen(restart) + 1);
                 pu_log(LL_DEBUG, "%s: WD alert sent to main thread %s", PT_THREAD_NAME, restart);
+                wa_alarm_update((pr_child_t)i);   // Just to check alarms are working correctly
             }
         }
+        sleep(1);
     }
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);
-}
-//Return 1 if TO, return 0 if stop on interrupt
-static int wd_wait(unsigned int timeout) {
-    lib_timer_clock_t t = {0};
-    lib_timer_init(&t, timeout);
-    while(!stop && !lib_timer_alarm(t)) sleep(1);
-    return 1;
 }

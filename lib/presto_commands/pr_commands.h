@@ -86,7 +86,6 @@ pr_msg_type_t pr_get_item_type(msg_obj_t* item);
 //Commands generation
 const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version);
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name);
-const char* pr_make_stop_cmd(char* buf, size_t size);
 ////////////////////////////////////////////////////////
 //Alerts
 typedef enum {PR_FWU_STATUS_STOP = 0, PR_FWU_STATUS_START = 1, PR_FWU_STATUS_PROCESS = 2, PR_FWU_STATUS_FAIL = 3

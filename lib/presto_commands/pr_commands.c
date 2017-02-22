@@ -219,14 +219,11 @@ const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_strin
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name) {
     const char* head1 = "{ \"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
-    const char* part1 = "\"paramsMap\": {\"restartChild\": ";   //+ "All" - for now. Because of reboot!
+    const char* part1 = "\"paramsMap\": {\"restartChild\": \"";   //+ "All" - for now. Because of reboot!
     const char* part2 = "\"}}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s", head1, "the best device id!", head2, part1, child_name, part2);
     return buf;
-}
-const char* pr_make_stop_cmd(char* buf, size_t size) {
-
 }
 //
 /////////////////////////////////////////////////////////////////////////

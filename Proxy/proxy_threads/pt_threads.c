@@ -72,7 +72,9 @@ void pt_main_thread() { //Starts the main thread.
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
+    unsigned int events_timeout = 0; //Wait until the end of univerce
 #ifndef PROXY_SEPARATE_RUN
+    events_timeout = 1;
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   //Initiating the timer for watchdog sendings
 #endif
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);    //Initiating the tomer for cloud URL request TO
@@ -84,9 +86,9 @@ void pt_main_thread() { //Starts the main thread.
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
 
-        switch (ev=pu_wait_for_queues(events, DEFAULT_MAIN_THREAD_TO_SEC)) {
+        switch (ev=pu_wait_for_queues(events, events_timeout)) {
             case PS_Timeout:
-                pu_log(LL_DEBUG, "%s: TIMEOUT", PT_THREAD_NAME);
+//                pu_log(LL_DEBUG, "%s: TIMEOUT", PT_THREAD_NAME);
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
