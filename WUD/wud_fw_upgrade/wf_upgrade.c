@@ -33,7 +33,7 @@ int wf_check_file(const char* check_sum, const char* path, const char* file_name
     char full_fname[WC_MAX_PATH];
     wu_create_file_name(full_fname, sizeof(full_fname), path, file_name, "");
 
-    if(strlen(check_sum) != LIB_SHA256_BLOCK_SIZE) {
+    if(strlen(check_sum) != LIB_SHA256_BLOCK_SIZE*2) {
         pu_log(LL_ERROR, "wf_check_file: incorrect check sum sent by the cloud: %d bytes instead of %d", strlen(check_sum), LIB_SHA256_BLOCK_SIZE);
         return 0;
     }
@@ -42,7 +42,8 @@ int wf_check_file(const char* check_sum, const char* path, const char* file_name
         pu_log(LL_ERROR, "wf_check_file: error opening %s: %d, %s", full_fname, errno, strerror(errno));
         return 0;
     }
-    int ret = lib_sha_file_compare(check_sum, LIB_SHA256_BLOCK_SIZE, f);
+
+    int ret = lib_sha_file_compare(check_sum, f);
     fclose(f);
     return ret;
 }

@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <lib_timer.h>
 
 #include "wa_alarm.h"
 #include "pu_logger.h"
@@ -17,6 +18,7 @@
 ////////////////////////////
 static pthread_t id;
 static pthread_attr_t attr;
+
 static volatile int stop;
 
 static pu_queue_t* to_main;
@@ -36,7 +38,7 @@ void wt_stop_watchdog() {
     wt_set_stop_watchdog();
     pthread_join(id, &ret);
     pthread_attr_destroy(&attr);
-}
+ }
 void wt_set_stop_watchdog() {
     stop = 1;
 }
@@ -63,8 +65,8 @@ static void* wd_proc(void* params) {
 }
 //Return 1 if TO, return 0 if stop on interrupt
 static int wd_wait(unsigned int timeout) {
-    unsigned int ret = sleep(timeout);
-    if(!ret && !stop) return 1;  //got TO and no stop
-    if(stop) return 0;
-    return wd_wait(ret);
+    lib_timer_clock_t t = {0};
+    lib_timer_init(&t, timeout);
+    while(!stop && !lib_timer_alarm(t)) sleep(1);
+    return 1;
 }

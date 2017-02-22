@@ -115,6 +115,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
         switch(lib_http_get_file(conn, rx_fd)) {
             case 1: // Got it!
                 pu_log(LL_INFO, "wh_read_file: download of %s succeed... And nobody beleived!", file_with_path);
+                ret = 1;
                 goto on_finish;
             case 0: //timeout... try again and again, until the attempts_amount separates us
                 sleep(1);
@@ -130,11 +131,10 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
                 goto on_finish;
         }
     }
-    ret = 1;    //Looks like we got the file...
-    pthread_mutex_unlock(&frd_mutex);
+    pu_log(LL_ERROR, "wh_write: all %attempts to get the upgrade failed.");
     on_finish:
     pthread_mutex_unlock(&frd_mutex);
-    lib_http_close();
+    lib_http_eraseConn(conn);
     if(rx_fd) fclose(rx_fd);
     return ret;
 }

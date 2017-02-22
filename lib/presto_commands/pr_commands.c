@@ -225,8 +225,13 @@ const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_
     snprintf(buf, size-1, "%s%s%s%s%s%s", head1, "the best device id!", head2, part1, child_name, part2);
     return buf;
 }
+const char* pr_make_stop_cmd(char* buf, size_t size) {
+
+}
+//
 /////////////////////////////////////////////////////////////////////////
 //Alerts functions
+//
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \""; //+device_id
     const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; //+ version
@@ -251,14 +256,14 @@ const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* devic
  */
 static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, const char* diagnostics, const char* comp, const char* device_id) {
     const char* part1 = "{\"alertId\": \"12345\", \"deviceId\": \"";   // + device_id
-    const char* part2 = "\", \"alertType\":\t\"";   // + status
+    const char* part2 = "\", \"alertType\": \"";   // + status
     const char* part3 = "\", \"timestamp\":";    //+ current time
-    const char* part4 = ", \"paramsMap\": {";  //+alert_text or  component diagnostics or component + child name
+    const char* part4 = ", \"paramsMap\": {\"";  //+alert_text or  component diagnostics or component + child name
     const char* part5 = "\": \"";   //+ diagnostics or child name
     const char* part6 = "\"}}";
 
     if(diagnostics)
-        snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, alertType, part5, diagnostics, part6);
+        snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, alertText, part5, diagnostics, part6);
     else
         snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, component, part5, comp, part6);
     return buf;
@@ -305,16 +310,17 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
     ret = processWUDping(alert_item);
     if(ret.alert_type != PR_ALERT_UNDEFINED) return ret;
 
+    cJSON* a_type = cJSON_GetObjectItem(alert_item, alertType);
+    if(!a_type) return ret;
     cJSON* parMap = cJSON_GetObjectItem(alert_item, paramsMap);
     if(!parMap) return ret;
-    cJSON* a_type = cJSON_GetObjectItem(parMap, alertType);
-    if(!a_type) return ret;
     cJSON* diagnostics = cJSON_GetObjectItem(parMap, alertText);
     if(!diagnostics) return ret;
-    switch(a_type->valueint) {
+
+    switch(atoi(a_type->valuestring)) {
         case PR_ALERT_FWU_FAILED:
         case PR_ALERT_FWU_READY_4_INSTALL:
-            ret.alert_type = (pr_alert_t)a_type->valueint;
+            ret.alert_type = (pr_alert_t)atoi(a_type->valuestring);
             break;
         case PR_ALERT_MONITOR:
             ret.alert_monitor.alert_type = PR_ALERT_MONITOR;
@@ -356,7 +362,6 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         }
         else if(!strcmp(name, cmd_file_server_url)) {
             strncpy(ret.fwu_start.file_server_url, value, sizeof(ret.fwu_start.file_server_url));
-
         }
         else if(!strcmp(name, cmd_fw_update_check_sum)) {
             strncpy(ret.fwu_start.check_sum, value, sizeof(ret.fwu_start.check_sum));

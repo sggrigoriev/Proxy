@@ -201,17 +201,18 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_CHILDREN_SHUTDOWN_TO_SEC, &children_to_sec))                                          WC_ERR();
     if(!getStrValue(cfg, WUD_FW_DOWNLOAD_FOLDER, fw_download_folder, sizeof(fw_download_folder)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_FW_UPGRADE_FOLDER, fw_upgrade_folder, sizeof(fw_upgrade_folder)))                      WC_ERR();
+
     if(!getStrValue(cfg, WUD_AGENT_PROCESS_NAME, agent_process_name, sizeof(agent_process_name)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_AGENT_BINARY_NAME, agent_binary_name, sizeof(agent_binary_name)))                      WC_ERR();
     if(!getStrValue(cfg, WUD_AGENT_WORKING_DIRECTORY, agent_working_directory, sizeof(agent_working_directory)))    WC_ERR();
     if(!getUintValue(cfg, WUD_AGENT_WD_TIMEOUT_SEC, &agent_wd_timeout_sec))                                         WC_ERR();
+
     if(!getStrValue(cfg, WUD_PROXY_PROCESS_NAME, proxy_process_name, sizeof(proxy_process_name)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_PROXY_BINARY_NAME, proxy_binary_name, sizeof(proxy_process_name)))                     WC_ERR();
-    if(!getStrValue(cfg, WUD_PROXY_WORKING_DIRECTORY, agent_working_directory, sizeof(agent_working_directory)))    WC_ERR();
-    if(!getUintValue(cfg, WUD_PROXY_WD_TIMEOUT_SEC, &agent_wd_timeout_sec))                                         WC_ERR();
+    if(!getStrValue(cfg, WUD_PROXY_WORKING_DIRECTORY, proxy_working_directory, sizeof(proxy_working_directory)))    WC_ERR();
     if(!getUintValue(cfg, WUD_PROXY_WD_TIMEOUT_SEC, &proxy_wd_timeout_sec))                                         WC_ERR();
-    if(!getUintValue(cfg, WUD_MONITORING_TO_SEC, &wud_monitoring_timeout_sec))                                      WC_ERR();
 
+    if(!getUintValue(cfg, WUD_MONITORING_TO_SEC, &wud_monitoring_timeout_sec))                                      WC_ERR();
 
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
     getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);

@@ -10,6 +10,7 @@
 	          and was compiled properly. This code also serves as
 	          example usage of the functions.
 *             Modified a little for PeoplePower needs by GSG ar 19-Feb-2017
+*   NB! file check works with text presentation, so original test#3 will not work.
 *********************************************************************/
 
 /*************************** HEADER FILES ***************************/
@@ -45,7 +46,7 @@ int sha256_test()
 */
     f = fopen("./sha_test", "r");
 
-    pass = pass && lib_sha_file_compare((const char*)hash3, sizeof(hash3), f);
+    pass = pass && lib_sha_file_compare((const char*)hash3, f);
 
     fclose(f);
 
