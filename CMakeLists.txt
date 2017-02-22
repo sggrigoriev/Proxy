@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(Presto C)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 add_subdirectory(Proxy)
 add_subdirectory(WUD)
 add_subdirectory(FWinstall)

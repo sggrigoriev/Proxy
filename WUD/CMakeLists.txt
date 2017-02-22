@@ -17,7 +17,7 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
 	set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c9x -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib  -D_GNU_SOURCE -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   $ENV{GCC_STANDARD}  -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib  -D_GNU_SOURCE -Wall -s")
 	set(REQUIRED_LIBRARIES
 	    m
 	    pthread
