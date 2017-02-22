@@ -45,6 +45,7 @@ static const char* cmd_stop = "shutYouselfDown";
 
 static const char* cmd_device_id = "deviceId";
 static const char* cmd_auth_token = "authToken";
+static const char* cmd_firmware = "firmware";
 //
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
@@ -106,9 +107,9 @@ size_t pr_get_array_size(msg_obj_t* array) {
     return (size_t)cJSON_GetArraySize(array);
 }
 msg_obj_t* pr_get_arr_item(msg_obj_t* array, size_t idx) {
-    if(!array) return NULL;
-    if(array->type != cJSON_Array) return NULL;
-    if(idx >= (size_t)cJSON_GetArraySize(array)) return NULL;
+    assert(array);
+    assert(array->type == cJSON_Array);
+    assert(idx < (size_t)cJSON_GetArraySize(array));
     return cJSON_GetArrayItem(array, (int)idx);
 }
 /*
@@ -117,7 +118,9 @@ COMMON HEAD: { "type": <number>, "commandId": "<number>", "deviceId": "<GW_ID>",
 *PR_CMD_FWU_START "parameters": [
     {"name": "firmwareUpdateStatus","value": "1"},{"name": "firmwareUrl","value": "<url>"},{"name": "firmwareCheckSum","value": "<check_sum>"}, ]}
 *PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
-*PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", "value": "<device_id>"}, {"name":"authToken", value": "<authToken>"}]
+*PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", "value": "<device_id>"},
+    {"name":"authToken", value": "<authToken>"}, {"name": "firmware", "value": "<version>"}]
+
 PR_CMD_RESTART_CHILD "paramsMap": {"restartChild": "<child_name>"}
 PR_CMD_STOP "paramsMap": {"shutYouselfDown": "1"}
 PR_CMD_UPDATE_MAIN_URL: "paramsMap": {"cloud": "url"}
@@ -201,15 +204,16 @@ pr_msg_type_t pr_get_item_type(msg_obj_t* item) {
 }
 /////////////////////////////////////////////////
 //Commands creation
-const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token) {
+const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version) {
     const char* head1 = "{\"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
     const char* part1 = "\"parameters\": [{\"name\":\"connString\", \"value\": \""; //+conn_string
     const char* part2 = "\"}, {\"name\":\"deviceId\", \"value\":\"";  //+device_id
     const char* part3 = "\"}, {\"name\":\"authToken\", \"value\": \"";    //+auth_token
-    const char* part4 = "\"}]}";
+    const char* part4 = "\"}, {\"name\":\"firmware\", \"value\": \"";    //+version
+    const char* part5 = "\"}]}";
 
-    snprintf(buf, size-1, "%s%s%s%s%s%s%s%s%s%s", head1, device_id, head2, part1, conn_string, part2, device_id, part3, auth_token, part4);
+    snprintf(buf, size-1, "%s%s%s%s%s%s%s%s%s%s%s%s", head1, device_id, head2, part1, conn_string, part2, device_id, part3, auth_token, part4, version, part5);
     return buf;
 }
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name) {
@@ -367,7 +371,9 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         else if(!strcmp(name, cmd_auth_token)) {
             strncpy(ret.cloud_conn.auth_token, value, sizeof(ret.cloud_conn.auth_token));
         }
-
+        else if(!strcmp(name, cmd_firmware)) {
+            strncpy(ret.cloud_conn.fw_version, value, sizeof(ret.cloud_conn.fw_version));
+        }
     }
     return ret;
 }

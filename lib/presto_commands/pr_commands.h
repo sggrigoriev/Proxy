@@ -38,7 +38,6 @@ typedef struct {
     char file_server_url[LIB_HTTP_MAX_URL_SIZE];    //full path to the file
     char file_name[LIB_HTTP_MAX_URL_SIZE];          //file name
     char check_sum[LIB_HTTP_SHA_256_SIZE+1];           //SHA_256 size
-    char fw_version[LIB_HTTP_FW_VERSION_SIZE];
 } pr_cmd_fwu_start_t;
 
 typedef struct {
@@ -51,6 +50,7 @@ typedef struct {
     char conn_string[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char fw_version[LIB_HTTP_FW_VERSION_SIZE];
 } pr_cmd_cloud_t;
 
 typedef struct {
@@ -85,7 +85,7 @@ pr_msg_type_t pr_get_message_type(msg_obj_t* msg);
 pr_msg_type_t pr_get_item_type(msg_obj_t* item);
 ////////////////////////
 //Commands generation
-const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token);
+const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version);
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name);
 ////////////////////////////////////////////////////////
 //Alerts
