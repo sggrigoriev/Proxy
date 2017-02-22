@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
 
+file(MAKE_DIRECTORY ../build/$ENV{PLATFORM}/make)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build/$ENV{PLATFORM})
+configure_file(wud.conf ../build/$ENV{PLATFORM}/wud.conf COPYONLY)
+
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
 	message(STATUS "Compiling for the MIPS")
-	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
