@@ -34,7 +34,8 @@ void wa_stop_child(pr_child_t id) {     //Later. currently we can'r do it
 */
 }
 void wa_stop_children() {
-    for(int c = 0; c < PR_CHILD_SIZE; c++) wa_stop_child((pr_child_t)c);
+    int c;
+    for(c = 0; c < PR_CHILD_SIZE; c++) wa_stop_child((pr_child_t)c);
 }
 
 int wa_restart_child(pr_child_t id) {

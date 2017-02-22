@@ -63,8 +63,8 @@ const char* pr_chld_2_string(pr_child_t child_name) {
 }
 pr_child_t pr_string_2_chld(const char* child_name) {
     pr_child_t ret = PR_CHILD_SIZE;
-
-    for(unsigned int i = 0; i < PR_CHILD_SIZE; i++) {
+    unsigned int i;
+    for(i = 0; i < PR_CHILD_SIZE; i++) {
         if(!strcmp(child_name, PROC_NAMES[i])) {
             ret = (pr_child_t)i;
             break;
@@ -158,8 +158,8 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
 //Got commands. Let split'em on reds and whites
     cJSON* agent_cmd = NULL;
     cJSON* proxy_cmd = NULL;
-
-    for(unsigned int i = 0; i < cJSON_GetArraySize(array); i++) {
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(array); i++) {
         cJSON *item = cJSON_GetArrayItem(array, i);
         if (!item) {
             pu_log(LL_ERROR, "Error extracting %d command from commands array. Skip", i);
@@ -219,14 +219,16 @@ const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_strin
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name) {
     const char* head1 = "{ \"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
-    const char* part1 = "\"paramsMap\": {\"restartChild\": ";   //+ "All" - for now. Because of reboot!
+    const char* part1 = "\"paramsMap\": {\"restartChild\": \"";   //+ "All" - for now. Because of reboot!
     const char* part2 = "\"}}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s", head1, "the best device id!", head2, part1, child_name, part2);
     return buf;
 }
+//
 /////////////////////////////////////////////////////////////////////////
 //Alerts functions
+//
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \""; //+device_id
     const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; //+ version
@@ -251,14 +253,14 @@ const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* devic
  */
 static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, const char* diagnostics, const char* comp, const char* device_id) {
     const char* part1 = "{\"alertId\": \"12345\", \"deviceId\": \"";   // + device_id
-    const char* part2 = "\", \"alertType\":\t\"";   // + status
+    const char* part2 = "\", \"alertType\": \"";   // + status
     const char* part3 = "\", \"timestamp\":";    //+ current time
-    const char* part4 = ", \"paramsMap\": {";  //+alert_text or  component diagnostics or component + child name
+    const char* part4 = ", \"paramsMap\": {\"";  //+alert_text or  component diagnostics or component + child name
     const char* part5 = "\": \"";   //+ diagnostics or child name
     const char* part6 = "\"}}";
 
     if(diagnostics)
-        snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, alertType, part5, diagnostics, part6);
+        snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, alertText, part5, diagnostics, part6);
     else
         snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, component, part5, comp, part6);
     return buf;
@@ -305,16 +307,17 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
     ret = processWUDping(alert_item);
     if(ret.alert_type != PR_ALERT_UNDEFINED) return ret;
 
+    cJSON* a_type = cJSON_GetObjectItem(alert_item, alertType);
+    if(!a_type) return ret;
     cJSON* parMap = cJSON_GetObjectItem(alert_item, paramsMap);
     if(!parMap) return ret;
-    cJSON* a_type = cJSON_GetObjectItem(parMap, alertType);
-    if(!a_type) return ret;
     cJSON* diagnostics = cJSON_GetObjectItem(parMap, alertText);
     if(!diagnostics) return ret;
-    switch(a_type->valueint) {
+
+    switch(atoi(a_type->valuestring)) {
         case PR_ALERT_FWU_FAILED:
         case PR_ALERT_FWU_READY_4_INSTALL:
-            ret.alert_type = (pr_alert_t)a_type->valueint;
+            ret.alert_type = (pr_alert_t)atoi(a_type->valuestring);
             break;
         case PR_ALERT_MONITOR:
             ret.alert_monitor.alert_type = PR_ALERT_MONITOR;
@@ -338,8 +341,8 @@ PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
     pr_cmd_item_t ret;
     ret.command_type = PR_CMD_UNDEFINED;
-
-    for(unsigned int i = 0; i < cJSON_GetArraySize(params_array); i++) {
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(params_array); i++) {
         cJSON* item = cJSON_GetArrayItem(params_array, i);
 
         char *name, *value;
@@ -356,7 +359,6 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         }
         else if(!strcmp(name, cmd_file_server_url)) {
             strncpy(ret.fwu_start.file_server_url, value, sizeof(ret.fwu_start.file_server_url));
-
         }
         else if(!strcmp(name, cmd_fw_update_check_sum)) {
             strncpy(ret.fwu_start.check_sum, value, sizeof(ret.fwu_start.check_sum));

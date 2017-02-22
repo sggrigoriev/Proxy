@@ -1,27 +1,27 @@
 {
-"LOG_NAME":                     "./WUD_LOG",
+"LOG_NAME":                     "/var/log/wud.log",
 "LOG_REC_AMT":                  5000,
 "LOG_LEVEL":                    "DEBUG",
 
 "QUEUES_REC_AMT":               1024,
 
-"WUD_WORKING_DIRECTORY":        "./",
+"WUD_WORKING_DIRECTORY":        "/root/presto/WUD",
 "WUD_COMM_PORT":                8887,
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
-"FW_DOWNLOAD_FOLDER":           "./download",
-"FW_UPGRADE_FOLDER":            "./upgrade",
+"FW_DOWNLOAD_FOLDER":           "/root/presto/download",
+"FW_UPGRADE_FOLDER":            "/root/presto/upgrade",
 
 "AGENT_PROCESS_NAME":           "Agent",
-"AGENT_BINARY_NAME":            "./comm_client",
+"AGENT_BINARY_NAME":            "/root/presto/zbagent",
 "AGENT_RUN_PARAMETERS":         [],
-"AGENT_WORKING_DIRECTORY":      "./",
+"AGENT_WORKING_DIRECTORY":      "/root/presto/zbagent",
 "AGENT_WD_TIMEOUT_SEC":         600,
 
 "PROXY_PROCESS_NAME":           "Proxy",
-"PROXY_BINARY_NAME":            "./Proxy",
+"PROXY_BINARY_NAME":            "/root/presto/Proxy",
 "PROXY_RUN_PARAMETERS":         [],
-"PROXY_WORKING_DIRECTORY":      "./",
+"PROXY_WORKING_DIRECTORY":      "/root/presto/Proxy",
 "PROXY_WD_TIMEOUT_SEC":         600,
 
 "WUD_MONITORING_TO_SEC":        3600

@@ -22,6 +22,8 @@ int wu_move_files(const char* dest_folder, const char* src_folder); //Returns 1 
 
 //Returns 1 if Ok. All diagnostics inside
 int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_dir, const char* new_name);
+//Return poinetr to the first non-filename symbol from the tail or empty string. No NULL!
+const char* wu_cut_off_file_name(const char* path_or_url);
 //
 //return files list from the directory. If no files - return NULL
 char** wu_get_flist(const char* path);

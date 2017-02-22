@@ -20,7 +20,7 @@ static const char* add_slash(char* buf, size_t buf_size,const char* path); //Add
 
 //return 0 if not exisst 1 if exists
 int wu_process_exsists(const char* process_name) {
-    char fn[4097];
+    char fn[WC_MAX_PATH];
     char pid[sizeof(pid_t)+1];
     FILE *f;
     int ret;
@@ -40,7 +40,7 @@ int wu_process_exsists(const char* process_name) {
 
 //return 0 if error, 1 if OK
 int wu_create_pid_file(const char* process_name, pid_t process_pid) {
-    char fn[4097];
+    char fn[WC_MAX_PATH];
     FILE* f;
 
     f = fopen(wu_create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "w+");
@@ -70,12 +70,13 @@ int wu_dir_empty(const char* dir_name) {
 //return 1 if OK, 0 if error
 int wu_clear_dir(const char* dir) {
     char path[WC_MAX_PATH];
+    char temp[WC_MAX_PATH];
 
     if(!dir || !strlen(dir)) return 1; //Nothing to elete
 
-    add_slash(path, sizeof(path), dir);
+    add_slash(temp, sizeof(temp), dir);
 
-    snprintf(path+strlen(path), sizeof(path)-strlen(path), "%s%s%s", "rm -rf ", dir, "*");
+    snprintf(path, sizeof(path)-1, "%s%s%s", "rm -rf ", temp, "*");
 
     return (system(path) == 0);
 }
@@ -103,8 +104,8 @@ int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1
     int ret = 1;
 
     if(d = opendir(src_folder), d) {
-        char buf_src[PATH_MAX];
-        char buf_dst[PATH_MAX];
+        char buf_src[WC_MAX_PATH];
+        char buf_dst[WC_MAX_PATH];
 
         add_slash(buf_src, sizeof(buf_src), src_folder);
         size_t offs_src = strlen(buf_src);
@@ -140,6 +141,15 @@ int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_
         return 0;
     }
     return 1;
+}
+
+//Return poinetr to the first non-filename symbol from the tail or empty string. No NULL!
+const char* wu_cut_off_file_name(const char* path_or_url) {
+        if((!path_or_url) || !strlen(path_or_url)) return "";
+        size_t i;
+        for(i = strlen(path_or_url); i > 0; i--)
+            if((path_or_url[i-1] == '/') || (path_or_url[i-1] == ':')) return path_or_url + i;
+        return path_or_url;
 }
 
 //return files list from directory. Last element NULL. If no files - return at least one element with NULL
@@ -192,7 +202,9 @@ const char* wu_create_file_name(char* buf, size_t buf_size, const char* dir, con
 
 //Add slash to the path's tail if no slash found there
 static const char* add_slash(char* buf, size_t buf_size, const char* path) {
-    if(path[strlen(path)-1] == '/') return strncpy(buf, path, buf_size);
-    snprintf(buf, buf_size, "%s%s", path, "/");
+    strncpy(buf, path, buf_size-1);
+    if(buf[strlen(buf)-1] != '/')
+        strncat(buf, "/", buf_size - strlen(buf) - 1);
+
     return buf;
 }

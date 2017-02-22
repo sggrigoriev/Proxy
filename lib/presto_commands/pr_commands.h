@@ -36,7 +36,6 @@ typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_REST
 typedef struct {
     pr_cmd_t command_type;          //PR_CMD_FWU_START, PR_CMD_FWU_CANCEL NB! for cancel params below are not valid
     char file_server_url[LIB_HTTP_MAX_URL_SIZE];    //full path to the file
-    char file_name[LIB_HTTP_MAX_URL_SIZE];          //file name
     char check_sum[LIB_HTTP_SHA_256_SIZE+1];           //SHA_256 size
 } pr_cmd_fwu_start_t;
 
@@ -92,8 +91,7 @@ const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_
 typedef enum {PR_FWU_STATUS_STOP = 0, PR_FWU_STATUS_START = 1, PR_FWU_STATUS_PROCESS = 2, PR_FWU_STATUS_FAIL = 3
 } fwu_status_t;
 
-typedef enum {PR_ALERT_UNDEFINED, PR_ALERT_FWU_FAILED , PR_ALERT_FWU_READY_4_INSTALL, PR_ALERT_MONITOR, PR_ALERT_WATCHDOG,
-    PR_ALERT_SIZE
+typedef enum {PR_ALERT_UNDEFINED, PR_ALERT_FWU_FAILED , PR_ALERT_FWU_READY_4_INSTALL, PR_ALERT_MONITOR, PR_ALERT_WATCHDOG
 } pr_alert_t;
 typedef struct {
     pr_alert_t alert_type;             //PR_MONITOR_ALERT, PR_ALERT_WATCHDOG
@@ -113,9 +111,10 @@ typedef union {
 //Create message to inform cloud about fw upgrade status
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id);
 const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id);
+const char* pr_make_monitor_alert4cloud(char* buf, size_t size, pr_alert_monitor_t m_alert, const char* device_id);
+
 const char* pr_make_fw_fail4WUD(char* buf, size_t size, const char* device_id);
 const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id);
-const char* pr_make_monitor_alert4cloud(char* buf, size_t size, pr_alert_monitor_t m_alert, const char* device_id);
 const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, const char* device_id);
 
 pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item);

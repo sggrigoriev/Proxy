@@ -56,22 +56,27 @@ static void sha256_transform(SHA256_CTX *ctx, const LIB_SHA_BYTE data[]);
 static void sha256_init(SHA256_CTX *ctx);
 static void sha256_update(SHA256_CTX *ctx, const LIB_SHA_BYTE data[], size_t len);
 static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[]);
+//
+static void hex_string_2_hex_bytes(LIB_SHA_BYTE dest[], const char* src);
 
 /*********************** FUNCTION DEFINITIONS ***********************/
 
 //Calculates the check sum for the file and compares it with c_sum
 //Return 1 if OK
-//          0 if not compared
-int lib_sha_file_compare(const char* c_sum, size_t c_sum_len, FILE* binary_opened_file) {
+//0 if not compared
+//c_sum supposed to be hex in string presentation with two-bytes per byte (i.e 64 symbols for 32 bytes)
+int lib_sha_file_compare(const char* c_sum, FILE* binary_opened_file) {
     const long blk_size = 4096;
     LIB_SHA_BYTE rd_buf[blk_size];
 
     LIB_SHA_BYTE buf[LIB_SHA256_BLOCK_SIZE];
+    LIB_SHA_BYTE cmp_buf[LIB_SHA256_BLOCK_SIZE];
     SHA256_CTX ctx;
 
 //Check the hash lenght
-    if(c_sum_len != LIB_SHA256_BLOCK_SIZE) return 0;
-
+    if(!c_sum || (strlen(c_sum) != LIB_SHA256_BLOCK_SIZE * 2)) return 0;
+// Convert char presentation to the byte one
+    hex_string_2_hex_bytes(cmp_buf, c_sum);
 //Calculate file length
     if(fseek(binary_opened_file, 0, SEEK_END)) return 0; // seek to end of file
     long size = ftell(binary_opened_file); // get current file pointer
@@ -92,15 +97,9 @@ int lib_sha_file_compare(const char* c_sum, size_t c_sum_len, FILE* binary_opene
         sha256_update(&ctx, rd_buf, (size_t)sz.rem);
     }
     sha256_final(&ctx, buf);
-/*
-    printf("\n");
-    for(unsigned int i = 0; i < LIB_SHA256_BLOCK_SIZE; i++) {
-        printf("%02x", buf[i]);
-    }
-    printf("\n");
-*/
+
 //Compare with hash sent and report the result
-    return (memcmp(c_sum, buf, LIB_SHA256_BLOCK_SIZE) == 0);
+    return (memcmp(cmp_buf, buf, LIB_SHA256_BLOCK_SIZE) == 0);
 }
 
 int lib_sha_string_compare(LIB_SHA_BYTE* c_sum, const char* str) {
@@ -226,5 +225,12 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
         hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+    }
+}
+//
+static void hex_string_2_hex_bytes(LIB_SHA_BYTE dest[], const char* src) {
+    unsigned int i;
+    for(i = 0; i < 32; i++) {
+        sscanf(src+i*2, "%2hhx", &dest[i]);
     }
 }

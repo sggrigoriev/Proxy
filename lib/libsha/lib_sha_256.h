@@ -25,7 +25,8 @@ typedef uint32_t    LIB_SHA_WORD;             // 32-bit word, change to "long" f
 
 
 //Return 1 if OK
-int lib_sha_file_compare(const char* c_sum, size_t c_sum_len, FILE* binay_opened_file);
+//c_sum supposed to be hex in string presentation with two-bytes per byte (i.e 64 symbols for 32 bytes)
+int lib_sha_file_compare(const char* c_sum, FILE* binay_opened_file);
 int lib_sha_string_compare(LIB_SHA_BYTE* c_sum, const char* str);
 
 #endif   // PRESTO_LIB_SHA256_H

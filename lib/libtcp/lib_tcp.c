@@ -27,8 +27,8 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size,
     if(!ret) goto on_err;
     ret->rd_conn_array = malloc(max_connections* sizeof(lib_tcp_rd_t));
     if(!ret->rd_conn_array) goto on_err;
-
-    for(unsigned int i = 0; i < max_connections; i++) {
+    unsigned int i;
+    for(i = 0; i < max_connections; i++) {
         ret->rd_conn_array[i].socket = -1;
         ret->rd_conn_array[i].in_buf.buf = malloc(in_size);
         ret->rd_conn_array[i].in_buf.len = 0;
@@ -50,7 +50,8 @@ on_err:
 lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
     assert(all_conns);
     pthread_mutex_lock(&own_mutex);
-    for(unsigned int i = 0; i < all_conns->sa_max_size; i++) {
+    unsigned int i;
+    for(i = 0; i < all_conns->sa_max_size; i++) {
             if(all_conns->rd_conn_array[i].socket < 0) {
                 all_conns->rd_conn_array[i].socket = rd_socket;
                 all_conns->sa_size++;
@@ -67,7 +68,8 @@ int lib_tcp_conn_amount(lib_tcp_conn_t* all_conns) {
 void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
     if(!all_conns) return;
     pthread_mutex_lock(&own_mutex);
-        for(unsigned int i = 0; i < all_conns->sa_max_size; i++) {
+    unsigned int i;
+        for(i = 0; i < all_conns->sa_max_size; i++) {
             if(all_conns->rd_conn_array[i].socket >= 0) {
                 shutdown(all_conns->rd_conn_array[i].socket, SHUT_RDWR);
                 close(all_conns->rd_conn_array[i].socket);
@@ -283,7 +285,8 @@ static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
 static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds) {
     int max_fd = -1;
     FD_ZERO(fds);
-    for(unsigned int i = 0; i < all_conns->sa_max_size; i++) { // get all valid sockets
+    unsigned int i;
+    for(i = 0; i < all_conns->sa_max_size; i++) { // get all valid sockets
         if(all_conns->rd_conn_array[i].socket > 0) FD_SET(all_conns->rd_conn_array[i].socket, fds);
         if(all_conns->rd_conn_array[i].socket > max_fd) max_fd = all_conns->rd_conn_array[i].socket;
     }
@@ -292,7 +295,8 @@ static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds) {
 static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds) {
     unsigned int idx = all_conns->start_no;
     lib_tcp_rd_t* ret = NULL;
-    for(unsigned int i = 0; (i < all_conns->sa_max_size)&&(!ret); i++) {
+    unsigned int i;
+    for(i = 0; (i < all_conns->sa_max_size)&&(!ret); i++) {
         if((all_conns->rd_conn_array[idx].socket >= 0) && FD_ISSET(all_conns->rd_conn_array[idx].socket, fds)) ret = all_conns->rd_conn_array+idx;
         idx = inc_start_no(idx, all_conns->sa_max_size);
     }

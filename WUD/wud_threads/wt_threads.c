@@ -183,7 +183,6 @@ static void routine_shutdown() {
 static int fw_started = 0;
 //
 static int run_fw_upgrade(pr_cmd_fwu_start_t fwu_start) {
-    pu_log(LL_DEBUG, "run_fw_upgrade - berinning");
     if(fw_started) return 1;    //Already run
     if(!wt_start_fw_upgrade(fwu_start)) return 0;
     fw_started = 1;
@@ -239,7 +238,7 @@ static void process_command(pr_cmd_item_t cmd) {
         case PR_CMD_RESTART_CHILD:
             pu_log(LL_WARNING, "%s: %s restart requested", PT_THREAD_NAME, cmd.restart_child.component);
             if (!wa_restart_child(pr_string_2_chld(cmd.restart_child.component))) {
-                pu_log(LL_ERROR, "%s: restart of %s failed. Reboot."PT_THREAD_NAME, cmd.restart_child.component);
+                pu_log(LL_ERROR, "%s: restart of %s failed. Reboot.", PT_THREAD_NAME, cmd.restart_child.component);
                 stop = 1;
             }
             else {

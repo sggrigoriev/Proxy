@@ -33,7 +33,8 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
     cJSON* resp_arr = cJSON_CreateArray();
     cJSON_AddItemToObject(resp_obj, CMD_RESP_HD, resp_arr);
 
-    for(unsigned int i = 0; i < cJSON_GetArraySize(arr); i++) {
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(arr); i++) {
         cJSON* arr_item = cJSON_GetArrayItem(arr, i);
         cJSON* cmd_id = cJSON_GetObjectItem(arr_item, CMD_CMD_ID);
         if(!cmd_id) {

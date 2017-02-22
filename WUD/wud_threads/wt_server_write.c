@@ -54,7 +54,7 @@ static void* write_proc(void* params){
     events = pu_add_queue_event(pu_create_event_set(), WT_to_Cloud);
     while(!stop) {
         pu_queue_event_t ev;
-        switch (ev = pu_wait_for_queues(events, WUD_DEFAULT_SERVER_WRITE_TO_SEC)) {
+        switch (ev = pu_wait_for_queues(events, 1)) {
             case WT_to_Cloud: {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
@@ -103,7 +103,7 @@ static void* write_proc(void* params){
                 break;
             }
             case WT_Timeout:
-                pu_log(LL_WARNING, "%s: timeout on waiting to server queue", PT_THREAD_NAME);
+//                pu_log(LL_WARNING, "%s: timeout on waiting to server queue", PT_THREAD_NAME);
                 break;
             case WT_STOP:
                 stop = 1;
