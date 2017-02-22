@@ -5,7 +5,7 @@
 	"LOG_REC_AMT":	10000,
 	"LOG_LEVEL":	"DEBUG",
 	"QUEUES_REC_AMT":	1024,
-	"AGENT_PORT":	8888,
+	"AGENT_PORT":	60110,
 	"WUD_PORT":	8887,
 	"DEVICE_TYPE":	31,
 	"MAIN_CLOUD_URL":	"http://sbox.presencepro.com",
