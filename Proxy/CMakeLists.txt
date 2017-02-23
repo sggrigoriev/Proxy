@@ -15,8 +15,8 @@ message(STATUS "platform is $ENV{PLATFORM}")
 #add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
-	file(MAKE_DIRECTORY ../build/$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../build/$ENV{PLATFORM})
+	file(MAKE_DIRECTORY ../$ENV{PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../$ENV{PLATFORM})
 
 
 #staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
@@ -28,7 +28,7 @@ set(GCC_STANDARD $ENV{STANDARD})
 if ($ENV{PLATFORM} STREQUAL "cross")
 	# MLevitin additions
 	message(STATUS "Compiling for the MIPS")
-	configure_file(proxyJSON.conf.mips ../build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+	configure_file(proxyJSON.conf.mips ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
@@ -45,7 +45,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
     # To separate run on real HW and on server
     add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-	configure_file(proxyJSON.conf ../build/$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+	configure_file(proxyJSON.conf ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 
 	#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
