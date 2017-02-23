@@ -316,16 +316,16 @@ void pc_readFWVersion() {    //Reads the version from DEFAULT_FW_VERSION_FILE
         fprintf(stderr, "Can't open %s: %d, %s. Firware version is undefined\n", DEFAULT_FW_VERSION_FILE, errno, strerror(errno));
         return;
     }
-    size_t sz = fread(fw_version, sizeof(char), DEFAULT_FW_VERSION_SIZE, f);
-
+    //size_t sz = fread(fw_version, sizeof(char), DEFAULT_FW_VERSION_SIZE, f);
+    size_t sz = fscanf(f,"%s",fw_version);
     if(!sz) {
         fprintf(stderr, "Can't read %s: %d, %s. Firware version is undefined\n", DEFAULT_FW_VERSION_FILE, errno, strerror(errno));
         return;
     }
-    else
-        fw_version[(sz < DEFAULT_FW_VERSION_SIZE)?sz:DEFAULT_FW_VERSION_SIZE-1] = '\0';
+    //else
+      //  fw_version[(sz < DEFAULT_FW_VERSION_SIZE)?sz:DEFAULT_FW_VERSION_SIZE-1] = '\0';
 
-    fw_version[sizeof(fw_version)-1] = '\0';
+    //fw_version[sizeof(fw_version)-1] = '\0';
 }
 void pc_getFWVersion(char* fw_ver, size_t size) {
     pthread_mutex_lock(&local_mutex);
