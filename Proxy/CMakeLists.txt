@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(Proxy C)
-set (CMAKE_C_STANDARD 90)
+#set (CMAKE_C_STANDARD 90)
 message(STATUS "platform is $ENV{PLATFORM}")
 
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
@@ -49,7 +49,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
 
 	#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -std=c90 -Wall")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -Wall") #-std=c90
 #	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m

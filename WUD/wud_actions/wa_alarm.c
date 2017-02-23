@@ -11,6 +11,7 @@ static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static lib_timer_clock_t ALARMS[PR_CHILD_SIZE] = {{0}};
 
+
 void wa_alarms_init() {
     unsigned int i;
     for(i = 0; i < PR_CHILD_SIZE; i++) wa_alarm_reset((pr_child_t)i);

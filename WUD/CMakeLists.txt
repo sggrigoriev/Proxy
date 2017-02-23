@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
-set (CMAKE_C_STANDARD 90)
+#set (CMAKE_C_STANDARD 90)
 
 	file(MAKE_DIRECTORY ../$ENV{PLATFORM}/make)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../$ENV{PLATFORM})
@@ -29,7 +29,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
 		configure_file(wud.conf ../$ENV{PLATFORM}/wud.conf COPYONLY)
 		add_definitions(-DWUD_ON_HOST)
 	    message(STATUS "Compiling for the X86")
-	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c90 -lc -Wall")
+	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall") #-std=c90 -lc
 #	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 #		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
