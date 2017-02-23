@@ -192,7 +192,7 @@ static void* main_client_proc(void* dummy) {
 #ifndef PROXY_SEPARATE_RUN
 
         int wud = -1;
-        pu_log(LL_INFO, "pc_getProxyWDTO() = %d, pc_getWUDPort() = %d", pc_getProxyWDTO(), pc_getWUDPort());
+        pu_log(LL_INFO, "pc_getAgentPort() = %d, pc_getWUDPort() = %d", pc_getAgentPort(), pc_getWUDPort());
         lib_timer_init(&wd_clock, pc_getProxyWDTO());
 
         while(wud = lib_tcp_get_client_socket(pc_getWUDPort(), 1), wud <= 0) {

@@ -41,7 +41,7 @@ cJSON* load_file(const char* fname) {
 
     ret = cJSON_Parse(cfg);
     if(ret == NULL) {
-        fprintf(stderr, "Error parsing the following:%s\n", cfg);
+        fprintf(stderr, "Error parsing the following:%s\n Error starts: %s", cfg, cJSON_GetErrorPtr());
     }
     free(cfg);
     return ret;
