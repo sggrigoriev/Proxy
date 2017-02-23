@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <wu_utils.h>
+#include <pu_logger.h>
 
 #include "pr_commands.h"
 #include "pr_ptr_list.h"
@@ -38,6 +39,7 @@ pid_t wm_child_get_pid(pr_child_t idx) { // return pid or 0
     return child_array[idx].pid;
 }
 int wm_child_set_pid(pr_child_t idx, pid_t pid) {
+    pu_log(LL_DEBUG, "wm_child_set_pid: Proc = %d, pid = %d", idx, pid);
     if(!pr_child_t_range_check(idx)) return 0;
     child_array[idx].pid = pid;
     return 1;
