@@ -77,8 +77,9 @@ int main(int argc, char* argv[]) {
                                         wc_getProxyWDTimeoutSec(),
                                         0
                                     );
+
 /*
-    if(!wa_start_child(agent_cd)) {
+  if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         wa_reboot();
     }
