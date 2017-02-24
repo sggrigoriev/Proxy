@@ -98,7 +98,7 @@ static void* ap_reader(void* params) {
                     break;
                 }
 
-                while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {      //Reag all fully incoming messages
+                while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {      //Reag all fully incoming messages...
                     pu_queue_push(proxy_commands, out_buf, strlen(out_buf) + 1);
                     pu_log(LL_INFO, "%s: sent to wud main: %s", PT_THREAD_NAME, out_buf);
                 }
