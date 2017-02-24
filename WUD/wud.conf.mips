@@ -5,7 +5,7 @@
 
 "QUEUES_REC_AMT":               1024,
 
-"WUD_WORKING_DIRECTORY":        "/root/presto/WUD",
+"WUD_WORKING_DIRECTORY":        "/root/presto/Proxy",
 "WUD_COMM_PORT":                8887,
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
@@ -13,7 +13,7 @@
 "FW_UPGRADE_FOLDER":            "/root/presto/upgrade",
 
 "AGENT_PROCESS_NAME":           "Agent",
-"AGENT_BINARY_NAME":            "/root/presto/zbagent",
+"AGENT_BINARY_NAME":            "/root/presto/zbagent/zbagent",
 "AGENT_RUN_PARAMETERS":         [],
 "AGENT_WORKING_DIRECTORY":      "/root/presto/zbagent",
 "AGENT_WD_TIMEOUT_SEC":         600,
