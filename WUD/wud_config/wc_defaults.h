@@ -21,10 +21,10 @@
 
 #define WC_DEFAULT_QUEUES_REC_AMT           1024
 
-#ifdef PROXY_ON_HOST
+#ifdef WUD_ON_HOST
     #define WC_DEFAULT_PID_DIRECTORY        "/var/run/"
 #else
-#define WC_DEFAULT_PID_DIRECTORY            "/root/presto"
+    #define WC_DEFAULT_PID_DIRECTORY            "/root/presto"
 #endif
 
 #define WC_DEFAULT_WUD_NAME                 "wud"
