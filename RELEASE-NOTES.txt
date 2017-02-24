@@ -50,6 +50,8 @@ VERSION 1.1.1 24-FEB-2016
         root/presto/Proxy
             Proxy
             proxyJSON.conf
+     /root/download
+     /root/upgrade
 
 10. Log files for WUD and Proxy is created in corresponding directories. This files has limited size, configured by application files (5000 lines now)
 11. Build
