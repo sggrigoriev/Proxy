@@ -29,7 +29,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
 	configure_file(wud.conf.x86 ../$ENV{PLATFORM}/wud.conf COPYONLY)
 	add_definitions(-DWUD_ON_HOST)
 	message(STATUS "Compiling for the X86")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -std=c90 -Wall") #-lc
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c90 -O0 -Wall") #-lc
 	#	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 	#	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)

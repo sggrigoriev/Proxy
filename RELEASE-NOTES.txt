@@ -61,3 +61,8 @@ VERSION 1.1.1 24-FEB-2016
     make
 
     Resulting files including proper configs can be found in presto-private-sdk/build/cross
+
+Known bugs
+=================================================================================================
+
+1. Proxy fails to Segmentation fault if one of its pors are busy. Example: set "AGENT_PORT":	8888,

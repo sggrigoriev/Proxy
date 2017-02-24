@@ -177,8 +177,10 @@ int saveToFile(const char* fname, cJSON* cfg) { //Returns 0 if bad
         fprintf(stderr, "Saving config file: Unable to open temp file. Save Failed %d %s\n", errno, strerror(errno));
     }
     else {
+        char* prnt_str = cJSON_Print(cfg);
         fprintf(f,"%s\n", cJSON_Print(cfg));
         fclose(f);
+        free(prnt_str);
         if(unlink(fname)) {
             fprintf(stderr, "Can\'t delete the file %s. Changed config file saved in %s. %d %s\n", fname, temp_name, errno, strerror(errno));
         }

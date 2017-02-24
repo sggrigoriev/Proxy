@@ -53,15 +53,14 @@ const char* pr_ptr_list2string(char* buf, size_t size, char* const* list) {
     assert(size);
     assert(list);
 
-    size_t len = size-1; //reserve space for '\0'
-    strncpy(buf, "{", len);
+    strncpy(buf, "{", size-1);
     unsigned int i;
     for(i = 0; i < pr_get_get_ptr_list_len(list); i++) {
-        strncat(buf, "<", len-strlen(buf));
-        strncat(buf, list[i], len-strlen(buf));
-        strncat(buf, ">", len-strlen(buf));
+        strncat(buf, "<", size-strlen(buf)-1);
+        strncat(buf, list[i], size-strlen(buf)-1);
+        strncat(buf, ">", size-strlen(buf)-1);
     }
-    strncat(buf, "}", len-strlen(buf));
-    buf[len] = '\0';
+    strncat(buf, "}", size-strlen(buf)-1);
+    buf[size-1] = '\0';
     return buf;
 }
