@@ -1,7 +1,7 @@
 {
 	"PROXY_PROCESS_NAME":	"Proxy",
 	"AGENT_PROCESS_NAME":	"Agent",
-	"LOG_NAME":	"/var/log/proxy.log",
+	"LOG_NAME":	"/root/presto/Proxy/proxy.log",
 	"LOG_REC_AMT":	10000,
 	"LOG_LEVEL":	"DEBUG",
 	"QUEUES_REC_AMT":	1024,
