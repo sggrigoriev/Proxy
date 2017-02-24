@@ -5,7 +5,7 @@
 
 "QUEUES_REC_AMT":               1024,
 
-"WUD_WORKING_DIRECTORY":        "/root/presto/Proxy",
+"WUD_WORKING_DIRECTORY":        "/root/presto/WUD",
 "WUD_COMM_PORT":                8887,
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
@@ -19,7 +19,7 @@
 "AGENT_WD_TIMEOUT_SEC":         600,
 
 "PROXY_PROCESS_NAME":           "Proxy",
-"PROXY_BINARY_NAME":            "/root/presto/Proxy",
+"PROXY_BINARY_NAME":            "/root/presto/Proxy/Proxy",
 "PROXY_RUN_PARAMETERS":         [],
 "PROXY_WORKING_DIRECTORY":      "/root/presto/Proxy",
 "PROXY_WD_TIMEOUT_SEC":         600,
