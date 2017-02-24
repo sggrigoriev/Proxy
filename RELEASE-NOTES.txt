@@ -6,14 +6,14 @@ VERSION 1.1.1 24-FEB-2016
 
 2. The firmware version
  Installation script must create the file "firmware_release" containing only one text string with firmware version.
- file firmware_release must be stored int /root/presto
+ file firmware_release must be stored in /root/presto
 
 3. wud.conf has new setting "WUD_DELAY_BEFORE_START_SEC"
- This declares the time in second WUD start delay. This made to wait until the gateway synchrinized own timer with the network time
+ This declares the time in second WUD start delay. This made to wait until the gateway synchronized own timer with the network time
 
 4. Firmware upgrade functionality enabled
  4.1 wud.cong file should contain two settings:
-        "FW_DOWNLOAD_FOLDER" - full path with the directory WUD will use to dowload and check file
+        "FW_DOWNLOAD_FOLDER" - full path with the directory WUD will use to download and check file
         "FW_UPGRADE_FOLDER"  - fill path with the directory WUD place the firmware file renamed to "presto_mt7688.tgz"
  4.2 After the presto_mt7688.tgz will appear in upgrade folder WUD will make the reboot to allow the AIOX script make installation process
 
@@ -29,12 +29,12 @@ VERSION 1.1.1 24-FEB-2016
           "PROXY_RUN_PARAMETERS"
           "PROXY_WORKING_DIRECTORY"
           "PROXY_WD_TIMEOUT_SEC"
-          "WUD_COMM_PORT"     - WUD will receive watchdogs from the Agent & Proxy by this port as a server
+          "WUD_COMM_PORT"                - WUD will receive watchdogs from the Agent & Proxy by this port as a server
 
     5.1 proxy.conf should contain following settings:
           "PROXY_PROCESS_NAME"   - the value of this setting shoulb be equal to the "PROXY_PROCESS_NAME" in wud configuration file
-          "WATCHDOG_TO_SEC"    - time period in seconds for watchdog messages sending to the WUD. NB! thr period should be less than "PROXY_WD_TIMEOUT_SEC" and to less than 30 seconds
-          "WUD_PORT"      - the value shoud be equal to "WUD_COMM_PORT" in wud.conf file
+          "WATCHDOG_TO_SEC"      - time period in seconds for watchdog messages sending to the WUD. NB! thr period should be less than "PROXY_WD_TIMEOUT_SEC" and to less than 30 seconds
+          "WUD_PORT"             - the value shoud be equal to "WUD_COMM_PORT" in wud.conf file
 
 6. WUD reboot functionality enabled
     6.1 WUD rebooting the GW at the end of firmware upgrade process before the installation starts
