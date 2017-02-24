@@ -26,25 +26,24 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
         exit(1);
     }
+    //initiate logger
+    pu_start_logger(wc_getLogFileName(), wc_getLogRecordsAmt(), wc_getLogVevel());
 
     if(wc_getWUDDelay()) {
-        printf("...delayed for %d second(s)...\n", wc_getWUDDelay());
+        pu_log(LL_INFO, "WUD start delayed for %d second(s)...", wc_getWUDDelay());
         sleep(wc_getWUDDelay());
     }
 
 //WUD must check if /var/run/wud.pid exists
     if(wu_process_exsists(WC_DEFAULT_WUD_NAME)) {
-        fprintf(stderr, "WUD is already running. Abort\n");
+        pu_log(LL_ERROR, "WUD is already running. Abort");
         exit(1);
     }
 //create pid file (var/run/wud.pid
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
-        fprintf(stderr, "Can\'t create PID file for %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
+        pu_log(LL_ERROR, "Can\'t create PID file for %s: %d %s. Abort", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
         exit(1);
     }
-
-//initiate logger
-    pu_start_logger(wc_getLogFileName(), wc_getLogRecordsAmt(), wc_getLogVevel());
 
 //check if download & upload directories are not empty
 //NB! Don't change the state even after files deletion: the initial state will be reported to the cloud!
