@@ -38,6 +38,7 @@ const char* wc_getProxyWorkingDirectory();
 unsigned int wc_getProxyWDTimeoutSec();
 
 unsigned int wc_getWUDMonitoringTO();
+unsigned int wc_getWUDDelay();
 
 //thread-protected functions
 int wc_load_config(const char* cfg_file_name);

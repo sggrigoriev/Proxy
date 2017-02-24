@@ -24,7 +24,8 @@
 "PROXY_WORKING_DIRECTORY":      "/root/presto/Proxy",
 "PROXY_WD_TIMEOUT_SEC":         600,
 
-"WUD_MONITORING_TO_SEC":        3600
+"WUD_MONITORING_TO_SEC":        3600,
+"WUD_DELAY_BEFORE_START_SEC":    60
 }
 
 

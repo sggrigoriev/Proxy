@@ -14,6 +14,8 @@
 #include "ph_manager.h"
 #include "pf_cloud_conn_params.h"
 
+static void print_Proxy_start_params();
+
 int main(int argc, char* argv[]) {
 
     printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
@@ -28,6 +30,8 @@ int main(int argc, char* argv[]) {
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
 
+    print_Proxy_start_params();
+
     if(!pf_get_cloud_conn_params()) exit(-1);
 
     ph_mgr_start();
@@ -40,4 +44,20 @@ int main(int argc, char* argv[]) {
 //Logger stop
     pu_stop_logger();
     exit(0);
+}
+
+static void print_Proxy_start_params() {
+    char buf[500];
+    pu_log(LL_INFO, "Proxy start parameters:");
+    pu_log(LL_INFO, "\tLog file name: %s", pc_getLogFileName());
+    pu_log(LL_INFO, "\t\tRecords amount in log file: %d", pc_getLogRecordsAmt());
+    pu_log(LL_INFO, "\t\tLog level: %d", pc_getLogVevel());
+    pu_log(LL_INFO, "\tProxy-Agent communication port: %d", pc_getAgentPort());
+    pu_log(LL_INFO, "\tProxy-WUD communication port: %d", pc_getWUDPort());
+    pu_log(LL_INFO, "\tProxy name: %s", pc_getProxyName());
+    pu_log(LL_INFO, "\tProxy watchdog sendind interval in seconds: %d", pc_getProxyWDTO());
+    pc_getMainCloudURL(buf, sizeof(buf));
+    pu_log(LL_INFO, "\tMain cloud URL: %s", buf);
+    pu_log(LL_INFO, "\tRequest for update the Contact URL interval in hours: %d", pc_getCloudURLTOHrs());
+    pu_log(LL_INFO, "\tFirmware wersion info to Cloud interval in hours: %d", pc_getFWVerSendToHrs());
 }

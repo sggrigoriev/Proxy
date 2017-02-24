@@ -17,8 +17,20 @@
 #include "wc_settings.h"
 #include "wu_utils.h"
 
+static void print_WUD_start_params();
+
 int main(int argc, char* argv[]) {
     printf("WUD launcher start\n");
+//read configuration file
+    if(!wc_load_config(WD_DEFAULT_CFG_FILE_NAME)) {
+        fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
+        exit(1);
+    }
+
+    if(wc_getWUDDelay()) {
+        printf("...delayed for %d second(s)...\n", wc_getWUDDelay());
+        sleep(wc_getWUDDelay());
+    }
 
 //WUD must check if /var/run/wud.pid exists
     if(wu_process_exsists(WC_DEFAULT_WUD_NAME)) {
@@ -28,11 +40,6 @@ int main(int argc, char* argv[]) {
 //create pid file (var/run/wud.pid
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
         fprintf(stderr, "Can\'t create PID file for %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
-        exit(1);
-    }
-//read configuration file
-    if(!wc_load_config(WD_DEFAULT_CFG_FILE_NAME)) {
-        fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
         exit(1);
     }
 
@@ -90,6 +97,7 @@ int main(int argc, char* argv[]) {
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getProxyProcessName());
+    print_WUD_start_params();
 
     wt_request_processor();
 
@@ -98,4 +106,27 @@ int main(int argc, char* argv[]) {
     printf("WUD stop\n");
 
     return 0;
+}
+
+static void print_WUD_start_params() {
+    pu_log(LL_INFO, "WUD start parameters:");
+    pu_log(LL_INFO, "\tLog file name: %s", wc_getLogFileName());
+    pu_log(LL_INFO, "\t\tRecords amount in log file: %d", wc_getLogRecordsAmt());
+    pu_log(LL_INFO, "\t\tLog level: %d", wc_getLogVevel());
+    pu_log(LL_INFO, "\tWUD working directory: %s", wc_getWorkingDir());
+    pu_log(LL_INFO, "\tWUD communication port: %d", wc_getWUDPort());
+    pu_log(LL_INFO, "\tWUD delay before startup in seconds:%d", wc_getWUDDelay());
+    pu_log(LL_INFO, "\tWUD delay on Agent&Proxy graceful shutdoun: %d", wc_getChildrenShutdownTO());
+
+    pu_log(LL_INFO, "Agent settings:");
+    pu_log(LL_INFO, "\tAgent name: %s", wc_getAgentProcessName());
+    pu_log(LL_INFO, "\tAgent executable file name: %s", wc_getAgentBinaryName());
+    pu_log(LL_INFO, "\tAgent working directory: %s", wc_getAgentWorkingDirectory());
+    pu_log(LL_INFO, "\tAgent watchdog timeout in seconds: %d", wc_getAgentWDTimeoutSec());
+
+    pu_log(LL_INFO, "Proxy settings:");
+    pu_log(LL_INFO, "\tProxy name: %s", wc_getProxyProcessName());
+    pu_log(LL_INFO, "\tProxy executable file name: %s", wc_getProxyBinaryName());
+    pu_log(LL_INFO, "\tProxy working directory: %s", wc_getProxyWorkingDirectory());
+    pu_log(LL_INFO, "\tProxy watchdog timeout in seconds: %d", wc_getProxyWDTimeoutSec());
 }

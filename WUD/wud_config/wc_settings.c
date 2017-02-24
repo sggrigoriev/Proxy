@@ -46,6 +46,7 @@
 #define WUD_PROXY_WD_TIMEOUT_SEC    "PROXY_WD_TIMEOUT_SEC"
 
 #define WUD_MONITORING_TO_SEC       "WUD_MONITORING_TO_SEC"
+#define WUD_DELAY_BEFORE_START_SEC  "WUD_DELAY_BEFORE_START_SEC"
 
 ////////////////////////////////////////////////////////
 //Config values
@@ -75,6 +76,7 @@ static char         proxy_working_directory[WC_MAX_PATH];
 static unsigned int proxy_wd_timeout_sec;
 
 static unsigned int wud_monitoring_timeout_sec;
+static unsigned int wud_delay_before_start_sec;
 
 static char conf_fname[WC_MAX_PATH];
 //The data from Proxy
@@ -172,6 +174,9 @@ unsigned int wc_getProxyWDTimeoutSec() {
 unsigned int wc_getWUDMonitoringTO() {
     WC_RET(WUD_DEFAULT_MONITORING_TO_SEC, wud_monitoring_timeout_sec);
 }
+unsigned int wc_getWUDDelay() {
+    WC_RET(WUD_DEFAILT_DELAY_BEFORE_START_SEC, wud_delay_before_start_sec);
+}
 /////////////////////////////////////////////////////////////
 //Thread-protected functions
 //
@@ -213,6 +218,7 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_PROXY_WD_TIMEOUT_SEC, &proxy_wd_timeout_sec))                                         WC_ERR();
 
     if(!getUintValue(cfg, WUD_MONITORING_TO_SEC, &wud_monitoring_timeout_sec))                                      WC_ERR();
+    if(!getUintValue(cfg, WUD_DELAY_BEFORE_START_SEC, &wud_delay_before_start_sec))                                 WC_ERR();
 
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
     getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
@@ -274,6 +280,7 @@ static void initiate_defaults() {
 
     strcpy(working_dir, WUD_DEFAULT_WORKING_DIRECTORY);
     wud_port = WUD_DEFAULT_COMM_PORT;
+    wud_delay_before_start_sec = WUD_DEFAILT_DELAY_BEFORE_START_SEC;
 
     strcpy(fw_download_folder, WUD_DEFAULT_FW_DOWNLOAD_FOLDER);
     strcpy(fw_upgrade_folder, WUD_DEFAULT_FW_UPGRADE_FOLDER);
