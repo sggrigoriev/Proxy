@@ -9,7 +9,7 @@
 "WUD_COMM_PORT":                8887,
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
-"FW_DOWNLOAD_FOLDER":           "/tmp",
+"FW_DOWNLOAD_FOLDER":           "/root/download",
 "FW_UPGRADE_FOLDER":            "/root/upgrade",
 
 "AGENT_PROCESS_NAME":           "zbagent",

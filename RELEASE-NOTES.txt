@@ -59,6 +59,10 @@ VERSION 1.1.1 24-FEB-2016
     cd build
     cmake ..
     make
+12. Upgrade procedure
+    Download folder is /root/download
+    upgrade folder is /root/upgrade
+    Know limitation: download and upgrade folders should reside on same file system (mount point)
 
     Resulting files including proper configs can be found in presto-private-sdk/build/cross
 
