@@ -9,8 +9,8 @@
 "WUD_COMM_PORT":                8887,
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
-"FW_DOWNLOAD_FOLDER":           "/root/presto/download",
-"FW_UPGRADE_FOLDER":            "/root/presto/upgrade",
+"FW_DOWNLOAD_FOLDER":           "/tmp",
+"FW_UPGRADE_FOLDER":            "/root/upgrade",
 
 "AGENT_PROCESS_NAME":           "Agent",
 "AGENT_BINARY_NAME":            "/root/presto/zbagent/zbagent",
@@ -25,7 +25,7 @@
 "PROXY_WD_TIMEOUT_SEC":         600,
 
 "WUD_MONITORING_TO_SEC":        3600,
-"WUD_DELAY_BEFORE_START_SEC":    60
+"WUD_DELAY_BEFORE_START_SEC":    120
 }
 
 
