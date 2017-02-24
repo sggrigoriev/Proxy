@@ -12,7 +12,7 @@
 "FW_DOWNLOAD_FOLDER":           "/tmp",
 "FW_UPGRADE_FOLDER":            "/root/upgrade",
 
-"AGENT_PROCESS_NAME":           "Agent",
+"AGENT_PROCESS_NAME":           "zbagent",
 "AGENT_BINARY_NAME":            "/root/presto/zbagent/zbagent",
 "AGENT_RUN_PARAMETERS":         [],
 "AGENT_WORKING_DIRECTORY":      "/root/presto/zbagent",
