@@ -1,0 +1,63 @@
+VERSION 1.1.1 24-FEB-2016
+=================================================================================================
+1. The Proxy startup sequence:
+ 1.1 Start Agent
+ 1.2 Start WUD
+
+2. The firmware version
+ Installation script must create the file "firmware_release" containing only one text string with firmware version.
+ file firmware_release must be stored int /root/presto
+
+3. wud.conf has new setting "WUD_DELAY_BEFORE_START_SEC"
+ This declares the time in second WUD start delay. This made to wait until the gateway synchrinized own timer with the network time
+
+4. Firmware upgrade functionality enabled
+ 4.1 wud.cong file should contain two settings:
+        "FW_DOWNLOAD_FOLDER" - full path with the directory WUD will use to dowload and check file
+        "FW_UPGRADE_FOLDER"  - fill path with the directory WUD place the firmware file renamed to "presto_mt7688.tgz"
+ 4.2 After the presto_mt7688.tgz will appear in upgrade folder WUD will make the reboot to allow the AIOX script make installation process
+
+5. Watchdog functionality enabled; automatic processes start (currently for Proxy only!) enabled
+    5.1 wud.conf should contain following settings:
+          "AGENT_PROCESS_NAME"           - the agent name ("Agent" usually)
+          "AGENT_BINARY_NAME"            - full path to the agent's executable with file name
+          "AGENT_RUN_PARAMETERS"         - agent start parameters list
+          "AGENT_WORKING_DIRECTORY"      - agent's working directory
+          "AGENT_WD_TIMEOUT_SEC"         - Agent's timeout in seconds.NB! After this time WUD will reboot the gateway if the Agent will not send any watchdog message!!
+          "PROXY_PROCESS_NAME"           - same for Proxy. NB! Proxy is already started by WUD
+          "PROXY_BINARY_NAME"
+          "PROXY_RUN_PARAMETERS"
+          "PROXY_WORKING_DIRECTORY"
+          "PROXY_WD_TIMEOUT_SEC"
+          "WUD_COMM_PORT"     - WUD will receive watchdogs from the Agent & Proxy by this port as a server
+
+    5.1 proxy.conf should contain following settings:
+          "PROXY_PROCESS_NAME"   - the value of this setting shoulb be equal to the "PROXY_PROCESS_NAME" in wud configuration file
+          "WATCHDOG_TO_SEC"    - time period in seconds for watchdog messages sending to the WUD. NB! thr period should be less than "PROXY_WD_TIMEOUT_SEC" and to less than 30 seconds
+          "WUD_PORT"      - the value shoud be equal to "WUD_COMM_PORT" in wud.conf file
+
+6. WUD reboot functionality enabled
+    6.1 WUD rebooting the GW at the end of firmware upgrade process before the installation starts
+    6.2 WUD rebooting the GW if watchdog timeout for Agent and/or Proxy watchdog messages exceeded
+7. /root/startApplication.sh must run only WUD. WUD must be started after presto-zb
+8. After start, WUD delays for WUD_DELAY_BEFORE_START_SEC seconds. Currently it is set to 120 seconds.
+    This is MUST until Aiox will not fix time coorection problem
+9. Directory layout
+    /root/presto
+        root/presto/WUD
+            WUD
+            wud.conf
+        root/presto/Proxy
+            Proxy
+            proxyJSON.conf
+
+10. Log files for WUD and Proxy is created in corresponding directories. This files has limited size, configured by application files (5000 lines now)
+11. Build
+    export PLATFORM=cross
+    export OPENWRT_PATH=/home/yctung/mt7688/openwrt
+    export GCC_STANDARD=c90
+    cd build
+    cmake ..
+    make
+
+    Resulting files including proper configs can be found in presto-private-sdk/build/cross
