@@ -26,7 +26,7 @@ if ($ENV{PLATFORM} STREQUAL "cross")
 	    )
 elseif($ENV{PLATFORM} STREQUAL "host")
 	# To separate run on real HW and on server
-		configure_file(wud.conf ../$ENV{PLATFORM}/wud.conf COPYONLY)
+		configure_file(wud.conf.x86 ../$ENV{PLATFORM}/wud.conf COPYONLY)
 		add_definitions(-DWUD_ON_HOST)
 	    message(STATUS "Compiling for the X86")
 	    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall") #-std=c90 -lc

@@ -45,7 +45,7 @@ elseif($ENV{PLATFORM} STREQUAL "host")
     # To separate run on real HW and on server
     add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-	configure_file(proxyJSON.conf ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+	configure_file(proxyJSON.conf.x86 ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
 
 	#    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 #    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
