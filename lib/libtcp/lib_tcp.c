@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 
+#include "pu_logger.h"
 #include "lib_tcp.h"
 
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -163,7 +164,7 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     if(!conn) return LIB_TCP_READ_NO_READY_CONNS; //no ready sockets error - they sould be!
 
     conn->in_buf.len = read(conn->socket, conn->in_buf.buf, conn->in_buf.size);  //todo mlevitin
-    if(conn->in_buf.len <= 0) {  //Get read error or (0) connection lost- reconnect required 
+    if(conn->in_buf.len <= 0) {  //Get read error or (0) connection lost- reconnect required
         lib_tcp_rd_t* ret = (!conn->in_buf.len)?LIB_TCP_READ_EOF:NULL;
 
         pthread_mutex_lock(&own_mutex);
@@ -187,20 +188,25 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     assert(conn);
     assert(out);
     assert(out_size);
+    const char* ret = NULL;
 
     pthread_mutex_lock(&own_mutex);
         for(i = 0; i < conn->ass_buf.idx; i++) {
             if(conn->ass_buf.buf[i] == '\0') {
-                memcpy(out, conn->ass_buf.buf, i+1);
+                if((i+1) <= out_size) {     //The message fits into out buffer
+                    memcpy(out, conn->ass_buf.buf, i+1);
+                    ret = out;
+                 }
+                else {
+                    pu_log(LL_ERROR, "lib_tcp_assemble: incoming message exceeds max bufer size: %d vs %d. Ignored.", i+1, out_size);
+                 }
                 memmove(conn->ass_buf.buf, conn->ass_buf.buf+i+1, conn->ass_buf.idx-(i+1));
                 conn->ass_buf.idx = conn->ass_buf.idx-(i+1);
-
-                pthread_mutex_unlock(&own_mutex);
-                return out;
+                break;
             }
         }
     pthread_mutex_unlock(&own_mutex);
-    return NULL;
+    return ret;
 }
 //All three return -1 if error, 0 if timeout, >0 if value
 //return binded socket
@@ -276,8 +282,10 @@ static unsigned int inc_start_no(unsigned int no, unsigned int size) {
     return (++no < size)?no:0;
 }
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
-
-    if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) return 0; //no place in buffer
+    if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) {     //no place in buffer
+        ab->idx = 0;    //reset assemblong buffer!
+        return 0;
+    }
     memcpy(ab->buf+ab->idx, in->buf, in->len);
     ab->idx += in->len;
     return 1;

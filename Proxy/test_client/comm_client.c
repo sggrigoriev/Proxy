@@ -18,9 +18,9 @@
 //      "params": [{"name": "desc","value": "Send a measurement from an existing device, with no timestamp"},{"name": "power","value": "100"}]
 //  ]
 //}
-#define SEND_TO_SEC 3000
+#define SEND_TO_SEC 30
 static lib_timer_clock_t send_clock = {0};
-static char wr_src[1000];
+static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
 "{"
@@ -42,7 +42,7 @@ const char* write_source() {
         "}"
     "]"
 "}"
-);
+    );
     char* ret = NULL;
 
     if(lib_timer_alarm(send_clock)) {

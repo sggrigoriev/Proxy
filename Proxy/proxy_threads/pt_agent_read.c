@@ -74,7 +74,7 @@ static void* agent_read(void* params) {
             continue;   //timeout
         }
         if (conn == LIB_TCP_READ_MSG_TOO_LONG) {
-            pu_log(LL_ERROR, "%s: incoming mesage too large: %lu vs %lu. Ignored", PT_THREAD_NAME, conn->in_buf.len, conn->ass_buf.size);
+            pu_log(LL_ERROR, "%s: incoming mesage too large. Ignored", PT_THREAD_NAME);
             continue;
         }
         if (conn == LIB_TCP_READ_NO_READY_CONNS) {

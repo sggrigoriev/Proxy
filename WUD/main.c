@@ -84,13 +84,13 @@ int main(int argc, char* argv[]) {
                                         0
                                     );
 
-/*
+#ifdef WUD_ON_HOST
   if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getAgentProcessName());
-*/
+#endif
     if(!wa_start_child(proxy_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getProxyProcessName());
         wa_reboot();

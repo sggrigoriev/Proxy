@@ -153,7 +153,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 
 
 add_executable(Proxy ${SOURCE_FILES})
-add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT} proxy_threads/pt_wud_write.c proxy_threads/pt_wud_write.h)
+add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
 #add_executable(comm_server ${SOURCE_FILES_TEST_SERVER})
 #add_executable(pc_test ${SOURCE_FILES_TEST_CONFIG})
 #add_executable(eui_test ${SOURCE_FILES_TEST_EUI})
