@@ -13,6 +13,8 @@
 #include "pu_logger.h"
 #include "lib_tcp.h"
 
+#include <sys/select.h>
+
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab);

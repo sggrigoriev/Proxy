@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+#cmake_minimum_required(VERSION 3.5)
 
 project(Proxy C)
-set (CMAKE_C_STANDARD 90)
-message(STATUS "platform is $ENV{PLATFORM}")
+#set (CMAKE_C_STANDARD 90)
+message(STATUS "platform is ${PRESTO_PLATFORM}")
 
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
@@ -15,38 +15,38 @@ message(STATUS "platform is $ENV{PLATFORM}")
 #add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
-	file(MAKE_DIRECTORY ../$ENV{PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../$ENV{PLATFORM})
-
-
 #staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
 #build_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
 
 
 set(GCC_STANDARD $ENV{STANDARD})
 
-if ($ENV{PLATFORM} STREQUAL "cross")
+if (PRESTO_PLATFORM STREQUAL "cross")
 	# MLevitin additions
+	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	message(STATUS "Compiling for the MIPS")
-	configure_file(proxyJSON.conf.mips ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
+	configure_file(proxyJSON.conf.mips ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
 	set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} $ENV{GCC_STANDARD} -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
 			curl
 			mbedtls
 		)
-elseif($ENV{PLATFORM} STREQUAL "host")
+elseif(PRESTO_PLATFORM STREQUAL "host")
     # To separate run on real HW and on server
-    add_definitions(-DPROXY_ON_HOST)
+	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+	add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-	configure_file(proxyJSON.conf.x86 ../$ENV{PLATFORM}/proxyJSON.conf COPYONLY)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c90 -O0 -Wall") #${GCC_STANDARD} -D_GNU_SOURCE
+	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #${GCC_STANDARD} -D_GNU_SOURCE
 	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
@@ -55,10 +55,21 @@ elseif($ENV{PLATFORM} STREQUAL "host")
 			pthread
 			curl
 		)
+elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
+  	message(STATUS "Compiling for the OpenWRT")
+	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -pthread") #${GCC_STANDARD} -D_GNU_SOURCE
+	set(REQUIRED_LIBRARIES
+			m
+#			pthread
+			curl
+#			mbedtls
+		)
 else()
 	message(STATUS "Please select PLATFORM host or cross")
 	return()
 endif()
+
 
 #all include paths
 include_directories(
@@ -153,7 +164,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 
 
 add_executable(Proxy ${SOURCE_FILES})
-add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
+add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT} proxy_threads/pt_wud_write.c proxy_threads/pt_wud_write.h)
 #add_executable(comm_server ${SOURCE_FILES_TEST_SERVER})
 #add_executable(pc_test ${SOURCE_FILES_TEST_CONFIG})
 #add_executable(eui_test ${SOURCE_FILES_TEST_EUI})
@@ -164,3 +175,9 @@ target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
 #target_link_libraries(comm_server ${REQUIRED_LIBRARIES})
 #target_link_libraries(pc_test ${REQUIRED_LIBRARIES})
 #target_link_libraries(eui_test ${REQUIRED_LIBRARIES})
+
+
+if (PRESTO_PLATFORM STREQUAL "OpenWRT")
+INSTALL(TARGETS Proxy DESTINATION /build )
+INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
+endif()

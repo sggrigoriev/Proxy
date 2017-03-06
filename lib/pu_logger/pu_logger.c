@@ -38,11 +38,12 @@ static char* getData(char* buf, unsigned max_size) {
     time_t rawtime;
     struct tm timeinfo;
     struct timeval tv;
-    struct timezone tz;
+    //mlevitin struct timezone tz;
 
     time (&rawtime);
     localtime_r (&rawtime, &timeinfo);
-    gettimeofday(&tv, &tz);
+    //gettimeofday(&tv, &tz);
+    gettimeofday(&tv, NULL);
     snprintf(buf, max_size, "%02u-%02u-%02u %02u:%02u:%02u.%03ld",
              timeinfo.tm_year-100,
              timeinfo.tm_mon+1,

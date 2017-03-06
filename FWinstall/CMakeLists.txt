@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 3.5)
+#cmake_minimum_required(VERSION 3.5)
 
 project(FWinstall C)
-set (CMAKE_C_STANDARD 90)
-message(STATUS "platform is $ENV{PLATFORM}")
+#set (CMAKE_C_STANDARD 90)
+message(STATUS "platform is ${PRESTO_PLATFORM}")
 
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
 
-file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-
 set(GCC_STANDARD $ENV{STANDARD})
 
-if ($ENV{PLATFORM} STREQUAL "cross")
+if (PRESTO_PLATFORM STREQUAL "cross")
+file(MAKE_DIRECTORY build/${PRESTO_PLATFORM})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PRESTO_PLATFORM})
     # MLevitin additions
     message(STATUS "Compiling for the MIPS")
     set(OPENWRT_PATH $ENV{OPENWRT_PATH})
@@ -28,7 +27,9 @@ if ($ENV{PLATFORM} STREQUAL "cross")
             curl
             mbedtls
             )
-elseif($ENV{PLATFORM} STREQUAL "host")
+elseif(PRESTO_PLATFORM STREQUAL "host")
+    file(MAKE_DIRECTORY build/${PRESTO_PLATFORM})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PRESTO_PLATFORM})
     message(STATUS "Compiling for the X86")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -D_GNU_SOURCE -std=c90 -Wall")
     #   file(MAKE_DIRECTORY build/$ENV{PLATFORM})
@@ -38,6 +39,18 @@ elseif($ENV{PLATFORM} STREQUAL "host")
             m
             pthread
             curl
+            )
+elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
+    message(STATUS "Compiling for the X86")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  ${GCC_STANDARD} -pthread")
+    #   file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+    #   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+    #   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+    set(REQUIRED_LIBRARIES
+            m
+#            pthread
+            curl
+#	    mbedtls
             )
 else()
     message(STATUS "Please select PLATFORM host or cross")

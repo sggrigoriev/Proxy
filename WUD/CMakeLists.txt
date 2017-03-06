@@ -1,41 +1,52 @@
-cmake_minimum_required(VERSION 3.5)
+#cmake_minimum_required(VERSION 3.5)
 
 project(WUD C)
-set (CMAKE_C_STANDARD 90)
+#set (CMAKE_C_STANDARD 90)
 
-file(MAKE_DIRECTORY ../$ENV{PLATFORM}/make)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../$ENV{PLATFORM})
+#
 
-if ($ENV{PLATFORM} STREQUAL "cross")
+
+if (PRESTO_PLATFORM STREQUAL "cross")
+
 	# MLevitin additions
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	message(STATUS "Compiling for the MIPS")
-	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-	configure_file(wud.conf.mips ../$ENV{PLATFORM}/wud.conf COPYONLY)
+	configure_file(wud.conf.mips ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
 	set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   $ENV{GCC_STANDARD}  -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib  -D_GNU_SOURCE -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${GCC_STANDARD}  -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib  -D_GNU_SOURCE -Wall -s")
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
 			curl
 			mbedtls
 			)
-elseif($ENV{PLATFORM} STREQUAL "host")
+elseif(PRESTO_PLATFORM STREQUAL "host")
+	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM}/make)
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	# To separate run on real HW and on server
-	configure_file(wud.conf.x86 ../$ENV{PLATFORM}/wud.conf COPYONLY)
+	configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	add_definitions(-DWUD_ON_HOST)
 	message(STATUS "Compiling for the X86")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c90 -O0 -Wall") #-lc
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #-lc
 	#	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 	#	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
+			curl
+			)
+elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
+	configure_file(wud.conf.x86 ../${PRETO_PLATFORM}/wud.conf COPYONLY)
+	message(STATUS "Compiling for the OpenWRT")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -pthread") 
+	set(REQUIRED_LIBRARIES
+			m
+#			pthread
 			curl
 			)
 else()
@@ -99,3 +110,9 @@ add_executable(WUD ${SOURCE_FILES})
 
 target_link_libraries(WUD ${REQUIRED_LIBRARIES})
 #target_link_libraries(sha256_test ${REQUIRED_LIBRARIES})
+
+if (PRESTO_PLATFORM STREQUAL "OpenWRT")
+INSTALL(TARGETS WUD DESTINATION /build )
+INSTALL(FILES wud.conf.mips DESTINATION /build)
+endif()
+
