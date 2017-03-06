@@ -1,6 +1,7 @@
 {
 	"PROXY_PROCESS_NAME":	"Proxy",
 	"AGENT_PROCESS_NAME":	"Agent",
+	"AUTH_TOKEN_FILE_NAME": "/root/presto/Proxy/auth_token",
 	"LOG_NAME":	"/root/presto/Proxy/proxy.log",
 	"LOG_REC_AMT":	10000,
 	"LOG_LEVEL":	"DEBUG",

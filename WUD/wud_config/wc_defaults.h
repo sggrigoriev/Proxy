@@ -38,6 +38,7 @@
 
 #define WUD_DEFAULT_FW_DOWNLOAD_FOLDER      "./download"
 #define WUD_DEFAULT_FW_UPGRADE_FOLDER       "./upgrade"
+#define WUD_DEFAULT_FW_COPY_EXT             "part"
 
 #define WUD_DEFAULT_AGENT_PROCESS_NAME      "Agent"
 #define WUD_DEFAULT_AGENT_BINARY_NAME       "agent"
@@ -54,7 +55,6 @@
 #define WUD_DEFAULT_MONITORING_TO_SEC         3600
 #define WUD_DEFAULT_SERVER_WRITE_TO_SEC       0
 #define WUD_DEFAILT_DELAY_BEFORE_START_SEC    1
-
 
 
 #endif //PRESTO_WC_DEFAULTS_H

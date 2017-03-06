@@ -5,26 +5,21 @@
 #include <errno.h>
 #include <memory.h>
 
-#include "pr_commands.h"
-#include "pf_traffic_proc.h"
-#include <lib_timer.h>
-#include <pf_cloud_conn_params.h>
-#include <pf_proxy_commands.h>
-#include <ph_manager.h>
-#include <pr_commands.h>
+#include "lib_timer.h"
+#include "pt_queues.h"
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
-#include "pt_queues.h"
-#include "pt_server_read.h"
+#include "ph_manager.h"
 
-#include "pt_threads.h"
+#include "pt_server_read.h"
 #include "pt_server_write.h"
 #include "pt_main_agent.h"
 
 #ifndef PROXY_SEPARATE_RUN
 #include "pt_wud_write.h"
 #endif
+#include "pt_threads.h"
 
 #define PT_THREAD_NAME "MAIN_THREAD"
 
@@ -50,9 +45,10 @@ static pu_queue_t* to_server;
 static pu_queue_t* to_agent;
 
 #ifndef PROXY_SEPARATE_RUN
-static pu_queue_t* to_wud;
-lib_timer_clock_t wd_clock = {0};
+    static pu_queue_t* to_wud;
+    lib_timer_clock_t wd_clock = {0};
 #endif
+
 lib_timer_clock_t cloud_url_update_clock = {0};
 lib_timer_clock_t gw_fw_version_sending_clock = {0};
 //TODO! If fw upgrade failed lock should be set to 0 again!!!
@@ -200,38 +196,38 @@ static void main_thread_shutdown() {
 #endif
     erase_queues();
 }
+
 #ifndef PROXY_SEPARATE_RUN
-//Send to WUD cloud connection info
-static int initiate_wud() {
-    char json[LIB_HTTP_MAX_MSG_SIZE];
-    char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-    char url[LIB_HTTP_MAX_URL_SIZE];
-    char di[LIB_HTTP_DEVICE_ID_SIZE];
-    char ver[LIB_HTTP_FW_VERSION_SIZE];
+    //Send to WUD cloud connection info
+    static int initiate_wud() {
+        char json[LIB_HTTP_MAX_MSG_SIZE];
+        char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+        char url[LIB_HTTP_MAX_URL_SIZE];
+        char di[LIB_HTTP_DEVICE_ID_SIZE];
+        char ver[LIB_HTTP_FW_VERSION_SIZE];
 
-    pc_getActivationToken(at, sizeof(at));
-    pc_getCloudURL(url, sizeof(url));
-    pc_getProxyDeviceID(di, sizeof(di));
-    pc_getFWVersion(ver, sizeof(ver));
+        pc_getAuthToken(at, sizeof(at));
+        pc_getCloudURL(url, sizeof(url));
+        pc_getProxyDeviceID(di, sizeof(di));
+        pc_getFWVersion(ver, sizeof(ver));
 
-    pr_make_conn_info_cmd(json, sizeof(json), url, di, at, ver);
-    pu_log(LL_DEBUG, "%s: gona send to WUD_WRITE %s", PT_THREAD_NAME, json);
-    pu_queue_push(to_wud, json, strlen(json)+1);
+        pr_make_conn_info_cmd(json, sizeof(json), url, di, at, ver);
+        pu_log(LL_DEBUG, "%s: gona send to WUD_WRITE %s", PT_THREAD_NAME, json);
+        pu_queue_push(to_wud, json, strlen(json)+1);
 
-    return 1;
-}
+        return 1;
+    }
 
-// Send Watchdog to the WUD
-static void send_wd() {
-    char buf[LIB_HTTP_MAX_MSG_SIZE];
-    char di[LIB_HTTP_DEVICE_ID_SIZE];
+    // Send Watchdog to the WUD
+    static void send_wd() {
+        char buf[LIB_HTTP_MAX_MSG_SIZE];
+        char di[LIB_HTTP_DEVICE_ID_SIZE];
 
-    pc_getProxyDeviceID(di, sizeof(di));
-    pr_make_wd_alert4WUD(buf, sizeof(buf), pc_getProxyName(), di);
+        pc_getProxyDeviceID(di, sizeof(di));
+        pr_make_wd_alert4WUD(buf, sizeof(buf), pc_getProxyName(), di);
 
-    pu_queue_push(to_wud, buf, strlen(buf)+1);
-}
-
+        pu_queue_push(to_wud, buf, strlen(buf)+1);
+    }
 #endif
 //Send DeviceID to the Agent
 static void send_device_id_to_agent() {
@@ -292,7 +288,7 @@ static void process_proxy_commands(const char* msg) {
                 break;
             }
             case PR_CMD_STOP:
-                pu_log(LL_INFO, "%d: finished because of %s", PT_THREAD_NAME, msg);
+                pu_log(LL_INFO, "%s: finished because of %s", PT_THREAD_NAME, msg);
                 main_finish = 1;
 #endif
             case PR_CMD_UPDATE_MAIN_URL:
@@ -300,6 +296,14 @@ static void process_proxy_commands(const char* msg) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
                 break;
+            case PR_CMD_REBOOT: {    //The cloud kindly asks to shut up & reboot
+                pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);
+
+                char for_wud[LIB_HTTP_MAX_MSG_SIZE];
+                pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
+                pu_queue_push(to_wud, for_wud, strlen(for_wud) + 1);
+                break;
+            }
             case PR_CMD_UNDEFINED:
                 pu_log(LL_ERROR, "%s: bad command syntax command %s in msg %s. Ignored.", PT_THREAD_NAME, cmd_arr_elem, msg);
                 break;

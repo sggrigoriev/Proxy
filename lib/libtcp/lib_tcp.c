@@ -9,11 +9,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/select.h>
 
 #include "pu_logger.h"
 #include "lib_tcp.h"
 
-#include <sys/select.h>
+
 
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 

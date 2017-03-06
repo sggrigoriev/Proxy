@@ -5,10 +5,11 @@
 #include <memory.h>
 #include <pthread.h>
 #include <assert.h>
-#include <cJSON.h>
 
+#include "cJSON.h"
 #include "lib_http.h"
 #include "pu_logger.h"
+
 #include "pc_settings.h"
 #include "pf_traffic_proc.h"
 #include "pf_reboot.h"
@@ -86,7 +87,7 @@ void ph_mgr_start() {
 //1. Get main url & deviceId from config
         pc_getMainCloudURL(main_url, sizeof(main_url));
         pc_getProxyDeviceID(device_id, sizeof(device_id));
-        pc_getActivationToken(auth_token, sizeof(auth_token));  //Coud be just "" if undefined...
+        pc_getAuthToken(auth_token, sizeof(auth_token));  //Coud be just "" if undefined...
 
         if(!strlen(main_url)) {
             pu_log(LL_ERROR, "Cloud connection initiation failed. Main Cloud URL is not set.");
@@ -109,7 +110,7 @@ void ph_mgr_start() {
 
 //Save all parameters updated
     pc_saveCloudURL(contact_url);
-    pc_saveActivationToken(auth_token);
+    pc_saveAuthToken(auth_token);
 
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
@@ -146,7 +147,7 @@ int ph_update_main_url(const char* new_main) {
 
     pc_getMainCloudURL(old_main, sizeof(old_main));
     pc_getProxyDeviceID(device_id, sizeof(device_id));  //No check: device ID is Ok if we're here
-    pc_getActivationToken(auth_token, sizeof(auth_token));
+    pc_getAuthToken(auth_token, sizeof(auth_token));
 
 //0. Close permanent connections
     erase_connections(post_conn, get_conn, immediate_post);
@@ -162,7 +163,7 @@ int ph_update_main_url(const char* new_main) {
 //3. save new main & new contact & auth token
     pc_saveMainCloudURL(new_main);
     pc_saveCloudURL(contact_url);
-    pc_saveActivationToken(auth_token);
+    pc_saveAuthToken(auth_token);
 
     pthread_mutex_unlock(&rd_mutex);
     pthread_mutex_unlock(&wr_mutex);
@@ -189,7 +190,7 @@ void ph_reconnect() {
 
     pc_getMainCloudURL(main_url, sizeof(main_url));
     pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pc_getActivationToken(auth_token, sizeof(auth_token));
+    pc_getAuthToken(auth_token, sizeof(auth_token));
 
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
@@ -226,7 +227,7 @@ void ph_update_contact_url() {
 
     pc_getMainCloudURL(main_url, sizeof(main_url));
     pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pc_getActivationToken(auth_token, sizeof(auth_token));
+    pc_getAuthToken(auth_token, sizeof(auth_token));
 
     pthread_mutex_lock(&rd_mutex);
     pthread_mutex_lock(&wr_mutex);
@@ -270,7 +271,7 @@ int ph_read(char* in_buf, size_t size) {
 int ph_write(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     pthread_mutex_lock(&wr_mutex);
-        pc_getActivationToken(auth_token, sizeof(auth_token));
+        pc_getAuthToken(auth_token, sizeof(auth_token));
         int ret = _post(post_conn, buf, resp, resp_size, auth_token);
     pthread_mutex_unlock(&wr_mutex);
 
@@ -279,7 +280,7 @@ int ph_write(char* buf, char* resp, size_t resp_size) {
 int ph_respond(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     pthread_mutex_lock(&wr_mutex);
-    pc_getActivationToken(auth_token, sizeof(auth_token));
+    pc_getAuthToken(auth_token, sizeof(auth_token));
     int ret = _post(post_conn, buf, resp, resp_size, auth_token);
     pthread_mutex_unlock(&wr_mutex);
 

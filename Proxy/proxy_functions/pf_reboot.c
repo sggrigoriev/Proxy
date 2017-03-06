@@ -10,7 +10,7 @@
 #include "pu_logger.h"
 #include "pf_reboot.h"
 
-//The functione call total revice reboot in case of hard non-compenstive internal
+//The functione call total device reboot in case of hard non-compenstive internal
 void pf_reboot() {
 #ifdef PROXY_ON_HOST
     pu_log(LL_INFO, "pf_reboot: EXIT on host case");

@@ -55,7 +55,7 @@ static void* ap_reader(void* params) {
             stop = 1;
             break;      //Allez kaputt
         }
-        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(PR_CHILD_SIZE, WC_MAX_MSG_LEN, WC_MAX_MSG_LEN*2);
+        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(PR_CHILD_SIZE, WC_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE, WC_MAX_MSG_LEN*2);
         if(!all_conns) {
             pu_log(LL_ERROR, "%s: memory allocation error.", PT_THREAD_NAME);
             stop = 1;
@@ -63,7 +63,7 @@ static void* ap_reader(void* params) {
         }
         while(!stop) {
 
-            int rd_socket = lib_tcp_listen(server_socket, 1);
+            int rd_socket = lib_tcp_listen(server_socket, 2);
             if(rd_socket < 0) {
                 pu_log(LL_ERROR, "%s: listen error. %d %s", PT_THREAD_NAME, errno, strerror(errno));
                 close(server_socket);
@@ -90,7 +90,7 @@ static void* ap_reader(void* params) {
                     continue;   //timeout
                 }
                 if (conn == LIB_TCP_READ_MSG_TOO_LONG) {
-                    pu_log(LL_ERROR, "%s: incoming message too long and can't be assempled. Ignored", PT_THREAD_NAME);
+                    pu_log(LL_ERROR, "%s: incoming message too long. Ignored", PT_THREAD_NAME);
                     continue;
                 }
                 if (conn == LIB_TCP_READ_NO_READY_CONNS) {

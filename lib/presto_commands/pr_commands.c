@@ -46,6 +46,8 @@ static const char* cmd_stop = "shutYouselfDown";
 static const char* cmd_device_id = "deviceId";
 static const char* cmd_auth_token = "authToken";
 static const char* cmd_firmware = "firmware";
+
+static const char* cmd_reboot = "reboot";
 //
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
@@ -336,7 +338,8 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
 PR_CMD_FWU_START "parameters": [
 {"name": "firmwareUpdateStatus","value": "1"},{"name": "firmwareUrl","value": "<url>"},{"name": "firmwareCheckSum","value": "<check_sum>"}]
 PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
- PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", value": "<device_id>"}, {"name":"authToken", value": "<authToken>"}]
+PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", value": "<device_id>"}, {"name":"authToken", value": "<authToken>"}]
+PG_CMD_REBOOT     "parameters": [{"name": "reboot", "value": "1"}]
  */
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
     pr_cmd_item_t ret;
@@ -375,6 +378,9 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         }
         else if(!strcmp(name, cmd_firmware)) {
             strncpy(ret.cloud_conn.fw_version, value, sizeof(ret.cloud_conn.fw_version));
+        }
+        else if(!strcmp(name, cmd_reboot) && !strcmp(value, "1")) {
+            ret.command_type = PR_CMD_REBOOT;
         }
     }
     return ret;

@@ -8,7 +8,16 @@ VERSION 1.1.3 06-MAR-2016
    - cd presto-privatesdk-c
    - cp Makefile.openwrt ../Makefile
     After that return to the openwrt root, run make menuconfig, then go to the 'Network' menu and select (*) presto-proxy
-2. Bug with maximum message length is fixed
+2. Bug with maximum message length is fixed. The max incoming message for the Agent is 7992 bytes
+3. Auth token is separated from ProxyJSON.conf. It saved in a separate file. It's default name is "auth_token" and the path is the same as for ProxyJSON.conf
+4. ProxyJSON.conf is changed:
+    - "ACTIVATION_TOKEN" setting removed
+    - "AUTH_TOKEN_FILE_NAME" setting added. The value should be the full path and file name to the file with auth token
+5. Firmware file move from download to upgrade directory implemented as copy and rename to avoid problems with different partitions
+6. Cloud "reboot" command is implemented: to receive such a command WUD is making reboot
+    Command example:{"status": "ACK", "commands": [{"type": 0, "commandId": 42126, "deviceId": "GATEWAY_ID", "parameters": [
+    {"name": "reboot", "value": "1"}]}]}
+7. Uptime value is used for all timeouts to avoid system time jumps.
 
 VERSION 1.1.2 28-FEB-2016
 =================================================================================================

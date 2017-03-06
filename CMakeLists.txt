@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.0)
 project(Presto C)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(PRESTO_PLATFORM $ENV{PLATFORM})
 
 if (PRESTO_PLATFORM STREQUAL "cross")

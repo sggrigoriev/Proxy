@@ -11,8 +11,9 @@
 #include "cJSON.h"
 
 #include "pc_config.h"
-#include "pc_settings.h"
 #include "pc_defaults.h"
+
+#include "pc_settings.h"
 
 /////////////////////////////////////////////////////////
 //Config filelds names
@@ -30,7 +31,9 @@
 
 #define PROXY_DEVICE_ID         "DEVICE_ID"
 #define PROXY_DEVICE_TYPE       "DEVICE_TYPE"
-#define PROXY_ACTIVATION_TOKEN  "ACTIVATION_TOKEN"
+
+#define PROXY_AUTH_TOKEN_FILE_NAME  "AUTH_TOKEN_FILE_NAME"
+
 #define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
 
 #define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
@@ -50,7 +53,8 @@ static char             log_name[PROXY_MAX_PATH];
 static unsigned int     log_rec_amt;
 static log_level_t      log_level;
 
-static char             activation_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
+static char             auth_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
+static char             auth_token_file_name[PROXY_MAX_PATH];
 static char             device_id[PROXY_DEVICE_ID_SIZE];
 static unsigned int     device_type;
 static char             cloud_url[PROXY_MAX_PATH];
@@ -85,6 +89,11 @@ static void initiate_defaults();
 //Copy log_level_t value (see pu_logger.h) of field_name of cgf object into uint_setting.
 //Copy default value in case of absence of the field in the object
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting);
+//Reads auth token from the file. If no token - set it as an empty string
+//no thread protection!
+static void read_auth_token(const char* at_file_name, char* at, size_t size);
+//Return 0 if error
+static int save_auth_token(const char* at_file_name, const char* new_at);
 
 /////////////////////////////////////////////////////////////
 #define PC_RET(a,b) return (!initiated)?a:b
@@ -167,7 +176,10 @@ int pc_load_config(const char* cfg_file_name) {
     getLLTValue(cfg, PROXY_LOG_LEVEL, &log_level);
 
     if(getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                         fprintf(stderr, "DeviceID get from config file\n");
-    if(getStrValue(cfg, PROXY_ACTIVATION_TOKEN, activation_token, sizeof(activation_token)))    fprintf(stderr, "Activation token get from config file\n");
+
+    if(getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name))) fprintf(stderr, "Default value will be used instead\n");
+    read_auth_token(auth_token_file_name, auth_token, sizeof(auth_token));
+
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL, main_cloud_url, sizeof(cloud_url)))              fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   fprintf(stderr, "Default value will be used instead\n");
@@ -210,13 +222,13 @@ void pc_getMainCloudURL(char* ret, size_t size) {
     pthread_mutex_unlock(&local_mutex);
 }
 
-//Copy to the ret the activation token string.
+//Copy to the ret the auth token string.
 //Copy empty string if the value > max_len
-void pc_getActivationToken(char* ret, size_t size) {
+void pc_getAuthToken(char* ret, size_t size) {
     assert(ret); assert(size);
     pthread_mutex_lock(&local_mutex);
 
-    strncpy(ret, activation_token, size);
+    strncpy(ret, auth_token, size);
     ret[size-1] = '\0';
 
     pthread_mutex_unlock(&local_mutex);
@@ -236,12 +248,12 @@ void pc_getProxyDeviceID(char* ret, size_t size) {
 
 //Update the current value in memory
 //Return 1 of success, return 0 if not
-int pc_saveActivationToken(const char* new_at) {
+int pc_saveAuthToken(const char* new_at) {
 
     pthread_mutex_lock(&local_mutex);
 
-    strncpy(activation_token, new_at, sizeof(activation_token)-1);
-    int ret = saveStrValue("pc_saveActivationToken", conf_fname, PROXY_ACTIVATION_TOKEN, new_at, activation_token, sizeof(activation_token));
+    strncpy(auth_token, new_at, sizeof(auth_token)-1);
+    int ret = save_auth_token(auth_token_file_name, auth_token);
 
     pthread_mutex_unlock(&local_mutex);
     return ret;
@@ -341,9 +353,7 @@ void pc_getFWVersion(char* fw_ver, size_t size) {
 int pc_existsCloudURL() {
     return (initiated && strlen(cloud_url));
 }
-int pc_existsActivationToken() {
-    return (initiated && strlen(activation_token));
-}
+
 int pc_existsProxyDeviceID() {
     return (initiated && strlen(device_id));
 }
@@ -356,7 +366,8 @@ static void initiate_defaults() {
     log_rec_amt = DEFAULT_LOG_RECORDS_AMT;
     log_level = DEFAULT_LOG_LEVEL;
 
-    activation_token[0] = '\0';
+    auth_token[0] = '\0';
+    strncpy(auth_token_file_name, DEFAULT_AUTH_TOKEN_FILE_NAME, sizeof(auth_token_file_name));
     device_id[0] = '\0';
     cloud_url[0] = '\0';
     strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url));
@@ -387,4 +398,29 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
                    field_name, buf, PROXY_LL_DEBUG, PROXY_LL_INFO,  PROXY_LL_WARNING, PROXY_LL_ERROR
             );
     }
+}
+static void read_auth_token(const char* at_file_name, char* at, size_t size) {
+    FILE* f = fopen(at_file_name, "r");
+    if(!f) {
+        fprintf(stderr, "File %s open error %d, %s. Auth token should be assigned!\n", at_file_name, errno, strerror(errno));
+        goto on_err;
+    }
+    char* ptr = fgets(at, size, f);
+    if(!ptr) {
+        fprintf(stderr, "File %s read error %d, %s. Auth token should be assigned!\n", at_file_name, errno, strerror(errno));
+        goto on_err;
+    }
+    fclose(f);
+    return;
+on_err:
+    auth_token[0] = '\0';
+    if(f) fclose(f);
+    return;
+}
+static int save_auth_token(const char* at_file_name, const char* new_at) {
+    FILE* f = fopen(at_file_name, "w");
+    if(!f) return 0;
+    fprintf(f, "%s", new_at);
+    fclose(f);
+    return 1;
 }

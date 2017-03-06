@@ -11,7 +11,7 @@
 #define WF_STATE_EMPTY 0
 #define WF_STATE_BUZY 1
 
-
+//return 1 if check_sum compared with calculated on file (SHA256)
 int wf_check_file(const char* check_sum, const char* path, const char* file_name);
 
 void wf_set_download_state(int empty);

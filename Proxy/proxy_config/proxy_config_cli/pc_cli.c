@@ -91,7 +91,7 @@ int pc_cli_process_params(int argc, char *argv[]) { //Return 0 if error. Parse a
   if(strlen(url) && pc_saveMainCloudURL(url)) {
     printf("[cli] New main cloud URL: %s\n", url);
   }
-  if(strlen(activation_key) && pc_saveActivationToken(activation_key)) {
+  if(strlen(activation_key) && pc_saveAuthToken(activation_key)) {
     printf("[cli] New activation key: %s\n", activation_key);
   }
   if(agent_port && pc_saveAgentPort(agent_port)) {

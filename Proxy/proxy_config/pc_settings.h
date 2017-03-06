@@ -39,11 +39,11 @@ int pc_load_config(const char* cfg_file_name);                  // return 1 if s
 
 void pc_getCloudURL(char* ret, size_t size);           //return empty string if no value or the value > max_len
 void pc_getMainCloudURL(char* ret, size_t size);       //return empty string if no value or the value > max_len
-void pc_getActivationToken(char* ret, size_t size);    //return empty string if no value or the value > max_len
+void pc_getAuthToken(char* ret, size_t size);           //return empty string if no value or the value > max_len
 void pc_getProxyDeviceID(char* ret, size_t size);
 
-//Update the current value in memory only!
-int pc_saveActivationToken(const char* new_at);     //Return 1 of success, return 0 if not
+//Update the current value in memory & in file!
+int pc_saveAuthToken(const char* new_at);     //Return 1 of success, return 0 if not
 
 int pc_saveProxyDeviceID(const char* new_da);       //Return 1 of success, return 0 if not
 int pc_saveMainCloudURL(const char* new_main_url);
@@ -60,6 +60,5 @@ void pc_getFWVersion(char* fw_version, size_t size);
 //Activation-related stuff
 //
 int pc_existsProxyDeviceID();
-int pc_existsActivationToken();
 
 #endif //PRESTO_PC_SETTINGS_H

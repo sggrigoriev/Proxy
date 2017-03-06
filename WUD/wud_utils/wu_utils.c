@@ -12,8 +12,9 @@
 #include <errno.h>
 
 #include "pu_logger.h"
-#include "wc_defaults.h"
 #include "pr_ptr_list.h"
+
+#include "wc_defaults.h"
 #include "wu_utils.h"
 
 static const char* add_slash(char* buf, size_t buf_size,const char* path); //Add slash to the path's tail if no slash found there
@@ -129,18 +130,58 @@ int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1
     }
     return ret;
 }
-
-//Returns 1 if Ok. All diagnostics inside
+//WUD_DEFAULT_FW_COPY_EXT
+//Returns 1 if Ok. All diagnostics inside. Copy & Delete. actually...
 int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_dir, const char* new_name) {
     char new_path[WC_MAX_PATH];
     char old_path[WC_MAX_PATH];
+    char new_in_process[WC_MAX_PATH];
+
     wu_create_file_name(new_path, sizeof(new_path), new_dir, new_name, "");
     wu_create_file_name(old_path, sizeof(old_path), old_dir, old_name, "");
-    if(rename(old_path, new_path)) {
-        pu_log(LL_ERROR, "wu_move_n_rename: can't move %s to %s: %d, %s", old_path, new_path, errno, strerror(errno));
-        return 0;
+    wu_create_file_name(new_in_process, sizeof(new_in_process), new_dir, new_name, WUD_DEFAULT_FW_COPY_EXT);
+
+//Open old file
+    FILE* f_src = fopen(old_path, "rb");
+    if(!f_src) {
+        pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", old_path, errno, strerror(errno));
+        goto on_err;
     }
+//Open new file with "in process" extention
+    FILE* f_cpy = fopen(new_in_process, "wb");
+    if(!f_cpy) {
+        pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", new_in_process, errno, strerror(errno));
+        goto on_err;
+    }
+//Coppy from src to cpy and flush at the end
+    unsigned char buf[4096];
+    while(!feof(f_src)) {
+        size_t ret = fread(buf, 1, sizeof(buf), f_src);
+        if(ret) fwrite(buf, 1, ret, f_cpy);
+    }
+    if(fflush(f_cpy) != 0) {
+        pu_log(LL_ERROR, "wu_move_n_rename: error copying file %s into %s: %d, %s", old_path, new_in_process, errno, strerror(errno));
+        goto on_err;
+    }
+    fclose(f_src); f_src = NULL;
+    fclose(f_cpy); f_cpy = NULL;
+    pu_log(LL_DEBUG, "File %s copied into %s", old_path, new_in_process);
+//Delete old file
+    if(remove(old_path) != 0) {
+        pu_log(LL_ERROR, "wu_move_n_rename: can't delete file %s:: %d, %s", old_path, errno, strerror(errno));
+        goto on_err;
+    }
+//Rename new file to the correct name (w/o extention)
+    if(rename(new_in_process, new_path)) {
+        pu_log(LL_ERROR, "wu_move_n_rename: can't rename %s to %s: %d, %s", new_in_process, new_path, errno, strerror(errno));
+        goto on_err;
+    }
+    pu_log(LL_DEBUG, "File %s renamed to %s", new_in_process, new_path);
     return 1;
+on_err:
+    if(f_src) fclose(f_src);
+    if(f_cpy) fclose(f_cpy);
+    return 0;
 }
 
 //Return poinetr to the first non-filename symbol from the tail or empty string. No NULL!

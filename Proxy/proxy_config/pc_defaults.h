@@ -11,6 +11,7 @@
 #include "eui64.h"
 
 #define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"
+#define DEFAULT_AUTH_TOKEN_FILE_NAME      "./auth_token"
 
 
 //Common defaults

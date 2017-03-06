@@ -41,11 +41,11 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 		)
 elseif(PRESTO_PLATFORM STREQUAL "host")
     # To separate run on real HW and on server
-	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+	#file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
+	#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	add_definitions(-DPROXY_ON_HOST)
   	message(STATUS "Compiling for the X86")
-	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
+	#configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #${GCC_STANDARD} -D_GNU_SOURCE
 	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
@@ -113,10 +113,10 @@ file(GLOB SOURCE_FILES
 file(GLOB SOURCE_FILES_TEST_CLIENT
         test_client/comm_client.c
         proxy_functions/*.c
-        proxy_threads/*.c
+#        proxy_threads/*.c
         proxy_config/pc_settings.c
         proxy_eui64/eui64.c
-		proxy_http/*.c
+#		proxy_http/*.c
         ../lib/presto_commands/*.c
         ../lib/libtcp/*.c
         ../lib/pu_logger/*.c
@@ -126,55 +126,12 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 		../lib/libtimer/*.c
         ../lib/json/*.c
         )
-#Test server
-#file(GLOB SOURCE_FILES_TEST_SERVER
-#        test_server/comm_server.c
-#        proxy_threads/*.c
-#        proxy_config/pc_settings.c
-#        ../lib/pt_tcp_utl/*.c
-#        ../lib/pu_logger/*.c
-#        ../lib/pc_config/pc_config.c
-#        ../lib/pu_queues/*.c
-#        ../lib/libhttpcomm/*.c
-#        ../lib/json/*.c
-#        )
-
-#Test config
-#file(GLOB SOURCE_FILES_TEST_CONFIG
-#        proxy_config/*.c
-#        proxy_config/proxy_config_cli/*.c
-#        proxy_eui64/eui64.c
-#        ../lib/pt_tcp_utl/*.c
-#        ../lib/pu_logger/*.c
-#        ../lib/pc_config/pc_config.c
-#        ../lib/pu_queues/*.c
-#        ../lib/json/*.c
-#        )
-
-#Test eui
-#file(GLOB SOURCE_FILES_TEST_EUI
-#        ../lib/json/*.c
-#        proxy_config/pc_settings.c
-#        proxy_eui64/*.c
-#        ../lib/pu_queues/*.c
-#        ../lib/pt_tcp_utl/*.c
-#        ../lib/pu_logger/*.c
-#        ../lib/pc_config/pc_config.c
-#        )
-
 
 add_executable(Proxy ${SOURCE_FILES})
-add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT} proxy_threads/pt_wud_write.c proxy_threads/pt_wud_write.h)
-#add_executable(comm_server ${SOURCE_FILES_TEST_SERVER})
-#add_executable(pc_test ${SOURCE_FILES_TEST_CONFIG})
-#add_executable(eui_test ${SOURCE_FILES_TEST_EUI})
-
+add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
 
 target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
 target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
-#target_link_libraries(comm_server ${REQUIRED_LIBRARIES})
-#target_link_libraries(pc_test ${REQUIRED_LIBRARIES})
-#target_link_libraries(eui_test ${REQUIRED_LIBRARIES})
 
 
 if (PRESTO_PLATFORM STREQUAL "OpenWRT")

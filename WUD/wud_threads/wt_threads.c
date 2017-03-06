@@ -56,6 +56,8 @@ static int start_server_writer(pr_cmd_cloud_t conn_info);
 static void stop_server_writer();    //check if thread really works before
 
 static void process_command(pr_cmd_item_t cmd);
+static void process_reboot();
+
 static void process_alert(pr_alert_item_t alert);
 //////////////////////////////////////////////////////
 //Main routine
@@ -239,17 +241,14 @@ static void process_command(pr_cmd_item_t cmd) {
             pu_log(LL_WARNING, "%s: %s restart requested", PT_THREAD_NAME, cmd.restart_child.component);
             if (!wa_restart_child(pr_string_2_chld(cmd.restart_child.component))) {
                 pu_log(LL_ERROR, "%s: restart of %s failed. Reboot.", PT_THREAD_NAME, cmd.restart_child.component);
-                stop = 1;
-            }
-            else {
-                char json[LIB_HTTP_MAX_MSG_SIZE];
-                char di[LIB_HTTP_DEVICE_ID_SIZE];
-                wc_getDeviceID(di, sizeof(di));
-//TODO! currently there is no child restart - just reboot. Dear friend, change it sometime...
-                pr_make_reboot_alert4cloud(json, sizeof(json), di);
-                pu_queue_push(to_cloud, json, strlen(json)+1);  //Notifu cloud about the restart
+                process_reboot();
             }
             break;
+        case PR_CMD_REBOOT: {
+            pu_log(LL_WARNING, "%s: REBOOT requested", PT_THREAD_NAME);
+            process_reboot();
+        }
+        break;
         case PR_CMD_CLOUD_CONN:
             pu_log(LL_INFO, "%s: Cloud connection info received", PT_THREAD_NAME);
             if(!is_server_writer_run()) {   //first run
@@ -271,6 +270,17 @@ static void process_command(pr_cmd_item_t cmd) {
             break;
     }
 }
+
+static void process_reboot() {
+    char json[LIB_HTTP_MAX_MSG_SIZE];
+    char di[LIB_HTTP_DEVICE_ID_SIZE];
+    wc_getDeviceID(di, sizeof(di));
+
+    pr_make_reboot_alert4cloud(json, sizeof(json), di);
+    pu_queue_push(to_cloud, json, strlen(json)+1);  //Notifu cloud about the restart
+    stop = 1;
+}
+
 static void process_alert(pr_alert_item_t alert) {
     switch(alert.alert_type) {
         case PR_ALERT_UNDEFINED:

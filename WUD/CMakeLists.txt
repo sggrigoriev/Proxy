@@ -25,10 +25,10 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 			mbedtls
 			)
 elseif(PRESTO_PLATFORM STREQUAL "host")
-	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM}/make)
-	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+	#file(MAKE_DIRECTORY ../${PRESTO_PLATFORM}/make)
+	#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	# To separate run on real HW and on server
-	configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
+	#configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	add_definitions(-DWUD_ON_HOST)
 	message(STATUS "Compiling for the X86")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #-lc

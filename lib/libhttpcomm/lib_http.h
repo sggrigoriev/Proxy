@@ -12,6 +12,7 @@
 
 #define LIB_HTTP_MAX_POST_RETRIES           3
 #define LIB_HTTP_MAX_FGET_RETRIES           5
+#define LIB_HTTP_HEADER_SIZE                200
 #define LIB_HTTP_MAX_MSG_SIZE               8193    //+1 byte for '\0'
 #define LIB_HTTP_MAX_URL_SIZE               4097
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 129     //+1 byte for '\0
