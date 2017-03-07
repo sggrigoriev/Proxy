@@ -9,7 +9,7 @@
 
 #include <stdio.h>
 
-#define LIB_TCP_BINGING_ATTEMPTS 100
+#define LIB_TCP_BINGING_ATTEMPTS 1
 #define LIB_TCP_READ_TIMEOUT (lib_tcp_rd_t*)1L
 #define LIB_TCP_READ_MSG_TOO_LONG (lib_tcp_rd_t*)2L
 #define LIB_TCP_READ_NO_READY_CONNS (lib_tcp_rd_t*)3L

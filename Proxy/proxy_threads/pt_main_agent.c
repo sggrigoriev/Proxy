@@ -60,7 +60,7 @@ static void* agent_main(void* params) {
         chids_stop = 0;
 
         if(server_socket = lib_tcp_get_server_socket(pc_getAgentPort()), server_socket < 0) {
-            pu_log(LL_ERROR, "%s: unable to bind. %d %s. Exiting.", PT_THREAD_NAME, errno, strerror(errno));
+            pu_log(LL_ERROR, "%s: unable to bind to the port %d. %d %s. Exiting.", PT_THREAD_NAME, pc_getAgentPort(), errno, strerror(errno));
             stop = 1;
             break;
         }

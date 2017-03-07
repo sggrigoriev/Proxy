@@ -51,7 +51,7 @@ static void* ap_reader(void* params) {
     while(!stop) {
        int server_socket = lib_tcp_get_server_socket(wc_getWUDPort());
         if(server_socket < 0) {
-            pu_log(LL_ERROR, "%s: unable to bind. %d %s", PT_THREAD_NAME, errno, strerror(errno));
+            pu_log(LL_ERROR, "%s: unable to bind to port %d. %d %s", PT_THREAD_NAME, wc_getWUDPort(), errno, strerror(errno));
             stop = 1;
             break;      //Allez kaputt
         }
