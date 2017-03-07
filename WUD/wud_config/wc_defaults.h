@@ -24,7 +24,7 @@
 #ifdef WUD_ON_HOST
     #define WC_DEFAULT_PID_DIRECTORY        "/var/run/"
 #else
-    #define WC_DEFAULT_PID_DIRECTORY            "/root/presto"
+    #define WC_DEFAULT_PID_DIRECTORY        "/tmp/"
 #endif
 
 #define WC_DEFAULT_WUD_NAME                 "wud"
