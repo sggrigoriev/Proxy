@@ -1,8 +1,14 @@
-Presto/lib - parts of Presto 1.0 almost copypasted from there
+Release 1.1.4
+Presto/lib - common functionality for the application. It could be built as a separate libraries.
 
-eui64       - builds the unique device id: <MAC_ADDRESS>-<PRODUCT_ID>-<CHECKSUM>
-json        - light library for JSON documents parsing & creation. Copyright (c) 2009 Dave Gamble
-libhttpcomm - add-on cURL for HTTP(S) communications
-pc_config   - read/write/parse a file with JSON text
-pt_tcp_utl  - primitives to communicate via TCP socket
-pu_logger   - logger utility with circular log file
+/json				3rd-party library (Copyright (c) 2009 Dave Gamble) for JSON strings parsing and JSON strings creation
+/libhttpcomm		wrapper under cURL for gateway communication with the cloud via http(s) protocol
+/libsha				3rd-party library (https://github.com/B-Con/crypto-algorithms/blob/master/) adopted by local needs for SHA256 calculation
+/libtcp				wrapper under standard tcp Linux interface
+/libtimer			gateway time service for timeouts and periodical actions start
+/pc_config			wrappper under JSON library for basic operations with comfiguration file
+/presto_commands	interface for all cloud <-> gateway commands parsing and creation. Currently looks like the garbage can. Also contains some helpers.
+/pu_logger			gateway logging funcions
+/pu_queues			gateway internal inter-thread communication mechanism.
+
+NB! some libraries are dependant on pu_logger library.

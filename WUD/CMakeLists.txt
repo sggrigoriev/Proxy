@@ -32,8 +32,8 @@ elseif(PRESTO_PLATFORM STREQUAL "host")
 	add_definitions(-DWUD_ON_HOST)
 	message(STATUS "Compiling for the X86")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #-lc
-	#	    file(MAKE_DIRECTORY build/$ENV{PLATFORM})
-	#	    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
+	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
+	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
@@ -62,7 +62,6 @@ include_directories(
 		wud_config
 		wud_fw_upgrade
 		wud_monitor
-		wud_startup
 		wud_watchdog
 		wud_actions
 		wud_utils
@@ -85,7 +84,6 @@ file(GLOB SOURCE_FILES
 		wud_config/*.c
 		wud_fw_upgrade/*.c
 		wud_monitor/*.c
-		wud_startup/*.c
 		wud_watchdog/*.c
 		wud_actions/*.c
 		wud_utils/*.c
