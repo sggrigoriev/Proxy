@@ -1,8 +1,23 @@
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 //
 // Created by gsg on 15/12/16.
 //
-
-
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -14,6 +29,7 @@
 #include "pu_logger.h"
 #include "lib_http.h"
 
+//Uncomment or add the "add_definitions( -DLIBHTTP_CURL_DEBUG)" string in /Proxy/CmakeLists.txt if debug output needed
 #ifdef LIBHTTP_CURL_DEBUG
 struct data {
   char trace_ascii; /* 1 or 0 */
@@ -26,19 +42,15 @@ typedef struct {
     char * buffer;
     int size;
 } HttpIoInfo_t;
-//
-typedef struct http_timeout_t {
-    long connectTimeout;
-    long transferTimeout;
-} http_timeout_t;
-//
-typedef struct http_param_t {
-    http_timeout_t timeouts;
-    bool verbose;
-    char *password;
-    char *key;
-} http_param_t;
-//
+
+//HTTP connection handler body definition
+//  type            - connection type
+//  hndlr           - cURL connection handler
+//  url             - URL to be connected with
+//  inBoundCommInfo - data transferred
+//  rx_buf          - data received
+//  err_buf         - buffer for error receiving
+//  slist           - some cURL bullshit
 typedef struct {
     lib_http_conn_type_t h_type;
     CURLSH* hndlr;
@@ -51,30 +63,69 @@ typedef struct {
 /////////////////////////////////////////////////////////////
 //Static data
 //
+//Connections pool pointer
 static http_handler_t** CONN_ARRAY;
+//Connections pool size
 static unsigned int CONN_ARRAY_SIZE = 0;
 //
 //Static functions declaration
 //
 /////////////////////////////////////////////////////////////
+//Allocate space for connections pool
+//  connections_max - max sumultaneous connections amount
+//Return NULL or pointer to the space allocated
 static http_handler_t** alloc_conn_pull(unsigned connections_max);
+
+//Write 0s to all connection fields as initiation
+//  conn    - pointer to the connection body
 static void bzero_conn(http_handler_t* conn);
+
+//Get not used element from connections pool
+//  conn_array  - pointer to connection pool
+//  conn_max    - pool size
+//Return free connection index or conn_max if error or no free place
 static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int conn_max);
+
+//Check the vaidity of connection handler
+//  conn    - checked handler
+//Return connection body or NULL (assertion in debug mode)
 static http_handler_t* check_conn(lib_http_conn_t conn);
 
 //Calc http_write (POST) result
-//Return 1 if OK, 0 if connectivity problems, -1 if error
+//  result  - answer from the cloud. Checked only if rc = 1
+//  rc      - received code from POST operation.
+//Return:
+//  LIB_HTTP_POST_ERROR if rc == -1 or synrax error in result;
+//  LIB_HTTP_POST_RETRY if rc == 0 or result has status == "ERR" or status has unknown value
+//  LIB_HTTP_POST_OK in the rest of cases
 static lib_http_post_result_t calc_post_result(char* result, int rc);
-//Called when a message HAS TO BE SENT to the server. this is a standard streamer
-//if the size of the data to write is larger than size*nmemb, this function will be called several times by libcurl.
+
+//Called when a message HAS TO BE SENT to the server.
+//  ptr     - where data has to be written
+//  size    - size*nmemb == maximum number of bytes that can be written each time
+//  nmemb   - size*nmemb == maximum number of bytes that can be written each time
+//  userp   - ptr to message to write -> inputted by CURLOPT_READDATA call below
+//Return number of bytes that were written
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
-//Called when a message HAS TO BE RECEIVED from the server. this is a standard streamer
-//if the size of the data to read, equal to size*nmemb, the function can return what was read
-// and the function will be called again by libcurl.
+
+//Called when a message HAS TO BE RECEIVED from the server
+//  ptr     - where the received message resides
+//  size    - size*nmemb == number of bytes to read
+//  nmemb   - size*nmemb == number of bytes to read
+//  userp   - ptr to where the message will be written -> inputted by CURLOPT_WRITEDATA call below
+//Return number of bytes that were written
 static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp);
-//Callback for file upload
+
+//Callback for file upload. Writes data from buffer to the file stream
+//  buffer  - incoming data buffer
+//  size    - element size in bytes
+//  nmemb   - amount of elements in the buffer. size*nmemb = buffer size
+//  stream  - open ("wb" mode) file stream
 static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream);
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+//Public functions
+//See the description in .h file
+
 //return 1 of OK, 0 if not
 int lib_http_init(unsigned int max_conns_amount) {
     assert(max_conns_amount);
@@ -91,6 +142,7 @@ int lib_http_init(unsigned int max_conns_amount) {
     }
     return 1;
 }
+
 void lib_http_close() {
     unsigned int i;
     for(i = 0; i < CONN_ARRAY_SIZE; i++) {
@@ -102,7 +154,9 @@ void lib_http_close() {
 
     curl_global_cleanup();
 }
+
 //Return connection handler or -1 if error
+//POST and GET connections made on special way - connections are not closed after each POST and GET: they are keep alive during the whole GW life
 lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *purl, const char* auth_token, const char* deviceID, unsigned int conn_to) {
     lib_http_conn_t conn;
 
@@ -202,6 +256,7 @@ out:
     }
     return conn;
 }
+
 void lib_http_eraseConn(lib_http_conn_t conn) {
     if((conn >= CONN_ARRAY_SIZE) || (!CONN_ARRAY[conn])) return;
     if(CONN_ARRAY[conn]->slist) curl_slist_free_all(CONN_ARRAY[conn]->slist);
@@ -209,6 +264,7 @@ void lib_http_eraseConn(lib_http_conn_t conn) {
     free(CONN_ARRAY[conn]);
     CONN_ARRAY[conn] = NULL;
 }
+
 //Return 1 if get msg, 0 if timeout, -1 if error. Logged inside
 int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
     long httpResponseCode = 0;
@@ -272,6 +328,7 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
     if(!curlErrno) return 1; //Got smth to read
     return -1;
 }
+
 //Return 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 look for some answer from the server. All logging inside
 //NB!slist & rx_buffer should be pssed by curlopt here beause length and msg are different from call to call
 lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
@@ -362,6 +419,7 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
         return calc_post_result(reply, ret);
     }
 }
+
 //Return 1 if OK, 0 if timeout, -1 if error.
 int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
     CURLcode curlResult;
@@ -421,8 +479,10 @@ out:
     if(!curlErrno) return 1; //Got smth uploaded
     return -1;
 }
+
 ////////////////////////////////////////////////////////////////
-//local functions
+//Local functions implementation.
+// Look for description at the top of the file
 //
 static http_handler_t** alloc_conn_pull(unsigned connections_max) {
     http_handler_t** ret = malloc(connections_max*sizeof(http_handler_t*));
@@ -434,6 +494,7 @@ static http_handler_t** alloc_conn_pull(unsigned connections_max) {
     for(i = 0; i < connections_max; i++) ret[i] = NULL;
     return ret;
 }
+
 static void bzero_conn(http_handler_t* conn) {
     conn->hndlr = NULL;
     bzero(conn->url, sizeof(conn->url));
@@ -443,6 +504,7 @@ static void bzero_conn(http_handler_t* conn) {
     conn->inBoundCommInfo.size = sizeof(conn->rx_buf);
     conn->slist = NULL;
 }
+
 // Return idx or conn_max if error or no free place
 static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int conn_max) {
     unsigned int i;
@@ -461,11 +523,13 @@ static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int c
     }
     return conn_max;
 }
+
 // Return NULL if conn is bas or wrong type
 static http_handler_t* check_conn(lib_http_conn_t conn) {
     assert(conn < CONN_ARRAY_SIZE); assert(CONN_ARRAY[conn]);
     return CONN_ARRAY[conn];
 }
+
 //Calc http_write (POST) result; fill the reply if needed.
 //Return 1 if OK, 0 if connectivity problems, -1 if error
 /*  TODO! Here is the place to react on message status level!
@@ -529,6 +593,7 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
     }
     return ret;
 }
+
 /**********************************************************************************************//**
  * @brief   Called when a message has to be received from the server. this is a standard streamer
  *              if the size of the data to read, equal to size*nmemb, the function can return
@@ -568,6 +633,7 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp) {
     strncat(dataToRead->buffer, data, (size * nmemb));
     return (size * nmemb);
 }
+
 static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream) {
     FILE* out= *((FILE **)stream);
     if(!out) {
@@ -575,6 +641,7 @@ static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream) {
     }
     return fwrite(buffer, size, nmemb, out);
 }
+
 /**
  * @brief   Called when a message has to be sent to the server. this is a standard streamer
  *              if the size of the data to write is larger than size*nmemb, this function

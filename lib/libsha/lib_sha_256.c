@@ -112,6 +112,8 @@ int lib_sha_string_compare(LIB_SHA_BYTE* c_sum, const char* str) {
 
     return (memcmp(c_sum, buf, LIB_SHA256_BLOCK_SIZE) == 0);
 }
+
+///////////////////////////////////////////////////////////////////
 static void sha256_transform(SHA256_CTX *ctx, const LIB_SHA_BYTE data[])
 {
     LIB_SHA_WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];

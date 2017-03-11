@@ -1,6 +1,23 @@
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
 // Created by gsg on 29/10/16.
-//
+*/
 #include <time.h>
 #include <sys/time.h>
 #include <stdarg.h>
@@ -12,28 +29,35 @@
 #include "pthread.h"
 #include "pu_logger.h"
 
-#define PU_LOG_REC_SIZE     160
-#define PU_END_FILL ' '
-
-////////////////////////////////////////////////////////////
+/*////////////////////////////////////////////////////////////
 //Module data
+*/
+/* Log file descriptor */
 static FILE* file;
 
+/* Currently written records amount */
 static unsigned long rec_amt;
+
+/* Max records allowed in log file*/
 static unsigned long max_rec;
 
+/* Log level: logger will not print messages with log level greater than this*/
 static log_level_t log_lvl;
+
+/* Thread protection */
 static pthread_mutex_t lock;
 
-////////////////////////////////////////////////////////////
+/*///////////////////////////////////////////////////////////
 //Local functions
 //
 ///////////////////////////////////////////////////////////
-//getData - returns the string with current timestamp. Format: YY-MM-DD-HH24-MIM-SEC-MSEC
-//
-//buf       - returned buf with the date
-//max_size  - buffer size
-//
+*/
+/*
+// Get the system date & time. Format: YY-MM-DD-HH24-MIM-SEC-MSEC
+//  buf       - returned buf with the date
+//  max_size  - buffer size
+ Return pointer to the buf
+*/
 static char* getData(char* buf, unsigned max_size) {
     time_t rawtime;
     struct tm timeinfo;
@@ -55,9 +79,12 @@ static char* getData(char* buf, unsigned max_size) {
     );
     return buf;
 }
-///////////////////////////////////////////////////////////
-//getLogLevel - returns the const string with log level name
-//
+
+/*//////////////////////////////////////////////////////////
+// Convert the log level to its name
+//      lvl - log level type
+    Return the log level name as a string
+*/
 static const char* getLogLevel(log_level_t lvl) {
     switch(lvl) {
         case LL_DEBUG:      return "DEBUG  ";
@@ -67,12 +94,10 @@ static const char* getLogLevel(log_level_t lvl) {
         default:            return "UNDEF  ";
     }
 }
-////////////////////////////////////////////////////////////
-//pu_start_logger - iitiates work of logger utility
-//
-//file_name     - string with the full path to the log file
-//rec_amount    - size of max amount of records
-//log_level     - defines the level of logging. All recirds with the type higher than log level will be suppressed
+
+/*///////////////////////////////////////////////////////////
+    Public functions
+*/
 void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_level) {
     if (pthread_mutex_init(&lock, NULL) != 0) {
         printf("\n LOGGER: mutex init failed\n");
@@ -94,28 +119,20 @@ void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_lev
 
     pthread_mutex_unlock(&lock);
  }
-////////////////////////////////////////////////////////////
-//pu_stop_logger - stops work of logger utility
-//
+
 void pu_stop_logger() {
     if(file) (fclose(file), file = NULL);
     pthread_mutex_destroy(&lock);
 }
-////////////////////////////////////////////////////////////
-//pu_set_log_level - chanfes log level from current to ll
-//
+
 void pu_set_log_level(log_level_t ll) {
     pthread_mutex_lock(&lock);
         log_lvl = ll;
     pthread_mutex_unlock(&lock);
 }
-////////////////////////////////////////////////////////////
-//pu_log - write info to the log
-//
-//lvl       - level of info (LL_DEBUG, ... , LL_ERROR
-//fmt, ...  - formatted output as in printf
-//
-static char buf[10000]; //to decrease the stack size...Anyway the buf access is under Lock protection
+
+/* to decrease the stack size...Anyway the buf access is under Lock protection */
+static char buf[10000];
 void pu_log(log_level_t lvl, const char* fmt, ...) {
     pthread_mutex_lock(&lock);
      if(log_lvl < lvl){ pthread_mutex_unlock(&lock); return; }   //Suppress the message

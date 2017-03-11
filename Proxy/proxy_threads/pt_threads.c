@@ -1,6 +1,23 @@
-//
-// Created by gsg on 03/11/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 03/11/16.
+*/
 #include <pthread.h>
 #include <errno.h>
 #include <memory.h>
@@ -11,56 +28,57 @@
 #include "pc_defaults.h"
 #include "pc_settings.h"
 #include "ph_manager.h"
-
 #include "pt_server_read.h"
 #include "pt_server_write.h"
 #include "pt_main_agent.h"
-
 #ifndef PROXY_SEPARATE_RUN
-#include "pt_wud_write.h"
+    #include "pt_wud_write.h"
 #endif
+
 #include "pt_threads.h"
 
 #define PT_THREAD_NAME "MAIN_THREAD"
 
-static int main_thread_startup();
-static void main_thread_shutdown();
-static void send_device_id_to_agent();
-static void send_fw_version_to_cloud();
-static void process_proxy_commands(const char* msg);
+/*******************************************************************************
+ * Local functions
+ */
+static int main_thread_startup();                       /* Total Proxy therads startup */
+static void main_thread_shutdown();                     /* Total Proxy shutdown */
+static void send_device_id_to_agent();                  /* Inform the Agent about Proxy's device id */
+static void send_fw_version_to_cloud();                 /* Inform the cloud about the gateway firmware version */
+static void process_proxy_commands(const char* msg);    /* Process Proxy commands - commsnd(s) string as input */
 
 #ifndef PROXY_SEPARATE_RUN
-static int initiate_wud();     //Send to WUD cloud connection info
-static void send_wd();          // Send Watchdog to thw WUD
+static int initiate_wud();     /* Send to WUD cloud connection info */
+static void send_wd();          /* Send Watchdog to thw WUD */
 #endif
-///////////////////////////////////////////////////////////////////////////////
-//Main proxy thread
-//
-//The only main thread's buffer!
-static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];
+/***********************************************************************************************
+ * Main Proxy thread data
+ */
+static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];    /* The only main thread's buffer! */
 
-static pu_queue_t* from_server;
-static pu_queue_t* from_agent;
-static pu_queue_t* to_server;
-static pu_queue_t* to_agent;
+static pu_queue_t* from_server;     /* server_read -> main_thread */
+static pu_queue_t* from_agent;      /* agent read -> main_thread */
+static pu_queue_t* to_server;       /* main_thread -> server_write */
+static pu_queue_t* to_agent;        /* main_thread -> agent_write */
 
 #ifndef PROXY_SEPARATE_RUN
-    static pu_queue_t* to_wud;
-    lib_timer_clock_t wd_clock = {0};
+    static pu_queue_t* to_wud;                  /* main_thread -> wud_write */
+    lib_timer_clock_t wd_clock = {0};           /* timer for watchdog sending */
 #endif
 
-lib_timer_clock_t cloud_url_update_clock = {0};
-lib_timer_clock_t gw_fw_version_sending_clock = {0};
+lib_timer_clock_t cloud_url_update_clock = {0};         /*  timer for contact URL request sending */
+lib_timer_clock_t gw_fw_version_sending_clock = {0};    /* timer for firmware version info sending */
 //TODO! If fw upgrade failed lock should be set to 0 again!!!
-int lock_gw_fw_version_sending = 0;     //set to 1 when the fw upgrade starts.
+int lock_gw_fw_version_sending = 0;     /* set to 1 when the fw upgrade starts. */
 
-static pu_queue_event_t events;
+static pu_queue_event_t events;         /* main thread events set */
 
-static volatile int main_finish;
-/////////////////////////////////////////////////////////////////////////////////
-//Main function
-//
-void pt_main_thread() { //Starts the main thread.
+static volatile int main_finish;        /* stop flag for main thread */
+/*********************************************************************************************
+ * Public function implementation
+ */
+void pt_main_thread() { /* Starts the main thread. */
 
     main_finish = 0;
 
@@ -68,23 +86,22 @@ void pt_main_thread() { //Starts the main thread.
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
-    unsigned int events_timeout = 0; //Wait until the end of univerce
+    unsigned int events_timeout = 0; /* Wait until the end of univerce */
 #ifndef PROXY_SEPARATE_RUN
     events_timeout = 1;
-    lib_timer_init(&wd_clock, pc_getProxyWDTO());   //Initiating the timer for watchdog sendings
+    lib_timer_init(&wd_clock, pc_getProxyWDTO());   /* Initiating the timer for watchdog sendings */
 #endif
-    lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);    //Initiating the tomer for cloud URL request TO
+    lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
     lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
 
-    send_device_id_to_agent();  //sending the device id to agent
-    send_fw_version_to_cloud(); //sending the fw version to the cloud
+    send_device_id_to_agent();  /* sending the device id to agent */
+    send_fw_version_to_cloud(); /* sending the fw version to the cloud */
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
 
         switch (ev=pu_wait_for_queues(events, events_timeout)) {
             case PS_Timeout:
-//                pu_log(LL_DEBUG, "%s: TIMEOUT", PT_THREAD_NAME);
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
@@ -108,21 +125,21 @@ void pt_main_thread() { //Starts the main thread.
                 pu_log(LL_ERROR, "%s: Undefined event %d on wait (from agent / from server)!", PT_THREAD_NAME, ev);
                 break;
         }
-//Place for own actions
-//1. Wathchdog
+/* Place for own periodic actions */
+/*1. Wathchdog */
 #ifndef PROXY_SEPARATE_RUN
         if(lib_timer_alarm(wd_clock)) {
             send_wd();
             lib_timer_init(&wd_clock, pc_getProxyWDTO());
         }
 #endif
-//2. Regular contact url update
+/*2. Regular contact url update */
         if(lib_timer_alarm(cloud_url_update_clock)) {
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
             ph_update_contact_url();
             lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
         }
-//3. Regular sending the fw version to the cloud
+/* 3. Regular sending the fw version to the cloud */
         if(lib_timer_alarm(gw_fw_version_sending_clock) && !lock_gw_fw_version_sending) {
             send_fw_version_to_cloud();
             lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
@@ -130,9 +147,10 @@ void pt_main_thread() { //Starts the main thread.
     }
     main_thread_shutdown();
 }
-/////////////////////////////////////////////////////////////////////////////////
-//Local functions
-//
+
+/***************************************************************************************************
+ * Local functions implementation
+ */
 static int main_thread_startup() {
     init_queues();
 
@@ -178,6 +196,7 @@ static int main_thread_startup() {
     return 1;
 #endif
 }
+
 static void main_thread_shutdown() {
     set_stop_server_read();
     set_stop_server_write();
@@ -198,7 +217,7 @@ static void main_thread_shutdown() {
 }
 
 #ifndef PROXY_SEPARATE_RUN
-    //Send to WUD cloud connection info
+    /* Send to WUD cloud connection info */
     static int initiate_wud() {
         char json[LIB_HTTP_MAX_MSG_SIZE];
         char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
@@ -218,7 +237,7 @@ static void main_thread_shutdown() {
         return 1;
     }
 
-    // Send Watchdog to the WUD
+    /* Send Watchdog to the WUD */
     static void send_wd() {
         char buf[LIB_HTTP_MAX_MSG_SIZE];
         char di[LIB_HTTP_DEVICE_ID_SIZE];
@@ -229,7 +248,7 @@ static void main_thread_shutdown() {
         pu_queue_push(to_wud, buf, strlen(buf)+1);
     }
 #endif
-//Send DeviceID to the Agent
+/* Send DeviceID to the Agent */
 static void send_device_id_to_agent() {
     const char* first_msg_part = "{\"gw_gatewayDeviceId\":[{\"paramsMap\":{\"deviceId\":\"";
     const char* second_msg_part = "\"}}]}";
@@ -244,6 +263,7 @@ static void send_device_id_to_agent() {
     pu_log(LL_INFO, "%s: device id was sent to the Agent: %s", PT_THREAD_NAME, msg);
 
 }
+
 //Sending the fw version to the cloud accordinlgy to the schedule
 static void send_fw_version_to_cloud() {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
@@ -281,7 +301,7 @@ static void process_proxy_commands(const char* msg) {
             case PR_CMD_FWU_START: {
                 lock_gw_fw_version_sending = 1;
 
-//            case PR_CMD_FWU_CANCEL:    // And who will initiate the cancellation???
+/*            case PR_CMD_FWU_CANCEL:    // And who will initiate the cancellation??? */
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];
                 pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
                 pu_queue_push(to_wud, for_wud, strlen(for_wud)+1);
@@ -296,7 +316,7 @@ static void process_proxy_commands(const char* msg) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
                 break;
-            case PR_CMD_REBOOT: {    //The cloud kindly asks to shut up & reboot
+            case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);
 
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];

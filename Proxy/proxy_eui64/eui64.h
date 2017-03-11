@@ -36,11 +36,11 @@
 
 #include "lib_http.h"
 
-#define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE // store for new deviceID ${Preffix}-${MAC_ADDR} = 6+1+16(?)
+#define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE /* store for new deviceID ${Preffix}-${MAC_ADDR} = 6+1+16(?) */
 
 /***************** Public Prototypes ****************/
 
-int eui64_toString(char *dest, size_t destLen); //Return 0 if failed
+int eui64_toString(char *dest, size_t destLen); /* Return 0 if failed */
 
 
 #endif

@@ -1,6 +1,23 @@
-//
-// Created by gsg on 06/12/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    reated by gsg on 06/12/16.
+*/
 #include <pthread.h>
 #include <string.h>
 
@@ -14,18 +31,33 @@
 
 #define PT_THREAD_NAME "SERVER_WRITE"
 
-////////////////////////////
+/**********************************************************************
+ * Local data
+ */
 static pthread_t id;
 static pthread_attr_t attr;
-static volatile int stop;
-static pu_queue_msg_t msg[PROXY_MAX_MSG_LEN];
 
-static pu_queue_t* to_main;       //to write answers from cloud
-static pu_queue_t* from_main;     //to read and pass
-static pu_queue_t* to_agent;
+static volatile int stop;                       /* Thread stip flag */
+static pu_queue_msg_t msg[PROXY_MAX_MSG_LEN];   /* Buffer for sending message */
 
+static pu_queue_t* from_main;       /* to read and forward to the cloud*/
+static pu_queue_t* to_agent;        /* to send cloud answers to the agent_write */
+
+/*******************************************************************************
+ * Local functions
+*/
+/* Thread function */
 static void* write_proc(void* params);
-static void conn_state_notf_to_agent(int connect, const char* device_id);  //sends to the cloud notification about the connection state
+
+/* Sends to the agent notification about the connection state
+ *      connect     - the status flag 1- online; 0 - offline
+ *      device_id   - gateway device id
+*/
+static void conn_state_notf_to_agent(int connect, const char* device_id);
+
+/*******************************************************************************
+ * Public functions implementation
+ */
 
 int start_server_write() {
 
@@ -46,12 +78,14 @@ void set_stop_server_write() {
     stop = 1;
 }
 
+/********************************************************************************
+ * Local functions implementation
+ */
 static void* write_proc(void* params) {
     pu_queue_event_t events;
 
     stop = 0;
     from_main = pt_get_gueue(PS_ToServerQueue);
-    to_main = pt_get_gueue(PS_FromServerQueue);
     to_agent = pt_get_gueue(PS_ToAgentQueue);
 
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
@@ -61,7 +95,7 @@ static void* write_proc(void* params) {
     pc_getProxyDeviceID(devid, sizeof(devid));
     pc_getFWVersion(fwver, sizeof(fwver));
 
-//Main write loop
+/* Main write loop */
     conn_state_notf_to_agent(1, devid);
     while(!stop) {
         pu_queue_event_t ev;
@@ -70,21 +104,21 @@ static void* write_proc(void* params) {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(from_main, msg, &len)) {
                     pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
-//Sending with retries loop
+/* Sending with retries loop */
                     int out = 0;
-    //Adding the head to message
+    /* Adding the head to message */
                     pf_add_proxy_head(msg, sizeof(msg), devid, 11038);
 
                     while(!stop && !out) {
                         char resp[PROXY_MAX_MSG_LEN];
-                        if(!ph_write(msg, resp, sizeof(resp))) {    //no connection: reconnect forever
+                        if(!ph_write(msg, resp, sizeof(resp))) {    /* no connection: reconnect forever */
                             pu_log(LL_ERROR, "%s: Error sending. Reconnect", PT_THREAD_NAME);
                             conn_state_notf_to_agent(0, devid);
-                            ph_reconnect();    //loop until the succ inside
+                            ph_reconnect();    /* loop until the succ inside */
                             conn_state_notf_to_agent(1, devid);
                             out = 0;
                         }
-                        else {  //data has been written
+                        else {  /* data has been written */
                             pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
                             if (strlen(resp) > 0) {
                                 pu_log(LL_INFO, "%s: Answer from cloud forwarded to Agent: %s", PT_THREAD_NAME, resp);
@@ -111,12 +145,15 @@ static void* write_proc(void* params) {
     }
     pthread_exit(NULL);
 }
+
+/* Constants for Agent notificatiuons - should be mobed into Proxy_commands garbage can */
 static char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
 static char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
 static char* conn_yes = "connected";
 static char* conn_no = "disconnected";
 static char* conn_msg_3 = "\"}}]}";
-static void conn_state_notf_to_agent(int connect, const char* device_id) {  //sends to the cloud notification about the connection state
+
+static void conn_state_notf_to_agent(int connect, const char* device_id) {  /* sends to the cloud notification about the connection state */
     char msg[LIB_HTTP_MAX_MSG_SIZE];
     strncpy(msg, conn_msg_1, sizeof(msg)-1);
     strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);

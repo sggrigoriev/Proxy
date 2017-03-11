@@ -1,3 +1,20 @@
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 //
 // Created by gsg on 19/12/16.
 //
@@ -14,16 +31,40 @@
 #include "pu_logger.h"
 #include "lib_tcp.h"
 
-
-
+//Thread protection to guard connections pool
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+//Add data to assembling bufer
+//  in  - buffer with data
+//  ab  - assimbling buffer
+//Returb 1 if OK; 0 if no more place in assembling buffer
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab);
-static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn);
-static unsigned int inc_start_no(unsigned int no, unsigned int size);
-static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds);
-static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds);
 
+//Close the active connection. Pool will have 1+ connections available
+//  all_conns   - connections pool
+//  conn        - the connection to be closed
+static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn);
+
+//Round Robin for checking ready for read connections
+//  no      - previous start number
+//  size    - active connections amount
+//Return next number to start from
+static unsigned int inc_start_no(unsigned int no, unsigned int size);
+
+//Initiate fd_setcalling FD_ZERO for all active connections
+//  all_conns   - connection pool
+//  fds         - fdset for all active connections
+//Return 1 if OK; 0 if error
+static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds);
+
+//Get first ready for read connection from all ready connections
+//  all_conns   - connections pool
+//  fds         - fdset for all active connections
+//Return ready connection or NULL
+static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Public functions. Description in *h file
+//
 lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size, size_t ass_size) {
     pthread_mutex_lock(&own_mutex);
     assert(max_connections);
@@ -51,6 +92,7 @@ on_err:
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
+
 lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
     assert(all_conns);
     pthread_mutex_lock(&own_mutex);
@@ -66,9 +108,11 @@ lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
+
 int lib_tcp_conn_amount(lib_tcp_conn_t* all_conns) {
     return all_conns->sa_size;
 }
+
 void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
     if(!all_conns) return;
     pthread_mutex_lock(&own_mutex);
@@ -85,6 +129,7 @@ void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
         free(all_conns);
     pthread_mutex_unlock(&own_mutex);
 }
+
 //All three return -1 if error, 0 if timeout, >0 if value
 //return binded socket
 int lib_tcp_get_server_socket(int port) {
@@ -211,6 +256,7 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     pthread_mutex_unlock(&own_mutex);
     return ret;
 }
+
 //All three return -1 if error, 0 if timeout, >0 if value
 //return binded socket
 int lib_tcp_get_client_socket(int port, int to_sec) {
@@ -267,13 +313,17 @@ int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
 //We got just one socket awaiting, so no need to check which is set
     return write(wr_socket, out, size);
 }
+
 void lib_tcp_client_close(int write_socket) {
     if(write_socket >= 0) {
         shutdown(write_socket, SHUT_RDWR);
         close(write_socket);
     }
 }
+
 ////////////////////////////////////////////////////////////////////////////////////
+//Local functions implementation (Description on top)
+//
 static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn) {
     close(conn->socket);
     conn->socket = -1;
@@ -281,9 +331,11 @@ static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn) {
     conn->in_buf.len = 0;
     all_conns->sa_size--;
 }
+
 static unsigned int inc_start_no(unsigned int no, unsigned int size) {
     return (++no < size)?no:0;
 }
+
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
     if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) {     //no place in buffer
         ab->idx = 0;    //reset assemblong buffer!
@@ -293,6 +345,7 @@ static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
     ab->idx += in->len;
     return 1;
 }
+
 static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds) {
     int max_fd = -1;
     FD_ZERO(fds);
@@ -303,6 +356,7 @@ static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds) {
     }
     return max_fd;
 }
+
 static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds) {
     unsigned int idx = all_conns->start_no;
     lib_tcp_rd_t* ret = NULL;

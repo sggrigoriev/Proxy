@@ -22,7 +22,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
+/*
+ *  This is AIOX creature.
+ */
 
 #include <time.h>
 #include <stdint.h>
@@ -45,13 +47,13 @@
 #define EUI64_BYTES_SIZE 8
 #endif
 
+/*
 // yctung
 //#define DEVICE_TYPE_SIZE 8
 #define DEVICE_TYPE_SIZE 9
 // yctung
+*/
 
-/////////////////////////////////////////////////////////////////
-//
 /**
  * Obtain the 48-bit MAC dest and convert to an EUI-64 value from the
  * hardware NIC
@@ -170,51 +172,7 @@ lhit :
  * @return 1 if we are able to capture the EUI64 else return 0
  */
 error_t eui64_toString(char *dest, size_t destLen) {
-//  uint8_t byteAddress[EUI64_BYTES_SIZE], i;
-//  uint16_t checksum= 0;
-//  char deviceType[DEVICE_TYPE_SIZE];
-//  char *tmp = NULL;
-//
-//  assert(dest);
-//
-//  if(destLen < EUI64_STRING_SIZE) {
-//    return FAIL;
-//  }
-//
-//  /* new format: ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} */
-//  if (eui64_toBytes(byteAddress, sizeof(byteAddress)) == SUCCESS) {
-//    memset(deviceType, 0x0, DEVICE_TYPE_SIZE);
-//    readDeviceType(deviceType);
-//
-//    memset(dest, 0x0, destLen);
-//// yctung
-//// uuid = 12345678-1234-1234-1234-123456789abc --> upnp (36 + 1)
-//// uuid = ${MAC_ADDRESS}-${PRODUCT_ID}-${CHECKSUM} = 12 + 1 + 8 + 1 + 4 = 26 --> presto (26 + 1)
-//// yctung
-//    snprintf(dest, destLen, "%2.2X%2.2X%2.2X%2.2X%2.2X%2.2X-%s-",
-//        byteAddress[0], byteAddress[1], byteAddress[2], byteAddress[3],
-//        byteAddress[4], byteAddress[5], deviceType);
-//
-//    for(i = 0; i < strlen(dest) ; i++ ) {
-//        checksum+= dest[i];
-//    }
-//
-//    tmp = strdup(dest);
-//
-//    if ( tmp != NULL )
-//    {
-//// yctung
-////	snprintf(dest, destLen, "%s%X", tmp, checksum);
-//	snprintf(dest, destLen, "%s%04X", tmp, checksum);
-//// yctung
-//	free(tmp);
-//    }
-//
-//
-//    return SUCCESS;
-//  }
-//
-//  return FAIL;
+
     uint8_t byteAddress[EUI64_BYTES_SIZE];
 
     memset(dest, 0, destLen);
@@ -226,8 +184,8 @@ error_t eui64_toString(char *dest, size_t destLen) {
     if (eui64_toBytes(byteAddress, sizeof(byteAddress)) != SUCCESS)
         return 0;
 
-    // aioxGW --> device type 31 (voilin gateway)
-    // AX0 --> device type 32 (aiox test gateway)
+    /*  aioxGW --> device type 31 (voilin gateway) */
+    /*  AX0 --> device type 32 (aiox test gateway) */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat="
 #ifndef YC_DEVICE_TYPE_32

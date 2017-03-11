@@ -1,6 +1,25 @@
-//
-// Created by gsg on 29/10/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 29/10/16.
+
+    Proxy process main function
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,19 +33,21 @@
 #include "ph_manager.h"
 #include "pf_cloud_conn_params.h"
 
+/* Help for Proxy start parameters syntax */
 static void print_Proxy_start_params();
 
+/* Main function */
 int main(int argc, char* argv[]) {
 
     printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
     
     if(argc > 1) {
-        if(!pc_cli_process_params(argc, argv)) exit(0); //Run from command line
+        if(!pc_cli_process_params(argc, argv)) exit(0); /* Run with input parameters (inherited from old Presto) */
     }
     else {
-        if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    //Run w/o input parameters
+        if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
     }
-    pc_readFWVersion(); //Get the current FW version from file DEFAULT_FW_VERSION_FILE
+    pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
 
@@ -36,12 +57,11 @@ int main(int argc, char* argv[]) {
 
     ph_mgr_start();
 
-////////
     pt_main_thread();
 
-//cURL stop
+/* HTTP mgr stop */
     ph_mgr_stop();
-//Logger stop
+/* Logger stop */
     pu_stop_logger();
     exit(0);
 }

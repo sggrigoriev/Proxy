@@ -1,17 +1,33 @@
-//
-// Created by gsg on 28/01/17.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 28/01/17.
+*/
 
 #include <string.h>
 #include <pf_traffic_proc.h>
 #include <assert.h>
 
 #include "cJSON.h"
-
 #include "pu_logger.h"
-#include "pc_settings.h"
 #include "lib_http.h"
 
+#include "pc_settings.h"
 #include "pf_proxy_commands.h"
 
 
@@ -20,9 +36,9 @@ static const char* CMD_RESP_HD = "responses";
 static const char* CMD_CMD_ID = "commandId";
 static const char* CMD_RC = "result";
 
-//Make answer from the message and put into buf. Returns buf addess
+/* Make answer from the message and put into buf. Returns buf addess */
 const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
-// json_answer: "{"responses": [{"commandId": <command_id> "result": 0}]}";
+/* json_answer: "{"responses": [{"commandId": <command_id> "result": 0}]}"; */
     assert(root); assert(buf); assert(buf_size);
     cJSON* arr = cJSON_GetObjectItem(root, CLOUD_COMMANDS);
     buf[0] = '\0';
@@ -48,7 +64,7 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
         cJSON_AddItemToArray(resp_arr, el);
     }
 
-    char* res = cJSON_PrintUnformatted(resp_obj); //Encoding responses array into string
+    char* res = cJSON_PrintUnformatted(resp_obj); /* Encoding responses array into string */
 
     strncpy(buf, res, buf_size-1);
     free(res);

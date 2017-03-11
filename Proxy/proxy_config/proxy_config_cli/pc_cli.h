@@ -21,8 +21,10 @@
 
 
 /***************** Public Prototypes ****************/
-
-int pc_cli_process_params(int argc, char *argv[]); //Return 0 if error. Parse and update config data + loaded params
+/* Process the parameters passed on Proxy start
+ *  Return 0 if error. Parse and update config data + loaded params
+ */
+int pc_cli_process_params(int argc, char *argv[]);
 
 #endif
 

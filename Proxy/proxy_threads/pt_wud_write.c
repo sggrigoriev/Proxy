@@ -1,32 +1,62 @@
-//
-// Created by gsg on 12/12/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 12/12/16.
+*/
 #ifndef PROXY_SEPARATE_RUN
 
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
 
-#include "pc_settings.h"
 #include "lib_tcp.h"
-#include "pc_defaults.h"
 #include "pt_queues.h"
+
+#include "pc_defaults.h"
+#include "pc_settings.h"
+
 #include "pt_wud_write.h"
 
 
 #define PT_THREAD_NAME "WUD_WRITE"
 
-////////////////////////////
+/******************************************************************
+ * Local data
+ */
 static pthread_t id;
 static pthread_attr_t attr;
-static volatile int stop;   //one stop for write and read agent threads
 
-static char out_buf[PROXY_MAX_MSG_LEN*2];
+static volatile int stop;                   /* Thread stop flag */
 
-static pu_queue_t* to_wud;
+static char out_buf[PROXY_MAX_MSG_LEN*2];   /* bufffer for sending data */
 
+static pu_queue_t* to_wud;                  /* transport here */
+
+/**********************************************************************
+ * Local functions
+ */
+
+/* Main thread function */
 static void* wud_write(void* params);
 
+/*********************************************************************
+ * Public functions implementation
+ */
 int start_wud_write() {
     if(pthread_attr_init(&attr)) return 0;
     if(pthread_create(&id, &attr, &wud_write, NULL)) return 0;
@@ -44,10 +74,14 @@ void stop_wud_write() {
 void set_stop_wud_write() {
     stop = 1;
 }
+
+/************************************************************************
+ * Local functions implemebtation
+ */
 static void* wud_write(void* params) {
     to_wud = pt_get_gueue(PS_ToWUDQueue);
 
-//Queue events init
+/* Queue events init */
     pu_queue_event_t events;
     events = pu_add_queue_event(pu_create_event_set(), PS_ToWUDQueue);
 
@@ -69,9 +103,9 @@ static void* wud_write(void* params) {
                     size_t len = sizeof(out_buf);
                     while (pu_queue_pop(to_wud, out_buf, &len)) {
                         ssize_t ret;
-                        while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!stop);  //run until the timeout
-                        if(stop) break; // goto reconnect
-                        if(ret < 0) { //op start failed
+                        while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!stop);  /* run until the timeout */
+                        if(stop) break; /* goto reconnect */
+                        if(ret < 0) {   /* op start failed */
                             pu_log(LL_ERROR, "%s. Write op finish failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
                             reconnect = 1;
                             break;
@@ -80,7 +114,7 @@ static void* wud_write(void* params) {
                     }
                     break;
                 }
-                case PS_Timeout:    //currently TO=0 but...
+                case PS_Timeout:
 //                          pu_log(LL_WARNING, "%s: timeout on waiting from server queue", PT_THREAD_NAME);
                     break;
                 case PS_STOP:
@@ -93,7 +127,7 @@ static void* wud_write(void* params) {
             if (reconnect) {
                 lib_tcp_client_close(write_socket);
                 pu_log(LL_WARNING, "%s: reconnect");
-                break;  //inner while(!stop)
+                break;  /* inner while(!stop) */
             }
         }
         lib_tcp_client_close(write_socket);

@@ -1,6 +1,23 @@
-//
-// Created by gsg on 29/10/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 29/10/16.
+*/
 
 #include <stdlib.h>
 #include <sys/time.h>
@@ -10,25 +27,56 @@
 #include "pu_logger.h"
 #include "pu_queue.h"
 
-////////////////////////////////////////////////////
-//Common local data
+/*****************************************************************************************************
+    Common local data
+*/
+/* common events set for all queues in a process */
 static pu_queue_event_t ps_all_queues_events_set = 0;
-static pthread_mutex_t ps_all_queues_cond_mutex;            //Common mutex to protect condition set changes
-static pthread_cond_t ps_all_queues_cond;                   //condition event
+
+/* Common mutex to protect condition set changes */
+static pthread_mutex_t ps_all_queues_cond_mutex;
+
+/* condition event */
+static pthread_cond_t ps_all_queues_cond;
+
+/* Max size of totally possible events declared. Currently - 1 byte. To have more - change the pu_queue_event_t base type from char to smth bigger */
 static unsigned int PQ_Size = sizeof(pu_queue_event_t)*8;
-/////////////////////////////////////////////////////////////
-//
+
+/********************************************************************************************************
+    Local functions
+*/
+/* Round Robin cyclic index imlementation (the second one in Proxy)
+ *      q   - the queue
+ *      idx - current index (pointed to the first free or to the last occupied place - depends on use
+ *  Return index incremented
+ */
 static unsigned long inc_idx(const pu_queue_t* q, unsigned long idx) {
     return (idx == q->q_array_size-1)?0 : idx+1;
 }
+
+/*  Erase queue element
+ *      q   - the queue
+ *      idx - the destroyed element's index
+*/
 static void erase_element(pu_queue_t* q, unsigned long idx) {
     if(q->q_array[idx].data) (free(q->q_array[idx].data), q->q_array[idx].data = NULL);
     q->q_array[idx].len = 0;
 }
+
+/* Create the mask for the evend
+ *      event_number    - event
+ *  Return the event mask - all 1s and zero bit at the event's number place
+*/
 static pu_queue_event_t make_event_mask(pu_queue_event_t event_number) {
     const pu_queue_event_t mask = 1;
     return mask << (PQ_Size - 1 - event_number);
 }
+
+/* Checks the ptr validity, write to the log some words if ptr bad
+ *      ptr     - poiter examined
+ *      phrase  - char string with all words about the disaster
+ *  Return 1 if ptr is not NULL, 0 - if ptr is NULL
+ */
 static int check_ptr(const void* ptr, const char* phrase) {
     if(!ptr) {
         pu_log(LL_ERROR, "%s", phrase);
@@ -36,6 +84,13 @@ static int check_ptr(const void* ptr, const char* phrase) {
     }
     return 1;
 }
+
+/* Check validity for puch function parameters.
+ *      queue   - pushed queue
+ *      data    - pushed data
+ *      len     - data length in bytes
+ *  Return 1 if params are OK, 0 if not
+ */
 static int check_params_for_pu_queue_push(const pu_queue_t* queue, const pu_queue_msg_t* data, unsigned long len) {
     if (!len) {
         pu_log(LL_WARNING, "Queue %d received zero length message. Ignored", queue->event);
@@ -45,13 +100,13 @@ static int check_params_for_pu_queue_push(const pu_queue_t* queue, const pu_queu
     if(!check_ptr(data, "pu_queue_push() got NULL \'data\' parameter. Failed")) return 0;
     return 1;
 }
-///////////////////////////////////////////////////
-// Common funtcions
-//
-//pu_queues_init - NB! it must be called once in initiation section before using any queue in a process!!
-//
-int pu_queues_init(unsigned int queues_amount) {       // returns 0 if initiation fails
-    if(queues_amount > PQ_Size-2) {     //zero bit is reserved for timeout fake event; the last bit reserved for STOP event
+
+/******************************************************************************************************************
+    Public funtcions
+*/
+
+int pu_queues_init(unsigned int queues_amount) {       /* returns 0 if initiation fails */
+    if(queues_amount > PQ_Size-2) {     /*zero bit is reserved for timeout fake event; the last bit reserved for STOP event */
         pu_log(LL_ERROR, "pu_queues_init: Queues amount requested greater than max possible amount: %d > %d. Initiation ignored", queues_amount, PQ_Size-2);
         return 0;
     }
@@ -60,34 +115,25 @@ int pu_queues_init(unsigned int queues_amount) {       // returns 0 if initiatio
     ps_all_queues_events_set = 0;
     return 1;
 }
-//
-//pu_queues_destroy - NB! it must be called once in termintation part of a process after all queues are destroyed!
-//
+
 void pu_queues_destroy() {
     pthread_mutex_destroy(&ps_all_queues_cond_mutex);
     pthread_cond_destroy(&ps_all_queues_cond);
 }
-//
-//PQ_STOP added by default
+
 pu_queue_event_t pu_create_event_set() {
     return make_event_mask(PQ_STOP);
 }
-pu_queue_event_t pu_add_queue_event(pu_queue_event_t queue_events_mask, pu_queue_event_t event) { //add event to the waiting list
+
+pu_queue_event_t pu_add_queue_event(pu_queue_event_t queue_events_mask, pu_queue_event_t event) { /* add event to the waiting list */
     if((event >= PQ_Size-1)||(!event)) {
         pu_log(LL_ERROR, "pu_add_queue_event: event# %d not fit into event set size %d. Event is not added.", event, PQ_Size-1);
         return queue_events_mask;
     }
     return (queue_events_mask | make_event_mask(event));
 }
-//////////////////////////////////////////////////////////////////////////////////////////////
-//NB! PQ_STOP as well as PQ_TIMEOUT could come any time!
-//pu_wait_for_queues - returns the first queue in the queue_events_mask which has data or wait
-//
-//queue_events_set - waiting list for data in queues
-//to_sec - timeout in seconds. if to_sec == 0 - wait forever
-//returns the first queue from queue_events_set with data occures
-//
-pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned int to_sec) { //wait for one or several queue events
+
+pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned int to_sec) { /* wait for one or several queue events */
     pu_queue_event_t ret;
     struct timespec timeToWait;
     struct timeval now;
@@ -118,12 +164,11 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
             ret = i;
         }
     }
-    if(ret == PQ_TIMEOUT) goto wait;    //That was not our condition!
+    if(ret == PQ_TIMEOUT) goto wait;    /*That was not our condition! */
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
     return ret;
 }
-/////////////////////////////////////////////////////////////
-//
+
 pu_queue_t* pu_queue_create(unsigned long records_amt, pu_queue_event_t my_event) {
 
     pu_queue_t* queue;
@@ -158,6 +203,7 @@ pu_queue_t* pu_queue_create(unsigned long records_amt, pu_queue_event_t my_event
 
     return queue;
 }
+
 void pu_queue_erase(pu_queue_t* queue) {
 
     if(!check_ptr(queue, "pu_queue_erase() got NULL \'queue\' parameter. Failed.")) return;
@@ -165,28 +211,28 @@ void pu_queue_erase(pu_queue_t* queue) {
     for(i = 0; i < queue->q_array_size; i++) erase_element(queue, i);
 }
 
-//send the PQ_STOP to the queue
 void pu_queue_stop(pu_queue_t* queue) {
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
 
     ps_all_queues_events_set |= make_event_mask(PQ_STOP);
-    pthread_cond_broadcast(&ps_all_queues_cond);           //Who if first - owns the slippers
+    pthread_cond_broadcast(&ps_all_queues_cond);           /* Who is the first - owns the slippers! */
 
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
 }
+
 void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
 
     if(!check_params_for_pu_queue_push(queue, data, len)) return;
     pthread_mutex_lock(&queue->own_mutex);
 
-//check for possible overflow
-    if((queue->wr_idx == queue->rd_idx) && !queue->empty) { // overflow case!
+/* check for possible overflow */
+    if((queue->wr_idx == queue->rd_idx) && !queue->empty) { /* overflow case! */
         queue->overflow = 1;
         pu_log(LL_WARNING, "Queue %d overflow!. Lost msg: %s", queue->event, queue->q_array[queue->rd_idx].data);
         erase_element(queue, queue->rd_idx);
         queue->rd_idx = inc_idx(queue, queue->rd_idx);
     }
-//add new element to the queue
+/* add new element to the queue */
     if(queue->q_array[queue->wr_idx].data = malloc(len * sizeof(pu_queue_msg_t)), !queue->q_array[queue->wr_idx].data) {
         pu_log(LL_ERROR, "Queue %d: not enough memory to add data!", queue->event);
         pu_log(LL_WARNING, "Queue %d lost data: %s", queue->event, data);
@@ -198,15 +244,15 @@ void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
     queue->wr_idx = inc_idx(queue, queue->wr_idx);
     queue->empty = 0;
 
-//send the signal we got smth
+/* send the signal we got smth */
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
        ps_all_queues_events_set |= make_event_mask(queue->event);
-       pthread_cond_broadcast(&ps_all_queues_cond);           //Who if first - owns the slippers
+       pthread_cond_broadcast(&ps_all_queues_cond);           /* Who is the first - owns the slippers! */
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
 
     pthread_mutex_unlock(&queue->own_mutex);
 }
-//returns 0 if no data
+
 int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
     if(!check_ptr(queue, "pu_queue_pop() got NULL \'queue\' parameter. Failed.")) return 0;
     if(!check_ptr(data, "pu_queue_pop() got NULL \'data\' parameter. Failed.")) return 0;
@@ -235,6 +281,7 @@ int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
     pthread_mutex_unlock(&queue->own_mutex);
     return 1;
 }
+
 int pu_queue_empty(pu_queue_t* queue) {
     int ret;
     if(!check_ptr(queue, "pu_queue_empty() got NULL \'queue\' parameter. Failed.")) return 0;
