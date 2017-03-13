@@ -2,7 +2,7 @@
 
 project(Proxy C)
 #set (CMAKE_C_STANDARD 90)
-message(STATUS "platform is ${PRESTO_PLATFORM}")
+message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 
 #ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
 #else - the proxy reads all configuration from default configuration file only
@@ -64,6 +64,7 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 #			pthread
 			curl
 #			mbedtls
+			c
 		)
 else()
 	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt]")
@@ -127,14 +128,16 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         ../lib/json/*.c
         )
 
-add_executable(Proxy ${SOURCE_FILES})
-add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
+if (PRESTO_PLATFORM STREQUAL "openwrt")
+    add_executable(Proxy ${SOURCE_FILES})
+    target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
+    INSTALL(TARGETS Proxy DESTINATION /build )
+    INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
+else()
+    add_executable(Proxy ${SOURCE_FILES})
+    add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
 
-target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
-target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
-
-
-if (PRESTO_PLATFORM STREQUAL "OpenWRT")
-INSTALL(TARGETS Proxy DESTINATION /build )
-INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
+    target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
+    target_link_libraries(comm_client ${REQUIRED_LIBRARIES})
 endif()
+

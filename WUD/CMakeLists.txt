@@ -10,7 +10,7 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 
 	# MLevitin additions
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
-	message(STATUS "Compiling for the MIPS")
+	message(STATUS "Cross-compiling for the MIPS")
 	configure_file(wud.conf.mips ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	set(OPENWRT_PATH $ENV{OPENWRT_PATH})
 	set(ROOTFS_PATH    ${OPENWRT_PATH}/staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2)
@@ -43,11 +43,12 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 	configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	message(STATUS "Compiling for the OpenWRT")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 ${GCC_STANDARD} -pthread -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 ${GCC_STANDARD}  -pthread -s")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread
 			curl
+			c
 			)
 else()
 	message(STATUS "Please set PLATFORM to [cross|ubuntu|openwrt].")
@@ -109,7 +110,7 @@ add_executable(WUD ${SOURCE_FILES})
 target_link_libraries(WUD ${REQUIRED_LIBRARIES})
 #target_link_libraries(sha256_test ${REQUIRED_LIBRARIES})
 
-if (PRESTO_PLATFORM STREQUAL "OpenWRT")
+if (PRESTO_PLATFORM STREQUAL "openwrt")
 INSTALL(TARGETS WUD DESTINATION /build )
 INSTALL(FILES wud.conf.mips DESTINATION /build)
 endif()
