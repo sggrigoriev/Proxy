@@ -39,7 +39,7 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 			curl
 			mbedtls
 		)
-elseif(PRESTO_PLATFORM STREQUAL "host")
+elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
     # To separate run on real HW and on server
 	#file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
 	#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
@@ -55,10 +55,10 @@ elseif(PRESTO_PLATFORM STREQUAL "host")
 			pthread
 			curl
 		)
-elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
+elseif(PRESTO_PLATFORM STREQUAL "openwrt")
   	message(STATUS "Compiling for the OpenWRT")
 	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -pthread") #${GCC_STANDARD} -D_GNU_SOURCE
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 ${GCC_STANDARD} -pthread -s")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread
@@ -66,7 +66,7 @@ elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
 #			mbedtls
 		)
 else()
-	message(STATUS "Please select PLATFORM host or cross")
+	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt]")
 	return()
 endif()
 

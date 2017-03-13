@@ -24,7 +24,7 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 			curl
 			mbedtls
 			)
-elseif(PRESTO_PLATFORM STREQUAL "host")
+elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 	#file(MAKE_DIRECTORY ../${PRESTO_PLATFORM}/make)
 	#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	# To separate run on real HW and on server
@@ -40,17 +40,17 @@ elseif(PRESTO_PLATFORM STREQUAL "host")
 			pthread
 			curl
 			)
-elseif(PRESTO_PLATFORM STREQUAL "OpenWRT")
-	configure_file(wud.conf.x86 ../${PRETO_PLATFORM}/wud.conf COPYONLY)
+elseif(PRESTO_PLATFORM STREQUAL "openwrt")
+	configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	message(STATUS "Compiling for the OpenWRT")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -pthread") 
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 ${GCC_STANDARD} -pthread -s")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread
 			curl
 			)
 else()
-	message(STATUS "Please select PLATFORM host or cross")
+	message(STATUS "Please set PLATFORM to [cross|ubuntu|openwrt].")
 	return()
 endif()
 

@@ -35,6 +35,7 @@ define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
 	echo "Copying files to $(PKG_BUILD_DIR)"
 	$(CP) ./presto-privatesdk-c/* $(PKG_BUILD_DIR)/
+	export PLATFORM="openwrt"
 endef
 
 define Package/presto-proxy/install
