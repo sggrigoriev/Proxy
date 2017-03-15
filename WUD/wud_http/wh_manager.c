@@ -1,6 +1,23 @@
-//
-// Created by gsg on 30/01/17.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 30/01/17.
+*/
 
 #include <pthread.h>
 #include <string.h>
@@ -13,33 +30,47 @@
 #include "wa_reboot.h"
 #include "wh_manager.h"
 
-//////////////////////////////////////////////////////////////////////
-//
-// Local data
-static pthread_mutex_t frd_mutex = PTHREAD_MUTEX_INITIALIZER;     //Puase i/o oprtations
-static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;       //To prevent double penetration
+/*************************************************************
+    Local data
+*/
+static pthread_mutex_t frd_mutex = PTHREAD_MUTEX_INITIALIZER;     /* Protect parallel file i/o opertations */
+static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;       /* To prevent double penetration to write */
 
-static unsigned int CONNECTIONS_TOTAL = 2;    //Regular post, regular get & immediate post (God bess the HTTP!)
+static unsigned int CONNECTIONS_TOTAL = 2;    /*Regular post, + file GET) */
 static lib_http_conn_t post_conn = -1;
-//////////////////////////////////////////////////////////////////////
-//
-// Local functions
-//NB! Local functions are not thread-protected!
+/*************************************************************
+    Local functions
+    NB! Local functions are not thread-protected!
+*/
+/*************************************************************
+ *  Open POST connection
+ * @param conn  - connection descriptor
+ * @return  - 1 if OK, 0 if not
+ */
 static int get_post_connection(lib_http_conn_t* conn);
-//Return 1 if OK and 0 if error
-//if full reply == 1 the http_post doesn't make any parsing of replly = provides it "as is"
-//No rw_mutex inside
+
+/*************************************************************
+ *  POST the message to the cloud (no thread protection)
+ * @param conn          - POST connection descriptor
+ * @param msg           - message to be sent
+ * @param reply         - buffer to receive cloud reply
+ * @param reply_size    - reply buffer size
+ * @param auth_token    - gateway authentication token
+ * @return  -  1 if OK and 0 if error
+ */
 static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
 
-//Init cURL and create connections pul size 2: - 1 for POST and 1 for file GET;
-//Make POST connection
+/*************************************************************
+ * Public functions implementation
+ */
+
 void wh_mgr_start() {
     pthread_mutex_lock(&wr_mutex);
     pthread_mutex_lock(&frd_mutex);
 
     if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
 
-//Open POST connection
+/* Open POST connection */
     if(!get_post_connection(&post_conn)) goto on_err;
 
     pthread_mutex_unlock(&wr_mutex);
@@ -51,7 +82,7 @@ on_err:
     lib_http_close();
     wa_reboot();
 }
-//Close cURL & erase connections pool
+
 void wh_mgr_stop() {
     pthread_mutex_lock(&wr_mutex);
     pthread_mutex_lock(&frd_mutex);
@@ -59,7 +90,7 @@ void wh_mgr_stop() {
     pthread_mutex_unlock(&wr_mutex);
     pthread_mutex_unlock(&frd_mutex);
 }
-//(re)create post connection; re-read conn parameters & reconnect
+
 void wh_reconnect(const char* new_url, const char* new_auth_token) {
     pthread_mutex_lock(&wr_mutex);
     pthread_mutex_lock(&frd_mutex);
@@ -80,9 +111,6 @@ void wh_reconnect(const char* new_url, const char* new_auth_token) {
     wa_reboot();
 }
 
-
-//Returns 0 if error, 1 if OK
-//In all cases when the return is <=0 the resp contains some diagnostics
 int wh_write(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
@@ -93,7 +121,7 @@ int wh_write(char* buf, char* resp, size_t resp_size) {
 
     return ret;
 }
-//Returns 0 if error, 1 if OK
+
 int wh_read_file(const char* file_with_path,  const char* url, unsigned int attempts_amount) {
     FILE* rx_fd = NULL;
     int ret = 0;
@@ -113,11 +141,11 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
     }
     while(attempts_amount--) {
         switch(lib_http_get_file(conn, rx_fd)) {
-            case 1: // Got it!
+            case 1:             /* Got it! */
                 pu_log(LL_INFO, "wh_read_file: download of %s succeed... And nobody beleived!", file_with_path);
                 ret = 1;
                 goto on_finish;
-            case 0: //timeout... try again and again, until the attempts_amount separates us
+            case 0:             /* timeout... try again and again, until the attempts_amount separates us */
                 sleep(1);
                 fclose(rx_fd);
                 rx_fd = fopen(file_with_path, "wb");
@@ -126,7 +154,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
                     goto on_finish;
                 }
                 break;
-            case -1:    //Error. Get out of here. We can't live in such a dirty world!
+            case -1:            /* Error. Get out of here. We can't live in such a dirty world! */
                 pu_log(LL_ERROR, "wh_read_file, can't dowload the %s. Maybe in the next life...", file_with_path);
                 goto on_finish;
         }
@@ -138,8 +166,10 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
     if(rx_fd) fclose(rx_fd);
     return ret;
 }
-/////////////////////////////////////////////////////////////////////////////
-//
+/*************************************************************
+ * Local functions implementation
+ */
+
 static int get_post_connection(lib_http_conn_t* conn) {
     char contact_url[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
@@ -155,22 +185,21 @@ static int get_post_connection(lib_http_conn_t* conn) {
             pu_log(LL_ERROR, "wh_mgr_start: WUD connection parameters are not set");
             return 0;
         }
-//Open POST connection
+/* Open POST connection */
         if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *conn < 0) {
             pu_log(LL_ERROR, "get_post_connection: Can't create POST connection descriptor for %s", contact_url);
             lib_http_eraseConn(*conn);
             sleep(1);
             continue;
         }
-        err = 0;    //Bon vouage!
+        err = 0;    /* Bon vouage! */
     }
     pu_log(LL_INFO, "WUD connected to cloud by URL %s", contact_url);
     pu_log(LL_DEBUG, "Device ID = %s, auth_token = %s", device_id, auth_token);
 
     return 1;
 }
-//Return 1 of OK and 0 if error
-//No rw_mutex inside
+
 static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
     int out = 0;
     int ret = 0;

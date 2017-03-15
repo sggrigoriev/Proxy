@@ -1,9 +1,25 @@
-//
-// Created by gsg on 07/12/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 07/12/16.
+*/
 #include <pthread.h>
 #include <string.h>
-#include <errno.h>
 
 #include "wt_queues.h"
 #include "wc_defaults.h"
@@ -13,12 +29,28 @@
 
 #define PT_THREAD_NAME "MONITOR"
 
-//////////////////////////////////////////////////
+/**********************************************************
+ * Local data
+ */
 static pthread_t id;
 static pthread_attr_t attr;
-static volatile int stop;
 
+static volatile int stop;           /* thread stop flag */
+
+/*************************************************************
+ * Local functions definition
+ */
+
+/*************************************************************
+ * Thread function
+ */
 static void* monitor(void* params);
+
+/*************************************************************
+ * Does not see any sence of folowing commenting this piece of shit. It sohuld be rewritten!
+ * @param to
+ * @return
+ */
 static int wakeup(unsigned int to);
 
 int wt_start_monitor() {

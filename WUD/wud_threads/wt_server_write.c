@@ -1,16 +1,32 @@
-//
-// Created by gsg on 07/12/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+    Created by gsg on 07/12/16.
+*/
 #include <string.h>
 #include <pthread.h>
 
 #include "pu_logger.h"
 #include "lib_http.h"
-
 #include "pf_traffic_proc.h"
-#include "wc_settings.h"
 
 #include "wc_defaults.h"
+#include "wc_settings.h"
 #include "wt_queues.h"
 #include "wh_manager.h"
 
@@ -18,15 +34,25 @@
 
 #define PT_THREAD_NAME "SERVER_WRITE"
 
-////////////////////////////
+/*******************************************
+ * Local data definition
+ */
 static pthread_t id;
 static pthread_attr_t attr;
-static volatile int stop;
-static pu_queue_msg_t msg[WC_MAX_MSG_LEN];
 
-static pu_queue_t* to_cloud;       //to write
+static volatile int stop;                   /* Thread stop flag */
+static pu_queue_msg_t msg[WC_MAX_MSG_LEN];  /* Bufer for sending messages */
 
+static pu_queue_t* to_cloud;       /* Thread communication channel with big WUD */
+
+/*******************************************
+ * Thread function
+ */
 static void* write_proc(void* params);
+
+/*******************************************
+ * Public functinos implementation
+ */
 
 int wt_start_server_write() {
     if(pthread_attr_init(&attr)) return 0;
@@ -46,7 +72,12 @@ void wt_set_stop_server_write() {
     stop = 1;
 }
 
-static void* write_proc(void* params){
+/*******************************************
+ * Local functinos implementation
+ */
+
+
+int static void* write_proc(void* params){
     pu_queue_event_t events;
 
     stop = 0;
@@ -59,10 +90,10 @@ static void* write_proc(void* params){
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
                     pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
-//Sending with retries loop
+/* Sending with retries loop */
                     int out = 0;
                     int retries = LIB_HTTP_MAX_POST_RETRIES;
-    //Adding head to the message
+    /* Add head to the message */
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
                     wc_getDeviceID(devid, sizeof(devid));
                     pf_add_proxy_head(msg, sizeof(msg), devid, 11039);
@@ -103,7 +134,6 @@ static void* write_proc(void* params){
                 break;
             }
             case WT_Timeout:
-//                pu_log(LL_WARNING, "%s: timeout on waiting to server queue", PT_THREAD_NAME);
                 break;
             case WT_STOP:
                 stop = 1;

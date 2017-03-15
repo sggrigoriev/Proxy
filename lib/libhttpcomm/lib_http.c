@@ -15,9 +15,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-//
-// Created by gsg on 15/12/16.
-//
+/*
+    Created by gsg on 15/12/16.
+*/
 #include <errno.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -29,7 +29,7 @@
 #include "pu_logger.h"
 #include "lib_http.h"
 
-//Uncomment or add the "add_definitions( -DLIBHTTP_CURL_DEBUG)" string in /Proxy/CmakeLists.txt if debug output needed
+/* Uncomment or add the "add_definitions( -DLIBHTTP_CURL_DEBUG)" string in /Proxy/CmakeLists.txt if debug output needed */
 #ifdef LIBHTTP_CURL_DEBUG
 struct data {
   char trace_ascii; /* 1 or 0 */
@@ -37,20 +37,22 @@ struct data {
 static int my_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
 #endif
 
-// structure used to store data to be sent to the server.
+/* structure used to store data to be sent to the server. */
 typedef struct {
     char * buffer;
     int size;
 } HttpIoInfo_t;
 
-//HTTP connection handler body definition
-//  type            - connection type
-//  hndlr           - cURL connection handler
-//  url             - URL to be connected with
-//  inBoundCommInfo - data transferred
-//  rx_buf          - data received
-//  err_buf         - buffer for error receiving
-//  slist           - some cURL bullshit
+/*
+HTTP connection handler body definition
+  type            - connection type
+  hndlr           - cURL connection handler
+  url             - URL to be connected with
+  inBoundCommInfo - data transferred
+  rx_buf          - data received
+  err_buf         - buffer for error receiving
+  slist           - some cURL bullshit
+*/
 typedef struct {
     lib_http_conn_type_t h_type;
     CURLSH* hndlr;
@@ -60,73 +62,90 @@ typedef struct {
     char err_buf[CURL_ERROR_SIZE];
     struct curl_slist* slist;
 } http_handler_t;
-/////////////////////////////////////////////////////////////
-//Static data
-//
-//Connections pool pointer
-static http_handler_t** CONN_ARRAY;
-//Connections pool size
-static unsigned int CONN_ARRAY_SIZE = 0;
-//
-//Static functions declaration
-//
-/////////////////////////////////////////////////////////////
-//Allocate space for connections pool
-//  connections_max - max sumultaneous connections amount
-//Return NULL or pointer to the space allocated
+/**************************************************
+ Local data
+*/
+
+static http_handler_t** CONN_ARRAY;             /* Connections pool pointer */
+static unsigned int CONN_ARRAY_SIZE = 0;        /* Connections pool size */
+
+/******************************************
+    Static functions declaration
+*/
+
+/******************************************
+ * Allocate space for connections pool
+ * @param connections_max   - max sumultaneous connections amount
+ * @return  - NULL or pointer to the space allocated
+ */
 static http_handler_t** alloc_conn_pull(unsigned connections_max);
 
-//Write 0s to all connection fields as initiation
-//  conn    - pointer to the connection body
+/******************************************
+ * Write 0s to all connection fields as initiation
+ * @param conn  - pointer to the connection body
+ */
 static void bzero_conn(http_handler_t* conn);
 
-//Get not used element from connections pool
-//  conn_array  - pointer to connection pool
-//  conn_max    - pool size
-//Return free connection index or conn_max if error or no free place
+/******************************************
+ * Get not used element from connections pool
+ * @param conn_array    - pointer to connection pool
+ * @param conn_max      - pool size
+ * @return  - free connection index or conn_max if error or no free place
+ */
 static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int conn_max);
 
-//Check the vaidity of connection handler
-//  conn    - checked handler
-//Return connection body or NULL (assertion in debug mode)
+/******************************************
+ * Check the vaidity of connection handler
+ * @param conn  - checked handler
+ * @return  - connection body or NULL (assertion in debug mode)
+ */
 static http_handler_t* check_conn(lib_http_conn_t conn);
 
-//Calc http_write (POST) result
-//  result  - answer from the cloud. Checked only if rc = 1
-//  rc      - received code from POST operation.
-//Return:
-//  LIB_HTTP_POST_ERROR if rc == -1 or synrax error in result;
-//  LIB_HTTP_POST_RETRY if rc == 0 or result has status == "ERR" or status has unknown value
-//  LIB_HTTP_POST_OK in the rest of cases
+/******************************************
+ *  Calc http_write (POST) result
+ * @param result    - answer from the cloud. Checked only if rc = 1
+ * @param rc        - received code from POST operation.
+ * @return
+ *    LIB_HTTP_POST_ERROR if rc == -1 or synrax error in result;
+ *    LIB_HTTP_POST_RETRY if rc == 0 or result has status == "ERR" or status has unknown value
+ *    LIB_HTTP_POST_OK in the rest of cases
+ */
 static lib_http_post_result_t calc_post_result(char* result, int rc);
 
-//Called when a message HAS TO BE SENT to the server.
-//  ptr     - where data has to be written
-//  size    - size*nmemb == maximum number of bytes that can be written each time
-//  nmemb   - size*nmemb == maximum number of bytes that can be written each time
-//  userp   - ptr to message to write -> inputted by CURLOPT_READDATA call below
-//Return number of bytes that were written
+/******************************************
+ * Called when a message HAS TO BE SENT to the server.
+ * @param ptr   - where data has to be written
+ * @param size  - size*nmemb == maximum number of bytes that can be written each time
+ * @param nmemb - size*nmemb == maximum number of bytes that can be written each time
+ * @param userp - ptr to message to write -> inputted by CURLOPT_READDATA call below
+ * @return  - number of bytes that were written
+ */
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
 
-//Called when a message HAS TO BE RECEIVED from the server
-//  ptr     - where the received message resides
-//  size    - size*nmemb == number of bytes to read
-//  nmemb   - size*nmemb == number of bytes to read
-//  userp   - ptr to where the message will be written -> inputted by CURLOPT_WRITEDATA call below
-//Return number of bytes that were written
+/******************************************
+ * Called when a message HAS TO BE RECEIVED from the server
+ * @param ptr   - where the received message resides
+ * @param size  - size*nmemb == number of bytes to read
+ * @param nmemb - size*nmemb == number of bytes to read
+ * @param userp - ptr to where the message will be written -> inputted by CURLOPT_WRITEDATA call below
+ * @return  - number of bytes that were written
+ */
 static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp);
 
-//Callback for file upload. Writes data from buffer to the file stream
-//  buffer  - incoming data buffer
-//  size    - element size in bytes
-//  nmemb   - amount of elements in the buffer. size*nmemb = buffer size
-//  stream  - open ("wb" mode) file stream
+/******************************************
+ * Callback for file upload. Writes data from buffer to the file stream
+ * @param buffer    - incoming data buffer
+ * @param size      - element size in bytes
+ * @param nmemb     - amount of elements in the buffer. size*nmemb = buffer size
+ * @param stream    -  open ("wb" mode) file stream
+ * @return
+ */
 static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream);
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//Public functions
-//See the description in .h file
 
-//return 1 of OK, 0 if not
+/******************************************
+    Public functions implementation
+*/
+
 int lib_http_init(unsigned int max_conns_amount) {
     assert(max_conns_amount);
 
@@ -155,8 +174,6 @@ void lib_http_close() {
     curl_global_cleanup();
 }
 
-//Return connection handler or -1 if error
-//POST and GET connections made on special way - connections are not closed after each POST and GET: they are keep alive during the whole GW life
 lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *purl, const char* auth_token, const char* deviceID, unsigned int conn_to) {
     lib_http_conn_t conn;
 
@@ -177,15 +194,15 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
 #endif
     CURLcode curlResult = CURLE_OK;
 
-//URL string creation
+/* URL string creation */
     strncpy(handler->url, purl, sizeof(handler->url));
     switch(conn_type) {
-        case LIB_HTTP_CONN_INIT_MAIN:                       //Get contact url from the main url
+        case LIB_HTTP_CONN_INIT_MAIN:                       /* Get contact url from the main url */
             strncat(handler->url, LIB_HTTP_MAIN_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
             break;
-        case LIB_HTTP_FILE_GET:                             //No interface - just the link
+        case LIB_HTTP_FILE_GET:                             /*No interface - just the link */
             break;
-        default:                                            //Rest of cases
+        default:                                            /* Rest of cases */
             strncat(handler->url, LIB_HTTP_ROUTINE_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
             break;
     }
@@ -199,12 +216,12 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
         conn_to += LIB_HTTP_PROXY_SERVER_TO_DELTA;
     }
 
-//Handler initiation
+/* Handler initiation */
     if(handler->hndlr = curl_easy_init(), !handler->hndlr) {
         pu_log(LL_ERROR, "lib_http_createConn: cURL handler creation failed.");
         goto out;
     }
-// slist creation for LIB_HTTP_CONN_GET only: slist for POST should be created for each POST call: it depends on posting message size
+/* slist creation for LIB_HTTP_CONN_GET only: slist for POST should be created for each POST call: it depends on posting message size */
     if((conn_type == LIB_HTTP_CONN_GET) || (conn_type == LIB_HTTP_FILE_GET)) {
         handler->slist = curl_slist_append(handler->slist, "User-Agent: IOT Proxy");
         if(conn_type == LIB_HTTP_CONN_GET) {
@@ -215,7 +232,7 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
         if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_HTTPHEADER, handler->slist), curlResult != CURLE_OK) goto out;
     }
 
-//Set options to the handler
+/* Set options to the handler */
 #ifdef LIBHTTP_CURL_DEBUG
     curl_easy_setopt(handler->hndlr, CURLOPT_DEBUGFUNCTION, my_trace);
     curl_easy_setopt(handler->hndlr, CURLOPT_DEBUGDATA, &config);
@@ -265,7 +282,6 @@ void lib_http_eraseConn(lib_http_conn_t conn) {
     CONN_ARRAY[conn] = NULL;
 }
 
-//Return 1 if get msg, 0 if timeout, -1 if error. Logged inside
 int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
     long httpResponseCode = 0;
     long httpConnectCode = 0;
@@ -280,7 +296,7 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
     handler->inBoundCommInfo.size = sizeof(handler->rx_buf);
     bzero(handler->rx_buf, sizeof(handler->rx_buf));
 
-    msg[0] = '\0';  //in case we got nothing
+    msg[0] = '\0';  /* in case we got nothing */
 
     CURLcode curlResult = curl_easy_perform(handler->hndlr);
 
@@ -303,15 +319,15 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
                 curlErrno = ENOEXEC;
                 pu_log(LL_ERROR, "lib_http_get: curl_easy_getinfo");
             }
-            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /// time out error must be distinctive
-            else if (curlErrno == 0) curlErrno = ENOEXEC; /// can't be equalt to 0 if curlResult != CURLE_OK
+            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /* time out error must be distinctive */
+            else if (curlErrno == 0) curlErrno = ENOEXEC; /* can't be equal to 0 if curlResult != CURLE_OK */
 
             pu_log(LL_WARNING, "lib_http_get: %s, %s for url %s", curl_easy_strerror(curlResult), strerror((int) curlErrno), handler->url);
         }
         goto out;
     }
-    // the following is a special case - a time-out from the server is going to return a
-    // string with 1 character in it ...
+    /* the following is a special case - a time-out from the server is going to return a */
+    /* string with 1 character in it ... */
     if (strlen(handler->rx_buf) > 1) {
         /* put the result into the main buffer and return */
         pu_log(LL_DEBUG, "lib_http_get: received msg length %d", strlen(handler->rx_buf));
@@ -323,14 +339,12 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
         goto out;
     }
     out:
-    handler->rx_buf[0] = '\0';    //prepare rx_buf for new inputs
-    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   //timrout case
-    if(!curlErrno) return 1; //Got smth to read
+    handler->rx_buf[0] = '\0';    /* prepare rx_buf for new inputs */
+    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   /* timrout case */
+    if(!curlErrno) return 1; /* Got smth to read */
     return -1;
 }
 
-//Return 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 look for some answer from the server. All logging inside
-//NB!slist & rx_buffer should be pssed by curlopt here beause length and msg are different from call to call
 lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
     CURLcode curlResult;
     http_handler_t* handler = NULL;
@@ -347,7 +361,7 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
     bzero(handler->rx_buf, sizeof(handler->rx_buf));
 
 
-//Create slist
+/* Create slist */
     if(strlen(msg) > 0) {
         char buf[41 + LIB_HTTP_AUTHENTICATION_STRING_SIZE];
         handler->slist = curl_slist_append(handler->slist, "Content-Type: application/json");
@@ -364,9 +378,8 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_READFUNCTION, read_callback), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_READDATA, &outBoundCommInfo), curlResult != CURLE_OK) goto out;
 
-//////////////////////////////////
     curlResult = curl_easy_perform(handler->hndlr);
-/////////////////////////////////
+
     long httpResponseCode = 0;
     long httpConnectCode = 0;
     long curlErrno = 0;
@@ -389,15 +402,15 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
                 curlErrno = ENOEXEC;
                 pu_log(LL_ERROR, "lib_http_post: curl_easy_getinfo");
             }
-            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /// time out error must be distinctive
-            else if (curlErrno == 0) curlErrno = ENOEXEC; /// can't be equalt to 0 if curlResult != CURLE_OK
+            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /* time out error must be distinctive */
+            else if (curlErrno == 0) curlErrno = ENOEXEC; /* can't be equalt to 0 if curlResult != CURLE_OK */
 
             pu_log(LL_WARNING, "lib_http_post: %s, %s for url %s", curl_easy_strerror(curlResult), strerror((int) curlErrno), handler->url);
         }
         goto out;
     }
-    // the following is a special case - a time-out from the server is going to return a
-    // string with 1 character in it ...
+    /* the following is a special case - a time-out from the server is going to return a */
+    /* string with 1 character in it ... */
     if (strlen(handler->rx_buf) > 0) {
         /* put the result into the main buffer and return */
         pu_log(LL_DEBUG, "lib_http_post: received msg length %d", strlen(handler->rx_buf));
@@ -413,14 +426,13 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
         int ret;
         if (handler->slist) { curl_slist_free_all(handler->slist); handler->slist = NULL;}
 
-        if (curlErrno == EAGAIN) ret = 0;   //timeout case
-        else if (!curlErrno) ret = 1; //Got smth to read
+        if (curlErrno == EAGAIN) ret = 0;   /* timeout case */
+        else if (!curlErrno) ret = 1; /* Got smth to read */
         else ret = -1;
         return calc_post_result(reply, ret);
     }
 }
 
-//Return 1 if OK, 0 if timeout, -1 if error.
 int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
     CURLcode curlResult;
     long httpResponseCode = 0;
@@ -468,22 +480,22 @@ int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
                 curlErrno = ENOEXEC;
                 pu_log(LL_ERROR, "lib_http_get_file: curl_easy_getinfo");
             }
-            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /// time out error must be distinctive
-            else if (curlErrno == 0) curlErrno = ENOEXEC; /// can't be equalt to 0 if curlResult != CURLE_OK
+            if (curlResult == CURLE_OPERATION_TIMEDOUT) curlErrno = ETIMEDOUT; /* time out error must be distinctive */
+            else if (curlErrno == 0) curlErrno = ENOEXEC; /* can't be equalt to 0 if curlResult != CURLE_OK */
 
             pu_log(LL_WARNING, "lib_http_get_file: %s, %s for url %s", curl_easy_strerror(curlResult), strerror((int) curlErrno), handler->url);
         }
     }
 out:
-    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   //timrout case
-    if(!curlErrno) return 1; //Got smth uploaded
+    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   /* timrout case */
+    if(!curlErrno) return 1; /* Got smth uploaded */
     return -1;
 }
 
-////////////////////////////////////////////////////////////////
-//Local functions implementation.
-// Look for description at the top of the file
-//
+/******************************************
+    Local functions implementation
+*/
+
 static http_handler_t** alloc_conn_pull(unsigned connections_max) {
     http_handler_t** ret = malloc(connections_max*sizeof(http_handler_t*));
     if(!ret) {
@@ -505,11 +517,10 @@ static void bzero_conn(http_handler_t* conn) {
     conn->slist = NULL;
 }
 
-// Return idx or conn_max if error or no free place
 static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int conn_max) {
     unsigned int i;
     for(i = 0; i < conn_max; i++) {
-        if(conn_array[i] == NULL) {		//Got vacant place
+        if(conn_array[i] == NULL) {		/* Got vacant place */
             conn_array[i] = malloc(sizeof(http_handler_t));
             if(!conn_array[i]) {
                 pu_log(LL_ERROR, "get_free_conn: Can't allocate %d bytes memory", sizeof(http_handler_t));
@@ -524,14 +535,15 @@ static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int c
     return conn_max;
 }
 
-// Return NULL if conn is bas or wrong type
 static http_handler_t* check_conn(lib_http_conn_t conn) {
     assert(conn < CONN_ARRAY_SIZE); assert(CONN_ARRAY[conn]);
     return CONN_ARRAY[conn];
 }
 
-//Calc http_write (POST) result; fill the reply if needed.
-//Return 1 if OK, 0 if connectivity problems, -1 if error
+/*
+    Calc http_write (POST) result; fill the reply if needed.
+    Return 1 if OK, 0 if connectivity problems, -1 if error
+*/
 /*  TODO! Here is the place to react on message status level!
 
 ACK             The message was received and parsed successfully. The device or gateway should send the next message
@@ -549,13 +561,13 @@ UNAUTHORIZED	When the device is registered with bidirectional authentication ena
 static lib_http_post_result_t calc_post_result(char* result, int rc) {
     lib_http_post_result_t ret;
 
-    if(rc < 0) {    //Some curl-level problem - everything logged
+    if(rc < 0) {    /* Some curl-level problem - everything logged */
         ret = LIB_HTTP_POST_ERROR;
     }
-    else if (!rc) {  // rc == 0 technically write is OK
+    else if (!rc) {  /* rc == 0 technically write is OK */
         ret = LIB_HTTP_POST_RETRY;
     }
-    else { // ...and what we got? rc == 1
+    else { /* ...and what we got? rc == 1 */
         cJSON* obj = cJSON_Parse(result);
         if(!obj) {
             ret = LIB_HTTP_POST_ERROR;
@@ -584,7 +596,7 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
                 pu_log(LL_WARNING, "Cloud answered for received unknown request from Proxy %s", result);
                 ret = LIB_HTTP_POST_OK;
             }
-            else {  //UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem
+            else {  /* UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem */
                 pu_log(LL_WARNING, "Cloud answered strange request from Proxy %s", result);
                 ret = LIB_HTTP_POST_RETRY;
             }
@@ -614,7 +626,7 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp) {
         return 0;
     }
 
-    // keeping one byte for the null byte
+    /* keeping one byte for the null byte */
     if((strlen(dataToRead->buffer)+(size * nmemb)) > (dataToRead->size - 1))
     {
 #if __WORDSIZE == 64
@@ -681,10 +693,10 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     return 0;
 }
 #ifdef LIBHTTP_CURL_DEBUG
-/////////////////////////////////////////////////////////////////
-//Debug part
-//Copypizded from https://curl.haxx.se/libcurl/c/debug.html
-//
+/***************************************************************
+        Debug part
+    Copypizded from https://curl.haxx.se/libcurl/c/debug.html
+*/
 static
 void dump(const char *text,
           FILE *stream, unsigned char *ptr, size_t size,

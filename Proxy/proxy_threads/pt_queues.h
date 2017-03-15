@@ -48,7 +48,7 @@ void init_queues();
 /* Stop Proxy queues service */
 void erase_queues();
 
-/* Get the queue pointed by associated eveny number
+/* Get the queue pointed by associated event number
  *  Return pointer to the queue or NULL if no queue associated
  */
 pu_queue_t* pt_get_gueue(int que_number);

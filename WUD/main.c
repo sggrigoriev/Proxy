@@ -1,32 +1,55 @@
-//
-// Created by gsg on 29/11/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+    Created by gsg on 29/11/16.
+
+    Main WUD function. From this place stats the Gateway
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <wm_childs_info.h>
-#include <wa_manage_children.h>
-#include <wf_upgrade.h>
-#include <wa_reboot.h>
-#include <wt_threads.h>
-#include <pr_ptr_list.h>
+
+#include "pr_ptr_list.h"
 
 #include "wc_defaults.h"
 #include "wc_settings.h"
 #include "wu_utils.h"
+#include "wm_childs_info.h"
+#include "wa_manage_children.h"
+#include "wf_upgrade.h"
+#include "wa_reboot.h"
+#include "wt_threads.h"
 
+/****************************************
+ * Log the WUD configuration
+ */
 static void print_WUD_start_params();
 
 int main(int argc, char* argv[]) {
     printf("WUD launcher start\n");
-//read configuration file
+/* read configuration file */
     if(!wc_load_config(WD_DEFAULT_CFG_FILE_NAME)) {
         fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
         exit(1);
     }
-    //initiate logger
+/* initiate logger */
     pu_start_logger(wc_getLogFileName(), wc_getLogRecordsAmt(), wc_getLogVevel());
 
     if(wc_getWUDDelay()) {
@@ -34,19 +57,19 @@ int main(int argc, char* argv[]) {
         sleep(wc_getWUDDelay());
     }
 
-//WUD must check if /var/run/wud.pid exists
+/* WUD must check if /var/run/wud.pid exists */
     if(wu_process_exsists(WC_DEFAULT_WUD_NAME)) {
         pu_log(LL_ERROR, "WUD is already running. Abort");
         exit(1);
     }
-//create pid file (var/run/wud.pid
+/* create pid file (var/run/wud.pid */
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
         pu_log(LL_ERROR, "Can\'t create PID file for %s: %d %s. Abort", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
         exit(1);
     }
 
-//check if download & upload directories are not empty
-//NB! Don't change the state even after files deletion: the initial state will be reported to the cloud!
+/* check if download & upload directories are not empty */
+/* NB! Don't change the state even after files deletion: the initial state will be reported to the cloud! */
     wf_set_download_state(wu_dir_empty(wc_getFWDownloadFolder()));
     if(!wf_was_download_empty() && !wu_clear_dir(wc_getFWDownloadFolder())) {
         pu_log(LL_ERROR, "Can\'t clear %s : %d %s. Abort.", wc_getFWDownloadFolder(), errno, strerror(errno));
@@ -59,7 +82,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-//WUD starts - Agent and Proxy according to configuration parameters - binary name and working directory child processes
+/* WUD starts - Agent and Proxy according to configuration parameters - binary name and working directory child processes */
     char buf[500];
     pu_log(LL_DEBUG, "WUD: Agent descriptor entries: process name = %s, binary name = %s, working directory = %s, run_parameters = %s, wd to = %d",
            wc_getAgentProcessName(), wc_getAgentBinaryName(), wc_getAgentWorkingDirectory(),
@@ -84,7 +107,7 @@ int main(int argc, char* argv[]) {
                                         0
                                     );
 
-#ifdef WUD_ON_HOST
+#ifdef WUD_ON_HOST      /* The agent runs by itself on real gateway. */
   if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         wa_reboot();

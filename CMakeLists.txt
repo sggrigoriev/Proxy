@@ -22,7 +22,6 @@ elseif (PRESTO_PLATFORM STREQUAL "ubuntu")
     set(GCC_STANDARD "-std=c99")
     add_subdirectory(Proxy)
     add_subdirectory(WUD)
-    add_subdirectory(FWinstall)
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
     # this is for the OpenWRT target build.
     set(CMAKE_VERBOSE_MAKEFILE OFF)

@@ -1,10 +1,13 @@
-//
-// Created by gsg on 09/12/16.
-//
+/*
+    Created by gsg on 09/12/16.
+
+    Gateway reboot official place. For the "HOST" configuration makes ext instead of reboot.
+*/
 
 #ifndef PRESTO_WA_REBOOT_H
 #define PRESTO_WA_REBOOT_H
 
-void wa_reboot();   //run WUD (or system?) totel reboot
+/* Run systemr eboot for host - just exit */
+void wa_reboot();
 
-#endif //PRESTO_WA_REBOOT_H
+#endif /* PRESTO_WA_REBOOT_H */

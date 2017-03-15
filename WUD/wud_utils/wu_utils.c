@@ -1,6 +1,23 @@
-//
-// Created by gsg on 29/11/16.
-//
+/*
+ *  Copyright 2017 People Power Company
+ *
+ *  This code was developed with funding from People Power Company
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+*/
+/*
+    Created by gsg on 29/11/16.
+*/
 
 #include <unistd.h>
 #include <stdio.h>
@@ -17,9 +34,21 @@
 #include "wc_defaults.h"
 #include "wu_utils.h"
 
-static const char* add_slash(char* buf, size_t buf_size,const char* path); //Add slash to the path's tail if no slash found there
+/***********************************************************
+ * Local function definition
+ *
+ * Add slash to the path's tail if no slash found there
+ * @param buf       - buffer to store the result
+ * @param buf_size  - buffer size
+ * @param path      - the path to be changed
+ * @return  - pointer to the buffer
+ */
+static const char* add_slash(char* buf, size_t buf_size,const char* path);
 
-//return 0 if not exisst 1 if exists
+/***********************************************************
+ * Public functions definition
+ */
+
 int wu_process_exsists(const char* process_name) {
     char fn[WC_MAX_PATH];
     char pid[sizeof(pid_t)+1];
@@ -27,19 +56,18 @@ int wu_process_exsists(const char* process_name) {
     int ret;
 
     f = fopen(wu_create_file_name(fn, sizeof(fn)-1, WC_DEFAULT_PID_DIRECTORY, process_name, WC_DEFAULT_PIDF_EXTENCION), "r");
-    if(!f) return 0;    //No pid file
+    if(!f) return 0;    /* No pid file */
     if(fgets(pid, sizeof(fn), f)) {
         snprintf(fn, sizeof(fn), "%s%s", WC_PROC_DIR, pid);
         ret = (access(fn, F_OK) != -1);
     }
     else {
-        ret = 0; //No PID in file
+        ret = 0; /* No PID in file */
     }
     fclose(f);
     return ret;
 }
 
-//return 0 if error, 1 if OK
 int wu_create_pid_file(const char* process_name, pid_t process_pid) {
     char fn[WC_MAX_PATH];
     FILE* f;
@@ -51,29 +79,27 @@ int wu_create_pid_file(const char* process_name, pid_t process_pid) {
     return 1;
 }
 
-//return 1 if empty, return 0 if not
 int wu_dir_empty(const char* dir_name) {
     int n = 0;
     DIR *dir = opendir(dir_name);
-    if (dir == NULL) //Not a directory or doesn't exist
+    if (dir == NULL)        /* Not a directory or doesn't exist */
         return 1;
     while (readdir(dir) != NULL) {
         if(++n > 2)
             break;
     }
     closedir(dir);
-    if (n <= 2) //Directory Empty
+    if (n <= 2)             /* Directory Empty */
         return 1;
     else
         return 0;
 }
 
-//return 1 if OK, 0 if error
 int wu_clear_dir(const char* dir) {
     char path[WC_MAX_PATH];
     char temp[WC_MAX_PATH];
 
-    if(!dir || !strlen(dir)) return 1; //Nothing to elete
+    if(!dir || !strlen(dir)) return 1; /* Nothing to delete */
 
     add_slash(temp, sizeof(temp), dir);
 
@@ -82,24 +108,21 @@ int wu_clear_dir(const char* dir) {
     return (system(path) == 0);
 }
 
-// return PID of OK 0 if not
 pid_t wu_start_process(const char* prg_name, char* const* command_string, const char* process_working_dir) {
     pid_t pid = 0;
     assert(prg_name);
 
     if((pid = fork())) {
-        return pid;     //Parent return
+        return pid;     /* Parent return */
     }
     else {
         if(process_working_dir) chdir(process_working_dir);
-        execv(prg_name, command_string);  //launcher exits and disapears...
+        execv(prg_name, command_string);  /* launcher exits and disapears... */
     }
     return pid;
 }
 
-//Move all files found from src_folder to dst_folder
-//Returns 1 if OK, 0 if not
-int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1 if OK, 0 if not
+int wu_move_files(const char* dest_folder, const char* src_folder) {
     DIR           *d;
     struct dirent *dir;
     int ret = 1;
@@ -130,8 +153,7 @@ int wu_move_files(const char* dest_folder, const char* src_folder) { //Returns 1
     }
     return ret;
 }
-//WUD_DEFAULT_FW_COPY_EXT
-//Returns 1 if Ok. All diagnostics inside. Copy & Delete. actually...
+
 int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_dir, const char* new_name) {
     char new_path[WC_MAX_PATH];
     char old_path[WC_MAX_PATH];
@@ -141,7 +163,7 @@ int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_
     wu_create_file_name(old_path, sizeof(old_path), old_dir, old_name, "");
     wu_create_file_name(new_in_process, sizeof(new_in_process), new_dir, new_name, WUD_DEFAULT_FW_COPY_EXT);
 
-//Open old file
+/* Open old file */
     FILE* f_src = fopen(old_path, "rb");
     if(!f_src) {
         pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", old_path, errno, strerror(errno));
@@ -153,7 +175,7 @@ int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_
         pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", new_in_process, errno, strerror(errno));
         goto on_err;
     }
-//Coppy from src to cpy and flush at the end
+/* Coppy from src to cpy and flush at the end */
     unsigned char buf[4096];
     while(!feof(f_src)) {
         size_t ret = fread(buf, 1, sizeof(buf), f_src);
@@ -166,12 +188,12 @@ int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_
     fclose(f_src); f_src = NULL;
     fclose(f_cpy); f_cpy = NULL;
     pu_log(LL_DEBUG, "File %s copied into %s", old_path, new_in_process);
-//Delete old file
+/* Delete old file */
     if(remove(old_path) != 0) {
         pu_log(LL_ERROR, "wu_move_n_rename: can't delete file %s:: %d, %s", old_path, errno, strerror(errno));
         goto on_err;
     }
-//Rename new file to the correct name (w/o extention)
+/* Rename new file to the correct name (w/o extention) */
     if(rename(new_in_process, new_path)) {
         pu_log(LL_ERROR, "wu_move_n_rename: can't rename %s to %s: %d, %s", new_in_process, new_path, errno, strerror(errno));
         goto on_err;
@@ -184,7 +206,6 @@ on_err:
     return 0;
 }
 
-//Return poinetr to the first non-filename symbol from the tail or empty string. No NULL!
 const char* wu_cut_off_file_name(const char* path_or_url) {
         if((!path_or_url) || !strlen(path_or_url)) return "";
         size_t i;
@@ -193,8 +214,6 @@ const char* wu_cut_off_file_name(const char* path_or_url) {
         return path_or_url;
 }
 
-//return files list from directory. Last element NULL. If no files - return at least one element with NULL
-//return NULL if allocation error
 char** wu_get_flist(const char* path) {
     DIR           *d;
     struct dirent *dir;
@@ -223,10 +242,11 @@ char** wu_get_flist(const char* path) {
     }
     return ret;
 }
+
 void wu_free_flist(char** flist) {
     pt_delete_ptr_list(flist);
 }
-//Creates file name with full path.
+
 const char* wu_create_file_name(char* buf, size_t buf_size, const char* dir, const char* fname, const char* ext) {
     assert(buf); assert(dir); assert(fname); assert(ext);
 
@@ -238,10 +258,11 @@ const char* wu_create_file_name(char* buf, size_t buf_size, const char* dir, con
     }
     return buf;
 }
-//////////////////////////////////////////////////////////////////////////
-//Local finctions definition
 
-//Add slash to the path's tail if no slash found there
+/****************************************
+    Local finction implementation
+*/
+
 static const char* add_slash(char* buf, size_t buf_size, const char* path) {
     strncpy(buf, path, buf_size-1);
     if(buf[strlen(buf)-1] != '/')
