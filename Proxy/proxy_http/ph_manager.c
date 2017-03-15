@@ -168,11 +168,11 @@ void ph_mgr_start() {
 
     if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
     while (err) {
-        sleep(1);   //in case of bad connection - to avoid too fast requests
+        sleep(1);   /*in case of bad connection - to avoid too fast requests */
 /*1. Get main url & deviceId from config */
         pc_getMainCloudURL(main_url, sizeof(main_url));
         pc_getProxyDeviceID(device_id, sizeof(device_id));
-        pc_getAuthToken(auth_token, sizeof(auth_token));  //Coud be just "" if undefined...
+        pc_getAuthToken(auth_token, sizeof(auth_token));  /*Coud be just "" if undefined...*/
 
         if(!strlen(main_url)) {
             pu_log(LL_ERROR, "Cloud connection initiation failed. Main Cloud URL is not set.");

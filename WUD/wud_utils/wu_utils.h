@@ -54,8 +54,8 @@ int wu_dir_empty(const char* dir_name);
  */
 int wu_clear_dir(const char* dir_name);
 
-//Fork launcher; return PID. Launcher change working dir and run process with the command string
-/*************************************************
+/*Fork launcher; return PID. Launcher change working dir and run process with the command string
+*************************************************
  * Start chilg process bu fork. Launcher change working dir and run process with the command string
  * @param prg_name              - process to start
  * @param command_string        - process' start parameters
@@ -102,8 +102,8 @@ char** wu_get_flist(const char* path);
  */
 void wu_free_flist(char** flist);
 
-//Creates file name with full path.
-/*************************************************
+/*Creates file name with full path.
+*************************************************
  * Construct the file name with the path from path, name & extention
  * @param buf       - buffer to store the result string
  * @param buf_size  - buffer size

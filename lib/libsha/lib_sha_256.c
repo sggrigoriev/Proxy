@@ -29,8 +29,9 @@
 #define EP1(x) (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25))
 #define SIG0(x) (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3))
 #define SIG1(x) (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10))
-//
-//Local types definition
+/*
+Local types definition
+*/
 typedef struct {
     LIB_SHA_BYTE data[64];
     LIB_SHA_WORD datalen;
@@ -50,21 +51,23 @@ static const LIB_SHA_WORD k[64] = {
         0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
         0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
 };
-///////////////////////////////////////////////////////////////////////////////////////
+/*/////////////////////////////////////////////////////////////////////////////////////
 //Static functions definition
+*/
 static void sha256_transform(SHA256_CTX *ctx, const LIB_SHA_BYTE data[]);
 static void sha256_init(SHA256_CTX *ctx);
 static void sha256_update(SHA256_CTX *ctx, const LIB_SHA_BYTE data[], size_t len);
 static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[]);
-//
+
 static void hex_string_2_hex_bytes(LIB_SHA_BYTE dest[], const char* src);
 
 /*********************** FUNCTION DEFINITIONS ***********************/
 
-//Calculates the check sum for the file and compares it with c_sum
+/*Calculates the check sum for the file and compares it with c_sum
 //Return 1 if OK
 //0 if not compared
 //c_sum supposed to be hex in string presentation with two-bytes per byte (i.e 64 symbols for 32 bytes)
+*/
 int lib_sha_file_compare(const char* c_sum, FILE* binary_opened_file) {
     const long blk_size = 4096;
     LIB_SHA_BYTE rd_buf[blk_size];
@@ -73,20 +76,20 @@ int lib_sha_file_compare(const char* c_sum, FILE* binary_opened_file) {
     LIB_SHA_BYTE cmp_buf[LIB_SHA256_BLOCK_SIZE];
     SHA256_CTX ctx;
 
-//Check the hash lenght
+/*Check the hash lenght */
     if(!c_sum || (strlen(c_sum) != LIB_SHA256_BLOCK_SIZE * 2)) return 0;
-// Convert char presentation to the byte one
+/* Convert char presentation to the byte one */
     hex_string_2_hex_bytes(cmp_buf, c_sum);
-//Calculate file length
-    if(fseek(binary_opened_file, 0, SEEK_END)) return 0; // seek to end of file
-    long size = ftell(binary_opened_file); // get current file pointer
+/*Calculate file length */
+    if(fseek(binary_opened_file, 0, SEEK_END)) return 0; /* seek to end of file */
+    long size = ftell(binary_opened_file); /* get current file pointer */
     if(size < 0) return 0;
     if(fseek(binary_opened_file, 0, SEEK_SET)) return 0;
 
-//Calculate blockks size and reminder
+/*Calculate blockks size and reminder */
     ldiv_t sz = ldiv(size, blk_size);
 
-//Run the check sum clculation
+/*Run the check sum clculation */
     sha256_init(&ctx);
     while(sz.quot--) {
         fread(rd_buf, sizeof(LIB_SHA_BYTE), blk_size, binary_opened_file);
@@ -98,7 +101,7 @@ int lib_sha_file_compare(const char* c_sum, FILE* binary_opened_file) {
     }
     sha256_final(&ctx, buf);
 
-//Compare with hash sent and report the result
+/*Compare with hash sent and report the result */
     return (memcmp(cmp_buf, buf, LIB_SHA256_BLOCK_SIZE) == 0);
 }
 
@@ -113,7 +116,6 @@ int lib_sha_string_compare(LIB_SHA_BYTE* c_sum, const char* str) {
     return (memcmp(c_sum, buf, LIB_SHA256_BLOCK_SIZE) == 0);
 }
 
-///////////////////////////////////////////////////////////////////
 static void sha256_transform(SHA256_CTX *ctx, const LIB_SHA_BYTE data[])
 {
     LIB_SHA_WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
@@ -190,7 +192,7 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
 
     i = ctx->datalen;
 
-    // Pad whatever data is left in the buffer.
+    /* Pad whatever data is left in the buffer. */
     if (ctx->datalen < 56) {
         ctx->data[i++] = 0x80;
         while (i < 56)
@@ -204,7 +206,7 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
         memset(ctx->data, 0, 56);
     }
 
-    // Append to the padding the total message's length in bits and transform.
+    /* Append to the padding the total message's length in bits and transform. */
     ctx->bitlen += ctx->datalen * 8;
     ctx->data[63] = ctx->bitlen;
     ctx->data[62] = ctx->bitlen >> 8;
@@ -216,8 +218,8 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
     ctx->data[56] = ctx->bitlen >> 56;
     sha256_transform(ctx, ctx->data);
 
-    // Since this implementation uses little endian byte ordering and SHA uses big endian,
-    // reverse all the bytes when copying the final state to the output hash.
+    /* Since this implementation uses little endian byte ordering and SHA uses big endian,
+     reverse all the bytes when copying the final state to the output hash. */
     for (i = 0; i < 4; ++i) {
         hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
         hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
@@ -229,7 +231,7 @@ static void sha256_final(SHA256_CTX *ctx, LIB_SHA_BYTE hash[])
         hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
     }
 }
-//
+
 static void hex_string_2_hex_bytes(LIB_SHA_BYTE dest[], const char* src) {
     unsigned int i;
     for(i = 0; i < 32; i++) {

@@ -1,3 +1,12 @@
+VERSION 1.1.5 15-MAR-2016
+=================================================================================================
+1. c98 standard compatibility
+2. Now it is possible to build using make
+    2.1 export HOST=mips-linux
+    2.2 make  -f Makefile.make
+    2.3 resulting files is in 
+
+
 VERSION 1.1.4 08-MAR-2016
 =================================================================================================
 1. Directory name for firmware upgrade adjusted with the firmware script (/root/download

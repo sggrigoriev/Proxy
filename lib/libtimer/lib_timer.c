@@ -14,10 +14,10 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
+ *
 //
 // Created by gsg on 12/12/16.
-//
+*/
 #include <sys/sysinfo.h>
 #include <errno.h>
 #include <string.h>
@@ -25,12 +25,14 @@
 #include "pu_logger.h"
 #include "lib_timer.h"
 
-//Get the gateway uptime from sysinfo or system time if again, the GW OS has some POSIX incompatibilities :-(
+/*Get the gateway uptime from sysinfo or system time if again, the GW OS has some POSIX incompatibilities :-(
 //Return abs Unix time in seconds
+*/
 static time_t get_uptime();
 
-////////////////////////////////////////////////////////////////////
+/*//////////////////////////////////////////////////////////////////
 //Public funcions (description in *.h)
+*/
 void lib_timer_init(lib_timer_clock_t* dat, time_t to) {
     dat->timeout = to;
     dat->last_update_time = get_uptime();

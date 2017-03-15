@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 /*
-// Created by gsg on 29/10/16.
+ Created by gsg on 29/10/16.
 */
 #include <time.h>
 #include <sys/time.h>
@@ -29,8 +29,8 @@
 #include "pthread.h"
 #include "pu_logger.h"
 
-/*////////////////////////////////////////////////////////////
-//Module data
+/*
+Module data
 */
 /* Log file descriptor */
 static FILE* file;
@@ -47,26 +47,26 @@ static log_level_t log_lvl;
 /* Thread protection */
 static pthread_mutex_t lock;
 
-/*///////////////////////////////////////////////////////////
-//Local functions
-//
-///////////////////////////////////////////////////////////
+/*/
+Local functions
+
+/
 */
 /*
-// Get the system date & time. Format: YY-MM-DD-HH24-MIM-SEC-MSEC
-//  buf       - returned buf with the date
-//  max_size  - buffer size
+ Get the system date & time. Format: YY-MM-DD-HH24-MIM-SEC-MSEC
+  buf       - returned buf with the date
+  max_size  - buffer size
  Return pointer to the buf
 */
 static char* getData(char* buf, unsigned max_size) {
     time_t rawtime;
     struct tm timeinfo;
     struct timeval tv;
-    //mlevitin struct timezone tz;
+    /*mlevitin struct timezone tz;*/
 
     time (&rawtime);
     localtime_r (&rawtime, &timeinfo);
-    //gettimeofday(&tv, &tz);
+    /*gettimeofday(&tv, &tz);*/
     gettimeofday(&tv, NULL);
     snprintf(buf, max_size, "%02u-%02u-%02u %02u:%02u:%02u.%03ld",
              timeinfo.tm_year-100,
@@ -80,9 +80,9 @@ static char* getData(char* buf, unsigned max_size) {
     return buf;
 }
 
-/*//////////////////////////////////////////////////////////
-// Convert the log level to its name
-//      lvl - log level type
+/*
+ Convert the log level to its name
+      lvl - log level type
     Return the log level name as a string
 */
 static const char* getLogLevel(log_level_t lvl) {
@@ -95,7 +95,7 @@ static const char* getLogLevel(log_level_t lvl) {
     }
 }
 
-/*///////////////////////////////////////////////////////////
+/*/
     Public functions
 */
 void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_level) {
@@ -135,7 +135,7 @@ void pu_set_log_level(log_level_t ll) {
 static char buf[10000];
 void pu_log(log_level_t lvl, const char* fmt, ...) {
     pthread_mutex_lock(&lock);
-     if(log_lvl < lvl){ pthread_mutex_unlock(&lock); return; }   //Suppress the message
+     if(log_lvl < lvl){ pthread_mutex_unlock(&lock); return; }   /*Suppress the message*/
         char head[31];
         getData(head, sizeof(head));
         snprintf(buf, sizeof(buf)-1, "%s %s ", head, getLogLevel(lvl));

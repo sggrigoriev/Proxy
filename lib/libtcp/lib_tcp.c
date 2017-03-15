@@ -14,10 +14,10 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
-//
-// Created by gsg on 19/12/16.
-//
+ *
+
+ Created by gsg on 19/12/16.
+*/
 
 #include <assert.h>
 #include <malloc.h>
@@ -31,40 +31,45 @@
 #include "pu_logger.h"
 #include "lib_tcp.h"
 
-//Thread protection to guard connections pool
+/*Thread protection to guard connections pool */
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-//Add data to assembling bufer
-//  in  - buffer with data
-//  ab  - assimbling buffer
-//Returb 1 if OK; 0 if no more place in assembling buffer
+/*Add data to assembling bufer
+  in  - buffer with data
+  ab  - assimbling buffer
+Returb 1 if OK; 0 if no more place in assembling buffer
+*/
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab);
 
-//Close the active connection. Pool will have 1+ connections available
-//  all_conns   - connections pool
-//  conn        - the connection to be closed
+/*Close the active connection. Pool will have 1+ connections available
+  all_conns   - connections pool
+  conn        - the connection to be closed
+*/
 static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn);
 
-//Round Robin for checking ready for read connections
-//  no      - previous start number
-//  size    - active connections amount
-//Return next number to start from
+/*Round Robin for checking ready for read connections
+  no      - previous start number
+  size    - active connections amount
+Return next number to start from
+*/
 static unsigned int inc_start_no(unsigned int no, unsigned int size);
 
-//Initiate fd_setcalling FD_ZERO for all active connections
-//  all_conns   - connection pool
-//  fds         - fdset for all active connections
-//Return 1 if OK; 0 if error
+/*Initiate fd_setcalling FD_ZERO for all active connections
+  all_conns   - connection pool
+  fds         - fdset for all active connections
+Return 1 if OK; 0 if error
+*/
 static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds);
 
-//Get first ready for read connection from all ready connections
-//  all_conns   - connections pool
-//  fds         - fdset for all active connections
-//Return ready connection or NULL
+/*Get first ready for read connection from all ready connections
+  all_conns   - connections pool
+  fds         - fdset for all active connections
+Return ready connection or NULL
+*/
 static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds);
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Public functions. Description in *h file
-//
+/*/
+Public functions. Description in *h file
+*/
 lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size, size_t ass_size) {
     pthread_mutex_lock(&own_mutex);
     assert(max_connections);
@@ -130,25 +135,26 @@ void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
     pthread_mutex_unlock(&own_mutex);
 }
 
-//All three return -1 if error, 0 if timeout, >0 if value
-//return binded socket
+/*All three return -1 if error, 0 if timeout, >0 if value
+return binded socket
+*/
 int lib_tcp_get_server_socket(int port) {
-    //Create server socket
+    /*Create server socket */
     int server_socket;
 
         if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) return -1;
-//Set socket options
+    /*Set socket options */
         int32_t on = 1;
-    //use the socket even if the address is busy (by previously killed process for ex)
+    /*use the socket even if the address is busy (by previously killed process for ex) */
         if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
-//Make address
+    /*Make address */
         struct sockaddr_in addr_struct;
         memset(&addr_struct, 0, sizeof(addr_struct));
         addr_struct.sin_family = AF_INET;
         addr_struct.sin_addr.s_addr = INADDR_ANY;
         addr_struct.sin_port = htons(port);
 
-//bind socket on repeated mode
+    /*bind socket on repeated mode */
         int rpt = LIB_TCP_BINGING_ATTEMPTS;
         while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
             sleep(1);
@@ -157,10 +163,11 @@ int lib_tcp_get_server_socket(int port) {
     return server_socket;
 }
 
-//return connected socket for R/W operations, 0 if timeout and negative if error
+/*return connected socket for R/W operations, 0 if timeout and negative if error */
 int lib_tcp_listen(int server_socket, int to_sec) {
-    //Make communication sockets
-//listen for incoming connection
+    /*Make communication sockets 
+    listen for incoming connection
+    */
     if (listen(server_socket, 1) < 0) {
         return -1;
     }
@@ -171,9 +178,10 @@ int lib_tcp_listen(int server_socket, int to_sec) {
     struct timeval tv = {to_sec, 0};
 
     int result = select(server_socket + 1, &readset, NULL, NULL, &tv);
-    if(result <= 0) return result; // Timeout or error. nothing to read
-// We got something to read!
-//accept incoming connection
+    if(result <= 0) return result; /* Timeout or error. nothing to read */
+/* We got something to read!
+accept incoming connection
+*/
     struct sockaddr_in cli_addr = {0};
     socklen_t size = sizeof(struct sockaddr);
     int conn_sock = accept(server_socket, (struct sockaddr *) &cli_addr, &size);
@@ -189,10 +197,10 @@ int lib_tcp_listen(int server_socket, int to_sec) {
     return conn_sock;
 }
 
-//return connection desriptor or NULL if error. in_buf.len == 0 in case of timeout
+/*return connection desriptor or NULL if error. in_buf.len == 0 in case of timeout */
 lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     assert(all_conns);
-//Build set for select
+/*Build set for select */
     struct timeval tv = {to_sec, 0};
     fd_set readset;
 
@@ -202,17 +210,17 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
 
     if(max_fd < 0) return NULL;
     int result = select(max_fd + 1, &readset, NULL, NULL, &tv);
-    if(result < 0) return NULL; // Error. nothing to read
-    if(result == 0) return LIB_TCP_READ_TIMEOUT;   //timeout
+    if(result < 0) return NULL; /* Error. nothing to read */
+    if(result == 0) return LIB_TCP_READ_TIMEOUT;   /*timeout */
 
     pthread_mutex_lock(&own_mutex);
         lib_tcp_rd_t* conn = get_ready_conn(all_conns, &readset);
     pthread_mutex_unlock(&own_mutex);
 
-    if(!conn) return LIB_TCP_READ_NO_READY_CONNS; //no ready sockets error - they sould be!
+    if(!conn) return LIB_TCP_READ_NO_READY_CONNS; /*no ready sockets error - they sould be! */
 
-    conn->in_buf.len = read(conn->socket, conn->in_buf.buf, conn->in_buf.size);  //todo mlevitin
-    if(conn->in_buf.len <= 0) {  //Get read error or (0) connection lost- reconnect required
+    conn->in_buf.len = read(conn->socket, conn->in_buf.buf, conn->in_buf.size);  /*todo mlevitin */
+    if(conn->in_buf.len <= 0) {  /*Get read error or (0) connection lost- reconnect required */
         lib_tcp_rd_t* ret = (!conn->in_buf.len)?LIB_TCP_READ_EOF:NULL;
 
         pthread_mutex_lock(&own_mutex);
@@ -221,16 +229,16 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
 
         return ret;
     }
-//Put incoming message into assembling buffer
+/*Put incoming message into assembling buffer */
     pthread_mutex_lock(&own_mutex);
         int ret = tcp_get(&conn->in_buf, &conn->ass_buf);
     pthread_mutex_unlock(&own_mutex);
 
-    if(!ret) return LIB_TCP_READ_MSG_TOO_LONG;  //too long record
+    if(!ret) return LIB_TCP_READ_MSG_TOO_LONG;  /*too long record */
     return conn;
 }
 
-//Return the 0-terminated message of NULL if no finished string
+/*Return the 0-terminated message of NULL if no finished string */
 const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     unsigned i;
     assert(conn);
@@ -241,7 +249,7 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     pthread_mutex_lock(&own_mutex);
         for(i = 0; i < conn->ass_buf.idx; i++) {
             if(conn->ass_buf.buf[i] == '\0') {
-                if((i+1) <= out_size) {     //The message fits into out buffer
+                if((i+1) <= out_size) {     /*The message fits into out buffer */
                     memcpy(out, conn->ass_buf.buf, i+1);
                     ret = out;
                  }
@@ -257,32 +265,33 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     return ret;
 }
 
-//All three return -1 if error, 0 if timeout, >0 if value
-//return binded socket
+/*All three return -1 if error, 0 if timeout, >0 if value
+return binded socket
+*/
 int lib_tcp_get_client_socket(int port, int to_sec) {
     int client_socket;
-// Create socket
+/* Create socket */
     if (client_socket = socket(AF_INET, SOCK_STREAM, 0), client_socket < 0) return -1;
 
-    //Set socket options
+    /*Set socket options */
     int32_t on = 1;
-    //use the socket even if the address is busy (by previously killed process for ex)
+    /*use the socket even if the address is busy (by previously killed process for ex) */
     if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
 
-//Make address
+/*Make address */
     struct sockaddr_in addr_struct;
     memset(&addr_struct, 0, sizeof(addr_struct));
     addr_struct.sin_family = AF_INET;
     addr_struct.sin_addr.s_addr = INADDR_ANY;
     addr_struct.sin_port = htons(port);
 
-//And connect to the remote socket
+/*And connect to the remote socket */
     unsigned rpt = LIB_TCP_BINGING_ATTEMPTS;
     while(rpt) {
         int ret = connect(client_socket, (struct sockaddr *)&addr_struct, sizeof(addr_struct));
         if (ret < 0) {
             rpt--;
-            sleep(1);   //wait for a while
+            sleep(1);   /*wait for a while */
         }
         else {
             int sock_flags = fcntl(client_socket, F_GETFL);
@@ -298,8 +307,9 @@ int lib_tcp_get_client_socket(int port, int to_sec) {
     return -1;
 }
 
-//Return bytes sent amt, 0 if timeout, < 0 if error
-//mlevitin ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
+/*Return bytes sent amt, 0 if timeout, < 0 if error
+mlevitin ssize_t lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
+*/
 int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
     struct timeval tv = {to_sec, 0};
     fd_set writedset;
@@ -307,10 +317,10 @@ int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
     FD_SET(wr_socket, &writedset);
 
     int result = select(wr_socket + 1, NULL, &writedset, NULL, &tv);
-    if(result < 0) return -1; // Error. nothing to write
-    if(result == 0) return 0;   //timeout
+    if(result < 0) return -1; /* Error. nothing to write */
+    if(result == 0) return 0;   /*timeout */
 
-//We got just one socket awaiting, so no need to check which is set
+/*We got just one socket awaiting, so no need to check which is set */
     return write(wr_socket, out, size);
 }
 
@@ -321,9 +331,9 @@ void lib_tcp_client_close(int write_socket) {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////
-//Local functions implementation (Description on top)
-//
+/*
+Local functions implementation (Description on top)
+*/
 static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn) {
     close(conn->socket);
     conn->socket = -1;
@@ -337,8 +347,8 @@ static unsigned int inc_start_no(unsigned int no, unsigned int size) {
 }
 
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
-    if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) {     //no place in buffer
-        ab->idx = 0;    //reset assemblong buffer!
+    if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) {     /*no place in buffer */
+        ab->idx = 0;    /*reset assemblong buffer!*/
         return 0;
     }
     memcpy(ab->buf+ab->idx, in->buf, in->len);
@@ -350,7 +360,7 @@ static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds) {
     int max_fd = -1;
     FD_ZERO(fds);
     unsigned int i;
-    for(i = 0; i < all_conns->sa_max_size; i++) { // get all valid sockets
+    for(i = 0; i < all_conns->sa_max_size; i++) { /* get all valid sockets */
         if(all_conns->rd_conn_array[i].socket > 0) FD_SET(all_conns->rd_conn_array[i].socket, fds);
         if(all_conns->rd_conn_array[i].socket > max_fd) max_fd = all_conns->rd_conn_array[i].socket;
     }

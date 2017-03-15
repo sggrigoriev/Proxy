@@ -115,7 +115,7 @@ static void* wud_write(void* params) {
                     break;
                 }
                 case PS_Timeout:
-//                          pu_log(LL_WARNING, "%s: timeout on waiting from server queue", PT_THREAD_NAME);
+/*                          pu_log(LL_WARNING, "%s: timeout on waiting from server queue", PT_THREAD_NAME); */
                     break;
                 case PS_STOP:
                     set_stop_wud_write();

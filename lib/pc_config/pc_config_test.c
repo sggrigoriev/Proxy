@@ -1,6 +1,6 @@
-//
+/*
 // Created by gsg on 01/12/16.
-//
+*/
 #include <stdio.h>
 
 #include "pc_config.h"
@@ -25,7 +25,7 @@ int main() {
         printf("Cfg obj from file %s was not created. Stop.\n", cfg_fname);
         return 1;
     }
-// STRING_ITEM
+/* STRING_ITEM*/
     if(!getStrValue(cfg, string_item, buf, sizeof(buf)-1)) {
         printf("Error reading %s item. Stop.\n", string_item);
         return 1;
@@ -33,7 +33,7 @@ int main() {
     else {
         printf("%s = %s\n", string_item, buf);
     }
-// STRING_EMPTY_ITEM
+/* STRING_EMPTY_ITEM */
     if(!getStrValue(cfg, string_empty_item, buf, sizeof(buf)-1)) {
         printf("Error reading %s item. Stop.\n", string_empty_item);
         return 1;
@@ -41,7 +41,7 @@ int main() {
     else {
         printf("%s = %s\n", string_empty_item, buf);
     }
-// UINT_ITEM
+/* UINT_ITEM */
     if(!getUintValue(cfg, uint_item, &uint)) {
         printf("Error reading %s item. Stop.\n", uint_item);
         return 1;
@@ -49,7 +49,7 @@ int main() {
     else {
         printf("%s = %d\n", uint_item, uint);
     }
-// STRING_ARRAY
+/* STRING_ARRAY */
     if(!getCharArray(cfg, string_array, &str_array, &uint)) {
         printf("Error reading %s item. Stop.\n", string_array);
         return 1;
@@ -61,7 +61,7 @@ int main() {
             i++;
         }
     }
-// EMPTY_ARRAY
+/* EMPTY_ARRAY */
     if(!getCharArray(cfg, empty_array, &emp_array, &uint)) {
         printf("Error reading %s item. Stop.\n", empty_array);
         return 1;

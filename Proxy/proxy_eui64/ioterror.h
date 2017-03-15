@@ -33,9 +33,7 @@ typedef int error_t;
 enum {
   SUCCESS        =  0,
   FAIL           =  1,
-// yctung
   SUCCESS_2      =  2,
-// yctung
 };
 
 #endif

@@ -37,13 +37,13 @@ static void _proxycli_printUsage();
 static void _proxycli_printVersion();
 
 /***************** Public Functions ****************
-//
-// Parse the command line arguments, to be retrieved by getter functions when
-// needed and update loadad from  config file parameters + updates the donfig file itself
-//
-//Return 0 if error. Parse and update config data + loaded params
+
+ Parse the command line arguments, to be retrieved by getter functions when
+ needed and update loadad from  config file parameters + updates the donfig file itself
+
+Return 0 if error. Parse and update config data + loaded params
 */
-int pc_cli_process_params(int argc, char *argv[]) { //Return 0 if error. Parse and update config data + loaded params
+int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse and update config data + loaded params*/
 
   int c;
   char cfg_fname[PROXY_MAX_PATH];

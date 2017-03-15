@@ -26,8 +26,8 @@
 
 #define WF_STATE_BUZY 1
 
-//return 1 if check_sum compared with calculated on file (SHA256)
-/***********************************************************************************
+/*return 1 if check_sum compared with calculated on file (SHA256)
+***********************************************************************************
  * Compute file check sum (SHA256) and compare in twith the given check sum (char representaion)
  * @param check_sum     - given check sum: hexadecimal as a string with two bytes ber each digit
  * @param path          - path to the checked file

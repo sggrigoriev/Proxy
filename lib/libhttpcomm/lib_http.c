@@ -206,10 +206,10 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
             strncat(handler->url, LIB_HTTP_ROUTINE_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
             break;
     }
-    if(conn_type != LIB_HTTP_FILE_GET) {                    //Add device id (all have it)
+    if(conn_type != LIB_HTTP_FILE_GET) {                    /*Add device id (all have it)*/
         strncat(handler->url, deviceID, sizeof(handler->url) - strlen(handler->url) - 1);
     }
-    if(conn_type == LIB_HTTP_CONN_GET) {                    //Add timeout for routine GET
+    if(conn_type == LIB_HTTP_CONN_GET) {                    /*Add timeout for routine GET*/
         char buf[20];
         snprintf(buf, sizeof(buf), "&timeout=%d", conn_to);
         strncat(handler->url, buf, sizeof(handler->url) - strlen(handler->url) - 1);
@@ -244,7 +244,7 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_CONNECTTIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_ERRORBUFFER, handler->err_buf), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_URL, handler->url), curlResult != CURLE_OK) goto out;
-    if(conn_type != LIB_HTTP_FILE_GET) {    //for file get we'll do it inside the get itself
+    if(conn_type != LIB_HTTP_FILE_GET) {    /*for file get we'll do it inside the get itself*/
         if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, writer), curlResult != CURLE_OK) goto out;
         if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &handler->inBoundCommInfo), curlResult != CURLE_OK) goto out;
         if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_BUFFERSIZE, sizeof(handler->rx_buf)), curlResult != CURLE_OK) goto out;
@@ -606,7 +606,7 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
     return ret;
 }
 
-/**********************************************************************************************//**
+/************************************************************************************************
  * @brief   Called when a message has to be received from the server. this is a standard streamer
  *              if the size of the data to read, equal to size*nmemb, the function can return
  *              what was read and the function will be called again by libcurl.
@@ -632,7 +632,6 @@ static size_t writer(void *ptr, size_t size, size_t nmemb, void *userp) {
 #if __WORDSIZE == 64
         pu_log(LL_WARNING, "writer: buffer overflow would result -> strlen(writeData): %lu, (size * nmemb): %lu, max size: %u",
 #else
-                //mlevitin pu_log(LL_WARNING, ("writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
 		pu_log(LL_WARNING, "writer: buffer overflow would result -> strlen(writeData): %u, (size * nmemb): %u, max size: %u",
 #endif
                strlen(dataToRead->buffer), (size * nmemb), dataToRead->size);

@@ -22,6 +22,8 @@
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include <pu_logger.h>
 #include "pr_commands.h"

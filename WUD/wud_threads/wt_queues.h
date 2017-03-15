@@ -44,8 +44,8 @@ void wt_init_queues();
  */
 void wt_erase_queues();
 
-//return queue ptr or null if no queue
-/*****************************************************
+/*return queue ptr or null if no queue
+*****************************************************
  * Get the poinier to the queue by associated event number
  * @param que_number    - queue (event) number
  * @return              - queue pointer or NULL if no such an association

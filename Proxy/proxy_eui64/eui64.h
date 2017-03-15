@@ -35,6 +35,7 @@
 #define EUI64_H
 
 #include "lib_http.h"
+#include <stddef.h>
 
 #define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE /* store for new deviceID ${Preffix}-${MAC_ADDR} = 6+1+16(?) */
 

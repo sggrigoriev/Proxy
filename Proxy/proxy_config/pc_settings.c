@@ -7,7 +7,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      http:www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@
  *  limitations under the License.
 */
 /*
-    // Created by gsg on 29/10/16.
+     Created by gsg on 29/10/16.
 */
 #include <assert.h>
 #include <pthread.h>
@@ -32,7 +32,7 @@
 #include "pc_settings.h"
 
 /************************************************************************
-    //Config file fields names
+    Config file fields names
 */
 
 #define PROXY_LOG_NAME          "LOG_NAME"
@@ -183,7 +183,7 @@ unsigned int pc_getFWVerSendToHrs() {
 }
 
 /***********************************************************************
-    //Thread-protected functions
+    Thread-protected functions
 */
 /* Load configuration settings from cfg_file_name into the memory. All settings not mentioned in cfg_file_name */
 /* got default values (see pc_defaults.h) */
@@ -375,7 +375,7 @@ void pc_getFWVersion(char* fw_ver, size_t size) {
     pthread_mutex_unlock(&local_mutex);
 }
 
-/* Activation-related stuff *///
+/* Activation-related stuff */
 int pc_existsProxyDeviceID() {
     return (initiated && strlen(device_id));
 }

@@ -58,4 +58,4 @@ void pt_delete_ptr_list(char** ptr_list);
 */
 const char* pr_ptr_list2string(char* buf, size_t size, char* const* list);
 
-#endif //PRESTO_PR_PTR_LIST_H
+#endif /*PRESTO_PR_PTR_LIST_H*/

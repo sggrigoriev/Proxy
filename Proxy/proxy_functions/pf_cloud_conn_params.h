@@ -34,4 +34,4 @@ Return 0 if error and 1 if OK
 */
 int pf_get_cloud_conn_params();  /* return 0 if proxy was not activated */
 
-#endif //PF_CLOUD_CONN_PARAMETERS_H
+#endif /*PF_CLOUD_CONN_PARAMETERS_H */

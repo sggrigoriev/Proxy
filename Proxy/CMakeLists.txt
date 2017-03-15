@@ -32,7 +32,7 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 	set(TOOLCHAIN_PATH ${OPENWRT_PATH}/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2)
 	set(COMPILER_PREFIX mipsel-openwrt-linux-uclibc-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -I${ROOTFS_PATH}/usr/include -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89 -I${ROOTFS_PATH}/usr/include -D_BSD_SOURCE -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
 	set(REQUIRED_LIBRARIES
 			m
 			pthread
@@ -58,7 +58,7 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
   	message(STATUS "Compiling for the OpenWRT")
 	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 ${GCC_STANDARD} -pthread -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -Wall -O2 -std=c89 -pthread -s")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread

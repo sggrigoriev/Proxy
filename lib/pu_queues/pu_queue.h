@@ -136,4 +136,4 @@ int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len);
  */
 int pu_queue_empty(pu_queue_t* queue);
 
-#endif //PRESTO_PU_QUEUE_H
+#endif /*PRESTO_PU_QUEUE_H */

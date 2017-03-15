@@ -80,4 +80,4 @@ void pc_getFWVersion(char* fw_version, size_t size);    /* Get the firmvare vers
 /* Activation-related stuff */
 int pc_existsProxyDeviceID();                /* Return 1 if defice id exists and sohuld not be generated. Will be removed once upon a time... */
 
-#endif //PRESTO_PC_SETTINGS_H
+#endif /*PRESTO_PC_SETTINGS_H*/

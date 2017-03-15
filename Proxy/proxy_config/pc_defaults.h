@@ -18,7 +18,7 @@
 /*
     Created by gsg on 20/11/16.
 
-    // Contains defaults for Proxy process
+     Contains defaults for Proxy process
 */
 
 #ifndef PRESTO_PC_DEFAULTS_H
@@ -98,4 +98,4 @@
 
 
 
-#endif //PRESTO_PC_DEFAULTS_H
+#endif /*PRESTO_PC_DEFAULTS_H */

@@ -100,8 +100,8 @@ unsigned int wm_child_get_child_to(pr_child_t idx);
  * @return  - process name or NULL if unvalid index
  */
 const char* wm_get_child_name(pr_child_t idx);
-//return idx or PR_CHILD_SIZE
-/***********************************************************************
+/*return idx or PR_CHILD_SIZE
+***********************************************************************
  * Get descriptor index by process name
  * @param name  - process name
  * @return  - idx or PR_CHILD_SIZE if name was not found

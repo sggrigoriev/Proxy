@@ -14,12 +14,12 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
-//
-// Created by gsg on 08/12/16.
-//
-// Interface for all cloud <-> gateway commands parsing and creation. Currently looks like the garbage can. Also contains some helpers.
-//
+ *
+
+ Created by gsg on 08/12/16.
+
+ Interface for all cloud <-> gateway commands parsing and creation. Currently looks like the garbage can. Also contains some helpers.
+*/
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
@@ -28,28 +28,30 @@
 #include "pu_logger.h"
 #include "pr_commands.h"
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// the strucure: {"alerts":[{"alertId":<seq#>,"deviceId":"<proxyID>","alertType":"CCC-NNN","timestamp":<NNNNNNN>,"paramsMap"{...}}]}
-//header items:
+/*
+ the strucure: {"alerts":[{"alertId":<seq#>,"deviceId":"<proxyID>","alertType":"CCC-NNN","timestamp":<NNNNNNN>,"paramsMap"{...}}]}
+header items:
+*/
 static const char* alerts = "alerts";
 static const char* commands = "commands";
 static const char* alertId = "alertId";
 static const char* commandId = "commandId";
 static const char* deviceId = "deviceId";
-//common items:
+/*common items:*/
 static const char* alertType = "alertType";
-//static const char* cmd_type = "type";
-//static const char* timestamp = "timestamp";
+/*static const char* cmd_type = "type"; */
+/*static const char* timestamp = "timestamp";*/
 static const char* paramsMap = "paramsMap";
 static const char* paramsArray = "parameters";
 static const char* cmd_par_name = "name";
 static const char* cmd_par_value = "value";
-//all WUD alerts
+/*all WUD alerts */
 static const char* alertText = "alertText";
 static const char* component = "component";
-static const char* wud_ping = "wud_ping";       //special case, blin...
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//item names for cmd
+static const char* wud_ping = "wud_ping";       /*special case, blin... */
+/*
+item names for cmd
+*/
 static const char* cmd_file_server_url = "firmwareUrl";
 static const char* cmd_fw_update_check_sum = "firmwareCheckSum";
 static const char* cmd_fw_update_status = "firmwareUpdateStatus";
@@ -67,11 +69,11 @@ static const char* cmd_firmware = "firmware";
 
 static const char* cmd_reboot = "reboot";
 
-//Using for PROC_NAMES changes protecion only
+/*Using for PROC_NAMES changes protecion only */
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
-/////////////////////////////////////////////////////////////////////////
+
 void pr_store_child_name(int child_name, const char* name) {
     assert(pr_child_t_range_check(child_name));
     assert(name);
@@ -101,50 +103,58 @@ int pr_child_t_range_check(int item) {
     return (item >= 0) && (item < PR_CHILD_SIZE);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Messaging part
-//local functions for messaging
-//
-
-//Recognize the command type by parameters array attached to the command
-//  params_array    - parsed parameters part of a command
-//Return command type or PR_CMD_UNDEFINED
+/*
+Messaging part
+local functions for messaging
+*/
+/*
+    Recognize the command type by parameters array attached to the command
+    params_array    - parsed parameters part of a command
+    Return command type or PR_CMD_UNDEFINED
+*/
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array);
 
-//Recognize the connad type by the parameters map, attached to a command. Currently some commands have its params as an array and some - as a map.
-//  params_map      - parsed parameters part of a command
-//Return command type or PR_CMD_UNDEFINED
+/*
+    Recognize the connad type by the parameters map, attached to a command. Currently some commands have its params as an array and some - as a map.
+    params_map      - parsed parameters part of a command
+    Return command type or PR_CMD_UNDEFINED
+*/
 static pr_cmd_item_t get_cmd_params_from_map(cJSON* params_map);
 
-//Compare de device id stoerd in item aith device_id.
-//  item        - message item
-//  device_id   - gateway device id
-//Return 1 if compared. 0 if not
+/*Compare de device id stoerd in item aith device_id.
+  item        - message item
+  device_id   - gateway device id
+Return 1 if compared. 0 if not
+*/
 static int cmp_device_id(cJSON* item, const char* device_id);
 
-//Add the referenced item to array. Create array if it is NULL
-//  array   - array, containgng reference items (NULL if no items)
-//  ref     - added reference item
-//Return the chaned array
+/*Add the referenced item to array. Create array if it is NULL
+  array   - array, containgng reference items (NULL if no items)
+  ref     - added reference item
+Return the chaned array
+*/
 static cJSON* add_ref2array(cJSON* array, cJSON* ref);
 
-//Get name, value pair from the command item. Command parameters array element has the structure "name":"<name>, "value":"<value>"
-//  cmd_item    - command's parameters array element
-//  name        - returned parameter name pointer
-//  value       - retured parameter value pointer
-//Return 1 if OK, 0 if the item does not contain such a pair
+/*Get name, value pair from the command item. Command parameters array element has the structure "name":"<name>, "value":"<value>"
+  cmd_item    - command's parameters array element
+  name        - returned parameter name pointer
+  value       - retured parameter value pointer
+Return 1 if OK, 0 if the item does not contain such a pair
+*/
 static int get_name_value_pair(cJSON* cmd_item, char** name, char** value);
 
-//Get the value by its name from the item
-//  cmd_item    - item containing  the info
-//  name        - parameter name
-//Return poiner to the value ir NULL if the cmd_item does not contain the parameter with this name
+/*Get the value by its name from the item
+  cmd_item    - item containing  the info
+  name        - parameter name
+Return poiner to the value ir NULL if the cmd_item does not contain the parameter with this name
+*/
 static char* get_parameter(cJSON* cmd_item, const char* name);
-//////////////////////////////////////////////////////////////////////////////////
-//Command functions
-//
-//NB! Commented string could used in testing puposes only: no thread protection on JSON static data!
-//Returns NULL if bad
+/*
+Command functions
+
+NB! Commented string could used in testing puposes only: no thread protection on JSON static data!
+Returns NULL if bad
+*/
 msg_obj_t* pr_parse_msg(const char* msg) {
     msg_obj_t* ret = cJSON_Parse(msg);
 /*
@@ -172,7 +182,7 @@ msg_obj_t* pr_get_arr_item(msg_obj_t* array, size_t idx) {
     return cJSON_GetArrayItem(array, (int)idx);
 }
 
-//Return obj_msg, converted to plain string
+/*Return obj_msg, converted to plain string*/
 void  pr_obj2char(msg_obj_t* obj_msg, char* text_msg, size_t size) {
     if(!obj_msg) text_msg[0] = '\0';
     char* str = cJSON_PrintUnformatted(obj_msg);
@@ -206,7 +216,7 @@ pr_cmd_item_t pr_get_cmd_item(msg_obj_t* cmd_item) {
     return ret;
 }
 
-//Return commands array for Proxy or "", return full message w/o proxy commands for Agent or ""
+/*Return commands array for Proxy or "", return full message w/o proxy commands for Agent or ""*/
 void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t msg4proxy_size, char* msg4agent, size_t msg4agent_size) {
     msg4proxy[0] = '\0';
     msg4agent[0] = '\0';
@@ -216,7 +226,7 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
         pr_obj2char(msg, msg4agent, msg4agent_size);
         return;
     }
-//Got commands. Let split'em on reds and whites
+/*Got commands. Let split'em on reds and whites*/
     cJSON* agent_cmd = NULL;
     cJSON* proxy_cmd = NULL;
     unsigned int i;
@@ -235,7 +245,7 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
             agent_cmd = add_ref2array(agent_cmd, item);
     }
     if(agent_cmd) {
-        cJSON* agent_with_head = cJSON_CreateObject();                  //Adding "commands" to the head and let it go
+        cJSON* agent_with_head = cJSON_CreateObject();                  /*Adding "commands" to the head and let it go*/
         cJSON_AddItemToObject(agent_with_head, commands, agent_cmd);
         pr_obj2char(agent_with_head, msg4agent, msg4agent_size);
         cJSON_Delete(agent_with_head);
@@ -246,7 +256,7 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
     }
 }
 
-//Retrieve from msg_object message type
+/*Retrieve from msg_object message type*/
 pr_msg_type_t pr_get_message_type(msg_obj_t* msg) {
     cJSON* obj = cJSON_GetObjectItem(msg, commands);
     if(obj) return PR_COMMANDS_MSG;
@@ -255,7 +265,7 @@ pr_msg_type_t pr_get_message_type(msg_obj_t* msg) {
     return PR_OTHER_MSG;
 }
 
-//Same as previous but for separate element
+/*Same as previous but for separate element */
 pr_msg_type_t pr_get_item_type(msg_obj_t* item) {
     cJSON* obj = cJSON_GetObjectItem(item, commandId);
     if(obj) return PR_COMMANDS_MSG;
@@ -265,16 +275,16 @@ pr_msg_type_t pr_get_item_type(msg_obj_t* item) {
     if(obj) return PR_ALERTS_MSG;
     return PR_OTHER_MSG;
 }
-/////////////////////////////////////////////////////////////////////////////////////////
-//Commands creation
-//
+/*/
+Commands creation
+*/
 const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version) {
     const char* head1 = "{\"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
-    const char* part1 = "\"parameters\": [{\"name\":\"connString\", \"value\": \""; //+conn_string
-    const char* part2 = "\"}, {\"name\":\"deviceId\", \"value\":\"";  //+device_id
-    const char* part3 = "\"}, {\"name\":\"authToken\", \"value\": \"";    //+auth_token
-    const char* part4 = "\"}, {\"name\":\"firmware\", \"value\": \"";    //+version
+    const char* part1 = "\"parameters\": [{\"name\":\"connString\", \"value\": \""; 
+    const char* part2 = "\"}, {\"name\":\"deviceId\", \"value\":\"";  
+    const char* part3 = "\"}, {\"name\":\"authToken\", \"value\": \"";    
+    const char* part4 = "\"}, {\"name\":\"firmware\", \"value\": \"";   
     const char* part5 = "\"}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s%s%s%s%s%s%s", head1, device_id, head2, part1, conn_string, part2, device_id, part3, auth_token, part4, version, part5);
@@ -284,20 +294,20 @@ const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_strin
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name) {
     const char* head1 = "{ \"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
-    const char* part1 = "\"paramsMap\": {\"restartChild\": \"";   //+ "All" - for now. Because of reboot!
+    const char* part1 = "\"paramsMap\": {\"restartChild\": \"";  
     const char* part2 = "\"}}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s", head1, "the best device id!", head2, part1, child_name, part2);
     return buf;
 }
-//
-/////////////////////////////////////////////////////////////////////////
-//Alerts functions
-//
+/*
+/
+Alerts functions
+*/
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id) {
-    const char* part1 = "{\"measures\": [{\"deviceId\": \""; //+device_id
-    const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; //+ version
-    const char* part3 = "\"},{\"name\": \"firmwareUpdateStatus\", \"value\": \"";  //+ status
+    const char* part1 = "{\"measures\": [{\"deviceId\": \""; 
+    const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; 
+    const char* part3 = "\"},{\"name\": \"firmwareUpdateStatus\", \"value\": \"";  
     const char* part4 = "\"}]}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%d%s", part1, device_id, part2, fw_version, part3, status, part4);
@@ -305,7 +315,7 @@ const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status,
 }
 
 const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id) {
-    const char* part1 = "{\"measures\": [{\"deviceId\": \"";    //+device_id
+    const char* part1 = "{\"measures\": [{\"deviceId\": \"";   
     const char* part2 = "\", \"params\": [{\"name\": \"reboot\", \"value\": \"1\"}]}]}";
 
     snprintf(buf, size-1, "%s%s%s", part1, device_id, part2);
@@ -320,11 +330,11 @@ const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* devic
     {"wud_ping":[{"deviceId":"gateway device id", "paramsMap":{"component":"zbagent"}}]}
 */
 static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, const char* diagnostics, const char* comp, const char* device_id) {
-    const char* part1 = "{\"alertId\": \"12345\", \"deviceId\": \"";   // + device_id
-    const char* part2 = "\", \"alertType\": \"";   // + status
-    const char* part3 = "\", \"timestamp\":";    //+ current time
-    const char* part4 = ", \"paramsMap\": {\"";  //+alert_text or  component diagnostics or component + child name
-    const char* part5 = "\": \"";   //+ diagnostics or child name
+    const char* part1 = "{\"alertId\": \"12345\", \"deviceId\": \"";  
+    const char* part2 = "\", \"alertType\": \"";   
+    const char* part3 = "\", \"timestamp\":";    
+    const char* part4 = ", \"paramsMap\": {\"";  
+    const char* part5 = "\": \"";   
     const char* part6 = "\"}}";
 
     if(diagnostics)
@@ -334,7 +344,7 @@ static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, con
     return buf;
 }
 
-// {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}]}
+/* {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}]} */
 static pr_alert_item_t processWUDping(msg_obj_t* alert_item) {
     pr_alert_item_t ret;
     ret.alert_type = PR_ALERT_UNDEFINED;
@@ -359,15 +369,15 @@ const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id) {
     return make_alert4WUD(buf, size, PR_ALERT_FWU_READY_4_INSTALL, "Firmware upgrade ready for installation. Do you beleive it?!", NULL, device_id);
 }
 
-//Create message to inform cloud about monitor alert
+/*Create message to inform cloud about monitor alert */
 const char* pr_make_monitor_alert4cloud(char* buf, size_t size, pr_alert_monitor_t m_alert, const char* device_id) {
     return make_alert4WUD(buf, size, PR_ALERT_MONITOR, m_alert.reason, NULL, device_id);
 }
 
-// {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}]
+/* {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}] */
 const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const char* device_id) {
-    const char* part1 = "{\"wud_ping\": [{\"deviceId\":\""; //+device_id
-    const char* part2 = "\", \"paramsMap\":{\"component\":\"";  //+ component name
+    const char* part1 = "{\"wud_ping\": [{\"deviceId\":\""; 
+    const char* part2 = "\", \"paramsMap\":{\"component\":\""; 
     const char* part3 = "\"}}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, comp, part3);
@@ -377,7 +387,7 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const
 pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
     pr_alert_item_t ret;
 
-//WUD ping procesing as a special case
+    /*WUD ping procesing as a special case */
     ret = processWUDping(alert_item);
     if(ret.alert_type != PR_ALERT_UNDEFINED) return ret;
 
@@ -405,8 +415,9 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
     return ret;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Local funcs implementation
+/*
+Local funcs implementation
+*/
 /*
 PR_CMD_FWU_START "parameters": [
 {"name": "firmwareUpdateStatus","value": "1"},{"name": "firmwareUrl","value": "<url>"},{"name": "firmwareCheckSum","value": "<check_sum>"}]

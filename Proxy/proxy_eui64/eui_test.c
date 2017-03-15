@@ -1,8 +1,3 @@
-//
-// Created by gsg on 22/11/16.
-//
-//Local eut test
-//
 #include <stdio.h>
 #include <memory.h>
 

@@ -77,7 +77,7 @@ void wt_set_stop_server_write() {
  */
 
 
-int static void* write_proc(void* params){
+ static void* write_proc(void* params){
     pu_queue_event_t events;
 
     stop = 0;

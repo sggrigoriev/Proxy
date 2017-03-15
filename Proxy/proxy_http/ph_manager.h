@@ -56,7 +56,7 @@ int ph_update_main_url(const char* new_main);
 void ph_reconnect();
 
 /*
-    //Case of periodic update the contact url
+    Case of periodic update the contact url
 1. Get contact url from main url
 2. Reopen connections
 If error - open connections with previous contact url

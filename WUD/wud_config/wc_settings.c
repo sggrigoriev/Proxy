@@ -134,9 +134,9 @@ static void initiate_defaults();
  */
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting);
 
-//Copy char* argv[] into the setting. The last pointer is NULL. If empty or not found - NULL
-//NB! memory allocated here!
-/*********************************************************************
+/*Copy char* argv[] into the setting. The last pointer is NULL. If empty or not found - NULL
+NB! memory allocated here!
+*********************************************************************
  * Copy char* argv[] into the setting. The last pointer is NULL. If empty or not found - NULL
  * @param cfg           - parsed configuration
  * @param field_name    - run parameters field name
@@ -144,7 +144,6 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
  */
 static void getParTValue(cJSON* cfg, const char* field_name, char*** setting);
 
-/////////////////////////////////////////////////////////////
 #define WC_RET(a,b) return (!initiated)?a:b
 /************************************************************************
     Public functions

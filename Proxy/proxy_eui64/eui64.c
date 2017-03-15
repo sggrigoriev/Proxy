@@ -1,4 +1,4 @@
-//#define YC_DEVICE_TYPE_32
+/*#define YC_DEVICE_TYPE_32*/
 #if 0
 #include <stdio.h>
 #define yc_printf_1(format, arg...) printf(format, ##arg)
@@ -41,6 +41,7 @@
 #include "pc_settings.h"
 #include "ioterror.h"
 #include "eui64.h"
+#include <stddef.h>
 
 
 #ifndef EUI64_BYTES_SIZE
@@ -48,10 +49,10 @@
 #endif
 
 /*
-// yctung
-//#define DEVICE_TYPE_SIZE 8
+ yctung
+#define DEVICE_TYPE_SIZE 8
 #define DEVICE_TYPE_SIZE 9
-// yctung
+ yctung
 */
 
 /**
@@ -81,32 +82,33 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
   if (sock == -1) {
     return -1;
   }
-// yctung
-//  ifc.ifc_len = sizeof(buf);
-//  ifc.ifc_buf = buf;
-//  ioctl(sock, SIOCGIFCONF, &ifc);
-//
-//  ifr = ifc.ifc_req;
-//  for (i = 0; i < ifc.ifc_len / sizeof(struct ifreq); ifr++) {
-//      if (strcmp(ifr->ifr_name, "eth0") == 0 || strcmp(ifr->ifr_name, "eth1")
-//	      == 0 || strcmp(ifr->ifr_name, "wlan0") == 0 || strcmp(ifr->ifr_name,
-//		  "br0") == 0) {
-//	  if (ioctl(sock, SIOCGIFFLAGS, ifr) == 0) {
-//	      if (!(ifr->ifr_flags & IFF_LOOPBACK)) {
-//		  if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0) {
-//		      ok = 1;
-//		      break;
-//		  }
-//	      }
-//	  }
-//      }
-//  }
-    char *ifName[] = {"br-lan", "eth0", "eth1"};    // for aiox mt7688
+/* yctung
+  ifc.ifc_len = sizeof(buf);
+  ifc.ifc_buf = buf;
+  ioctl(sock, SIOCGIFCONF, &ifc);
+
+  ifr = ifc.ifc_req;
+  for (i = 0; i < ifc.ifc_len / sizeof(struct ifreq); ifr++) {
+      if (strcmp(ifr->ifr_name, "eth0") == 0 || strcmp(ifr->ifr_name, "eth1")
+	      == 0 || strcmp(ifr->ifr_name, "wlan0") == 0 || strcmp(ifr->ifr_name,
+		  "br0") == 0) {
+	  if (ioctl(sock, SIOCGIFFLAGS, ifr) == 0) {
+	      if (!(ifr->ifr_flags & IFF_LOOPBACK)) {
+		  if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0) {
+		      ok = 1;
+		      break;
+		  }
+	      }
+	  }
+      }
+  }
+*/
+    char *ifName[] = {"br-lan", "eth0", "eth1"};    /* for aiox mt7688 */
     char buf2[64];
     int j;
     struct ifreq ifr2;
 
-    // for aiox mt7688
+    /* for aiox mt7688 */
     printf("%s:search list = ", __FUNCTION__);
     for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
         printf("%s, ", ifName[j]);
@@ -127,7 +129,7 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
     }
     if (!ok)
     {
-        // for intel platform, ubuntu, rpi
+        /* for intel platform, ubuntu, rpi */
         printf("%s:3,fail to search, so search active interface except loopback interface==========\n", __FUNCTION__);
         ifc.ifc_len = sizeof(buf);
         ifc.ifc_buf = buf;
@@ -146,7 +148,7 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
         }
     }
 lhit :
-// yctung
+/* yctung */
   close(sock);
   if (ok) {
     /* Convert 48 bit MAC dest to EUI-64 */
@@ -180,7 +182,7 @@ error_t eui64_toString(char *dest, size_t destLen) {
     if (destLen < EUI64_STRING_SIZE)
         return 0;
 
-    // uuid = aioxGW-${MAC_ADDRESS} = 6 + 1 + 12 = 19
+    /* uuid = aioxGW-${MAC_ADDRESS} = 6 + 1 + 12 = 19 */
     if (eui64_toBytes(byteAddress, sizeof(byteAddress)) != SUCCESS)
         return 0;
 

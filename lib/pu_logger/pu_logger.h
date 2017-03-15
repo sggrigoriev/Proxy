@@ -16,11 +16,11 @@
  *  limitations under the License.
  */
 /*
-// Created by gsg on 29/10/16.
-//
-// Contains all functions and data related to Proxy logging
-// NB! Logging utility is thread-protected!
-// The log has fixed amount of records. After the max records size is riches it starts right from the beginning
+ Created by gsg on 29/10/16.
+
+ Contains all functions and data related to Proxy logging
+ NB! Logging utility is thread-protected!
+ The log has fixed amount of records. After the max records size is riches it starts right from the beginning
 */
 #ifndef PRESTO_PU_LOGGER_H
 #define PRESTO_PU_LOGGER_H
@@ -53,4 +53,4 @@ void pu_set_log_level(log_level_t ll);
 void pu_log(log_level_t lvl, const char* fmt, ...);
 
 
-#endif //PRESTO_PU_LOGGER_H
+#endif /*PRESTO_PU_LOGGER_H */

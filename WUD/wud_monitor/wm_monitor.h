@@ -37,9 +37,9 @@ int wm_init_monitor_data();
  */
 void wn_destroy_monitor_data();
 
-//Return pointer to alert, NULL if nothing to tell
-//NB! could issue alerts or commands for restart!
-/**************************************************************
+/*Return pointer to alert, NULL if nothing to tell
+NB! could issue alerts or commands for restart!
+**************************************************************
  * Check system resources state
  * @return  - pointer to alert message if recource(s) low, or NULL if OK
  */

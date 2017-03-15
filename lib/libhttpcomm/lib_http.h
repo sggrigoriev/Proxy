@@ -15,6 +15,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 /*
     Created by gsg on 15/12/16.
 
@@ -40,7 +41,7 @@ NB-2! no thread protection
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 129
 #define LIB_HTTP_DEVICE_ID_SIZE             31
 #define LIB_HTTP_FW_VERSION_SIZE            129
-#define LIB_HTTP_SHA_256_SIZE               64      /* bytes *
+#define LIB_HTTP_SHA_256_SIZE               64      /* bytes */
 /* Long GET from Proxy's side will be less on LIB_HTTP_PROXY_SERVER_TO_DELTA than the cloud conn timeout */
 #define LIB_HTTP_PROXY_SERVER_TO_DELTA      20
 /* Maximum time for an HTTP connection, including name resolving */

@@ -239,10 +239,10 @@ static const char *skip(const char *in) {while (in && *in && (unsigned char)*in<
 /* Parse an object - create a new root, and populate. */
 cJSON *cJSON_Parse(const char *value)
 {
-// yctung
+/* yctung */
     if (!value[0])
         return NULL;
-// yctung
+/* yctung */
 	cJSON *c=cJSON_New_Item();
 	ep=0;
 	if (!c) return 0;       /* memory fail */

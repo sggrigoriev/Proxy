@@ -154,7 +154,7 @@ static void read_from_cloud(char* buf, size_t size) {
     int out = 0;
     while(!out && !stop) {
         switch(ph_read(buf, size)) {
-            case -1:        //error
+            case -1:        /*error*/
                 pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
                 ph_reconnect();    /* loop again the succ inside */
                 out = 0;

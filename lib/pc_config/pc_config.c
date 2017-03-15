@@ -14,11 +14,11 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- */
-//
-// Created by gsg on 28/11/16.
-//
-//
+ *
+
+ Created by gsg on 28/11/16.
+
+*/
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -28,9 +28,10 @@
 
 #include "pc_config.h"
 
-//load_file()    - load configuration file into memory
-//fname           - file name
-//Return NULL if no file or bad JSON, or cJSON object
+/*load_file()    - load configuration file into memory
+fname           - file name
+Return NULL if no file or bad JSON, or cJSON object
+*/
 cJSON* load_file(const char* fname) {
     FILE *f;
     char buffer[100];
@@ -64,45 +65,48 @@ cJSON* load_file(const char* fname) {
     return ret;
 }
 
-//json_str_update() - update field of string type
-//item_name     - fileld name
-//value         - new value
-//cfg           - pointer to cJSON object
+/*json_str_update() - update field of string type
+item_name     - fileld name
+value         - new value
+cfg           - pointer to cJSON object
+*/
 void json_str_update(const char* item_name, const char* value, cJSON* cfg) {
     cJSON* at;
 
-    if(at = cJSON_GetObjectItem(cfg, item_name), at == NULL) {         //Add item
+    if(at = cJSON_GetObjectItem(cfg, item_name), at == NULL) {         /*Add item */
         fprintf(stderr, "%s item is not found in configuretion file. Added.\n", item_name);
         cJSON_AddItemToObject(cfg, item_name, cJSON_CreateString(value));
     }
     else {
-        free(at->valuestring);                                                      //UPdate Item value
+        free(at->valuestring);                                                      /*UPdate Item value */
         at->valuestring = strdup(value);
     }
 }
 
-//json_uint_update() - update field of uint type
-//item_name     - fileld name
-//value         - new value
-//cfg           - pointer to cJSON object
+/*json_uint_update() - update field of uint type
+item_name     - fileld name
+value         - new value
+cfg           - pointer to cJSON object
+*/
 void json_uint_update(const char* item_name, unsigned int value, cJSON* cfg) {
     cJSON* at;
 
-    if(at = cJSON_GetObjectItem(cfg, item_name), at == NULL) {         //Add item
+    if(at = cJSON_GetObjectItem(cfg, item_name), at == NULL) {         /*Add item */
         fprintf(stderr, "%s item is not found in configuretion file. Added.\n", item_name);
         cJSON_AddItemToObject(cfg, item_name, cJSON_CreateNumber(value));
     }
     else {
-        at->valueint = value;        //UPdate Item value
+        at->valueint = value;        /*UPdate Item value */
     }
 }
 
-//getStrValue() - get string value
-//cfg           - poiner to cJSON object containgng configuration
-//field_name    - JSON fileld name
-//str_setting   - returned value of field_name
-//max_size      - str_setting capacity
-//Return 1 if OK 0 if error
+/*getStrValue() - get string value
+cfg           - poiner to cJSON object containgng configuration
+field_name    - JSON fileld name
+str_setting   - returned value of field_name
+max_size      - str_setting capacity
+Return 1 if OK 0 if error
+*/
 int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t max_size) {
     cJSON* obj;
     if(obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
@@ -114,7 +118,6 @@ int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t ma
         return 0;
     }
     if(strlen(obj->valuestring) > max_size-1) {
-        //mlevitin fprintf(stderr, "Setting %s value > than max size: %lu against %lu.\n", field_name, strlen(field_name), max_size);
 	fprintf(stderr, "Setting %s value > than max size: %zu against %zu.\n", field_name, strlen(field_name), max_size);
         return 0;
     }
@@ -122,11 +125,12 @@ int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t ma
     return 1;
 }
 
-//getUintValue()    - get uint value
-//cfg           - poiner to cJSON object containgng configuration
-//field_name    - JSON fileld name
-//uint_setting   - returned value of field_name
-//Return 1 if OK 0 if error
+/*getUintValue()    - get uint value
+cfg           - poiner to cJSON object containgng configuration
+field_name    - JSON fileld name
+uint_setting   - returned value of field_name
+Return 1 if OK 0 if error
+*/
 int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting) {
     cJSON *obj;
     if (obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
@@ -141,12 +145,13 @@ int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting)
     return 1;
 }
 
-//getCharArray()    -Allocate memory and copy into it string array. arr_len contains amount of strings in array
-//cfg           - poiner to cJSON object containgng configuration
-//field_name    - JSON fileld name
-//carr_setting  - returned value of field_name
-//arr_len       - returned length of array
-//Return 1 if OK 0 if error
+/*getCharArray()    -Allocate memory and copy into it string array. arr_len contains amount of strings in array
+cfg           - poiner to cJSON object containgng configuration
+field_name    - JSON fileld name
+carr_setting  - returned value of field_name
+arr_len       - returned length of array
+Return 1 if OK 0 if error
+*/
 int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {
     cJSON *obj;
     unsigned int i,list_len;
@@ -163,8 +168,8 @@ int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {
     }
     list_len = (unsigned int)cJSON_GetArraySize(obj);
 
-     // One position for NULL-terminator
-    (*carr_setting) = (char**)malloc((list_len+1)*sizeof(char**)); // One position added for NULL-terminator
+     /* One position for NULL-terminator */
+    (*carr_setting) = (char**)malloc((list_len+1)*sizeof(char**)); /* One position added for NULL-terminator */
     for(i = 0; i < list_len; i++) {
         cJSON* item;
         item = cJSON_GetArrayItem(obj, i);
@@ -176,14 +181,15 @@ int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {
         }
         (*carr_setting)[i] = (!item->valuestring)?strdup(""):strdup(item->valuestring);
     }
-    (*carr_setting)[i] = NULL;  // add termination element into the list
+    (*carr_setting)[i] = NULL;  /* add termination element into the list */
     return 1;
 }
 
-//saveToFile() - save cfg to the fname
-//fname     - file name
-//cfg       - pointer to cJSON object
-int saveToFile(const char* fname, cJSON* cfg) { //Returns 0 if bad
+/*saveToFile() - save cfg to the fname
+fname     - file name
+cfg       - pointer to cJSON object
+*/
+int saveToFile(const char* fname, cJSON* cfg) { /*Returns 0 if bad */
     FILE *f;
     int ret = 0;
     char temp_name[L_tmpnam];
@@ -212,21 +218,21 @@ int saveToFile(const char* fname, cJSON* cfg) { //Returns 0 if bad
     return ret;
 }
 
-//saveStrValue() - save string type value to the fname
-//func_name     - calling function name foe logging
-//conf_fname    - configuration file name
-//field_name    - filend name
-//new_value     - new value
-//old_value     - poiner to the setting in memory
-//max_size      - old_value capacity
+/*saveStrValue() - save string type value to the fname
+func_name     - calling function name foe logging
+conf_fname    - configuration file name
+field_name    - filend name
+new_value     - new value
+old_value     - poiner to the setting in memory
+max_size      - old_value capacity
+*/
 int saveStrValue(const char* func_name, const char* conf_fname, const char* field_name, const char *new_value, char* old_value, size_t max_size) {
     if(strlen(new_value)+1 > max_size) {
-        //mlevitin fprintf(stderr, "%s(): new value %s is too big: %lu against %lu\n", func_name, new_value, strlen(new_value), max_size);
 	fprintf(stderr, "%s(): new value %s is too big: %zu against %zu\n", func_name, new_value, strlen(new_value), max_size);
         return 0;
     }
 
-    strcpy(old_value, new_value);     // Save into loaded settings
+    strcpy(old_value, new_value);     /* Save into loaded settings */
 
     cJSON* cfg = load_file(conf_fname);
     if(cfg == NULL) return 0;
@@ -235,14 +241,15 @@ int saveStrValue(const char* func_name, const char* conf_fname, const char* fiel
     return saveToFile(conf_fname, cfg);
 }
 
-//saveUintValue() - save uint type value to the fname
-//func_name     - calling function name foe logging
-//conf_fname    - configuration file name
-//field_name    - filend name
-//new_value     - new value
-//old_value     - poiner to the setting in memory
+/*saveUintValue() - save uint type value to the fname
+func_name     - calling function name foe logging
+conf_fname    - configuration file name
+field_name    - filend name
+new_value     - new value
+old_value     - poiner to the setting in memory
+*/
 int saveUintValue(const char* func_name, const char* conf_fname, const char* field_name,  unsigned int new_value, unsigned int* old_value) {
-    *old_value = new_value;     // Save into loaded settings
+    *old_value = new_value;     /* Save into loaded settings */
 
     cJSON* cfg = load_file(conf_fname);
     if(cfg == NULL) return 0;

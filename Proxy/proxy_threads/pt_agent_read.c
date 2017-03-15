@@ -103,7 +103,7 @@ static void* agent_read(void* params) {
             break;
         }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
-            pu_queue_push(to_main, out_buf, strlen(out_buf) + 1); //TODO Mlevitin
+            pu_queue_push(to_main, out_buf, strlen(out_buf) + 1); /*TODO Mlevitin */
 
             pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
         }

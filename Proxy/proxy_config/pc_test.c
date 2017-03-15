@@ -1,6 +1,6 @@
-//
+/*
 // Created by gsg on 21/11/16.
-//
+*/
 
 #include <stdio.h>
 
@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
         if (!pc_cli_process_params(argc, argv)) return 1;
 
-//    if(!pc_load_config("/media/sf_GWDrive/Presto_new/build/proxyJSON.test")) return 1;
+/*    if(!pc_load_config("/media/sf_GWDrive/Presto_new/build/proxyJSON.test")) return 1; */
         pu_start_logger(DEFAULT_LOG_NAME, 7, LL_DEBUG);
         pu_log(LL_WARNING, "1111111111111111111111111111111111111111111111111");
 

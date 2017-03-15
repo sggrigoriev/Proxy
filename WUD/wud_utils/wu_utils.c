@@ -27,6 +27,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include "pu_logger.h"
 #include "pr_ptr_list.h"
@@ -169,7 +170,7 @@ int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_
         pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", old_path, errno, strerror(errno));
         goto on_err;
     }
-//Open new file with "in process" extention
+/*Open new file with "in process" extention */
     FILE* f_cpy = fopen(new_in_process, "wb");
     if(!f_cpy) {
         pu_log(LL_ERROR, "wu_move_n_rename: can't open file %s: %d, %s", new_in_process, errno, strerror(errno));

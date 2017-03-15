@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include "lib_tcp.h"
 #include "pu_logger.h"

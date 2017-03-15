@@ -1,4 +1,5 @@
 build/*
+bin/*
 !build/.gitkeep
 Proxy/build/*
 !Proxy/build/.gitkeep

@@ -69,7 +69,7 @@ static pu_queue_t* to_agent;        /* main_thread -> agent_write */
 
 lib_timer_clock_t cloud_url_update_clock = {0};         /*  timer for contact URL request sending */
 lib_timer_clock_t gw_fw_version_sending_clock = {0};    /* timer for firmware version info sending */
-//TODO! If fw upgrade failed lock should be set to 0 again!!!
+/*TODO! If fw upgrade failed lock should be set to 0 again!!! */
 int lock_gw_fw_version_sending = 0;     /* set to 1 when the fw upgrade starts. */
 
 static pu_queue_event_t events;         /* main thread events set */
@@ -264,7 +264,7 @@ static void send_device_id_to_agent() {
 
 }
 
-//Sending the fw version to the cloud accordinlgy to the schedule
+/*Sending the fw version to the cloud accordinlgy to the schedule */
 static void send_fw_version_to_cloud() {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char fw_ver[DEFAULT_FW_VERSION_SIZE];
