@@ -40,7 +40,7 @@
 */
 #define SEND_TO_SEC 30
 static lib_timer_clock_t send_clock = {0};
-static char wr_src[/*LIB_HTTP_MAX_MSG_SIZE*/640000];
+static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
 "{"
