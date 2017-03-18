@@ -142,11 +142,11 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
     while(attempts_amount--) {
         switch(lib_http_get_file(conn, rx_fd)) {
             case 1:             /* Got it! */
-                pu_log(LL_INFO, "wh_read_file: download of %s succeed... And nobody beleived!", file_with_path);
+                pu_log(LL_INFO, "wh_read_file: download of %s succeed.", file_with_path);
                 ret = 1;
                 goto on_finish;
-            case 0:             /* timeout... try again and again, until the attempts_amount separates us */
-                sleep(1);
+            case 0:             /* timeout... try it again and again, until the attempts_amount separates us */
+                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 fclose(rx_fd);
                 rx_fd = fopen(file_with_path, "wb");
                 if(!rx_fd) {
@@ -189,7 +189,7 @@ static int get_post_connection(lib_http_conn_t* conn) {
         if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *conn < 0) {
             pu_log(LL_ERROR, "get_post_connection: Can't create POST connection descriptor for %s", contact_url);
             lib_http_eraseConn(*conn);
-            sleep(1);
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
             continue;
         }
         err = 0;    /* Bon vouage! */
@@ -216,7 +216,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
                     out = 1;
                 }
                 else {
-                    sleep(1);
+                    sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 }
                 break;
             case LIB_HTTP_POST_OK:

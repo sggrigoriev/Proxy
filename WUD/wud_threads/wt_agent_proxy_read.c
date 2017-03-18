@@ -88,7 +88,7 @@ static void* ap_reader(void* params) {
             stop = 1;
             break;      /* Allez kaputt */
         }
-        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(PR_CHILD_SIZE, WC_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE, WC_MAX_MSG_LEN*2);
+        lib_tcp_conn_t* all_conns = lib_tcp_init_conns(PR_CHILD_SIZE, WC_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE);
         if(!all_conns) {
             pu_log(LL_ERROR, "%s: memory allocation error.", PT_THREAD_NAME);
             stop = 1;

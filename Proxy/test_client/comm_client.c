@@ -40,7 +40,7 @@
 */
 #define SEND_TO_SEC 30
 static lib_timer_clock_t send_clock = {0};
-static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
+static char wr_src[/*LIB_HTTP_MAX_MSG_SIZE*/640000];
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
 "{"
@@ -129,7 +129,7 @@ static char out_buf[500];
 static void* read_proc(void* socket) {
     int read_socket = *(int *)socket;
 
-    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, 500, 10000);
+    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, 500);
     if(!all_conns) {
         pu_log(LL_ERROR, "%s: memory allocation error.", "read_proc");
         rw_stop = 1;

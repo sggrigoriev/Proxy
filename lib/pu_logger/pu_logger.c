@@ -32,6 +32,8 @@
 /*
 Module data
 */
+/* Log file name */
+static char LOG_FILE_NAME[4097] = "./default_log.log";
 /* Log file descriptor */
 static FILE* file;
 
@@ -94,6 +96,20 @@ static const char* getLogLevel(log_level_t lvl) {
         default:            return "UNDEF  ";
     }
 }
+/************************************************
+ * Oepn log file. If error - set stdout as a stream
+ * @return  - pointer to file descriptor
+ */
+static FILE* open_log(const char* fname) {
+    FILE* ret = fopen(fname, "w");
+
+    if (ret == NULL) {
+        ret = stdout;
+        printf("\nLOGGER: Error opening log file %s : %d, %s\n", fname, errno, strerror(errno));
+        printf("\nLOGGER: gona use stdout stream instead\n");
+    }
+    return ret;
+}
 
 /*/
     Public functions
@@ -108,14 +124,9 @@ void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_lev
         file = NULL;
         rec_amt = 0;
         max_rec = rec_amount;
+        strncpy(LOG_FILE_NAME, file_name, sizeof(LOG_FILE_NAME)-1);
 
-        file = fopen(file_name, "w+");
-
-        if (file == NULL) {
-            file = stdout;
-            printf("\nLOGGER: Error opening log file %s : %d, %s\n", file_name, errno, strerror(errno));
-            printf("\nLOGGER: gona use stdout stream instead\n");
-        }
+        file = open_log(LOG_FILE_NAME);
 
     pthread_mutex_unlock(&lock);
  }
@@ -148,7 +159,8 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
         va_end(argptr);
 
         if (rec_amt >= max_rec) {
-            rewind(file);
+            fclose(file);
+            file = open_log(LOG_FILE_NAME);
             rec_amt = 0;
         }
 

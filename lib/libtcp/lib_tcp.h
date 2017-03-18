@@ -36,6 +36,13 @@ NB2! Interface functions are thread-protected. But still async...
 #define LIB_TCP_READ_NO_READY_CONNS (lib_tcp_rd_t*)3L   /*Connection pool is full - no place for new connections */
 #define LIB_TCP_READ_EOF (lib_tcp_rd_t*)4L              /*Connection is broken */
 
+/* Status to prevent buffer overflow:
+ * LIB_TCP_BUF_READY        - ready to accespt new message
+ * LIB_TCP_BUF_IN_PROCESS   - ready to take new portion of message - '\0' is not found
+ * LIB_TCP_BUF_REJECT       - too long message - ignore it until the '\0' will happened
+*/
+typedef enum {LIB_TCP_BUF_READY, LIB_TCP_BUF_IN_PROCESS, LIB_TCP_BUF_REJECT} lib_tcp_ass_buf_state_t;
+
 /*Buffer for assembling the whole 0-terminated string.
 Made because TCP could pass just the part of the message in case of high load
 */
@@ -43,6 +50,8 @@ typedef struct{
     char* buf;
     size_t size;
     size_t idx;
+    lib_tcp_ass_buf_state_t status;
+
 } lib_tcp_assembling_buf_t;
 
 /*Incoming buffer type */
@@ -73,7 +82,7 @@ typedef struct {
   ass_size        - size of assembling buffer (usually in_size*2
 Return NULL if allocation error or pointer to connections pool
 */
-lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size, size_t ass_size);
+lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size);
 
 /*Create working connecion
   rd_socket   - TCP socket open for read

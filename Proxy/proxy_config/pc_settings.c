@@ -449,5 +449,6 @@ static int save_auth_token(const char* at_file_name, const char* new_at) {
     if(!f) return 0;
     fprintf(f, "%s", new_at);
     fclose(f);
+    sync();
     return 1;
 }

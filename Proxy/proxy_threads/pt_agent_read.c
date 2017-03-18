@@ -66,7 +66,7 @@ static void* agent_read(void* params) {
 
     to_main = pt_get_gueue(PS_FromAgentQueue);
 
-    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, PROXY_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE, PROXY_MAX_MSG_LEN*2);
+    lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, PROXY_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE);
     if(!all_conns) {
         pu_log(LL_ERROR, "%s: memory allocation error.", PT_THREAD_NAME);
         set_stop_agent_children();

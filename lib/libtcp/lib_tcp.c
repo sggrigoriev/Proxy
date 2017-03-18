@@ -70,7 +70,7 @@ static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds);
 /*/
 Public functions. Description in *h file
 */
-lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size, size_t ass_size) {
+lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size) {
     pthread_mutex_lock(&own_mutex);
     assert(max_connections);
     lib_tcp_conn_t* ret = malloc(sizeof(lib_tcp_conn_t));
@@ -83,9 +83,10 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size,
         ret->rd_conn_array[i].in_buf.buf = malloc(in_size);
         ret->rd_conn_array[i].in_buf.len = 0;
         ret->rd_conn_array[i].in_buf.size = in_size;
-        ret->rd_conn_array[i].ass_buf.buf = malloc(ass_size);
-        ret->rd_conn_array[i].ass_buf.size = ass_size;
+        ret->rd_conn_array[i].ass_buf.buf = malloc(in_size*2);
+        ret->rd_conn_array[i].ass_buf.size = in_size*2;
         ret->rd_conn_array[i].ass_buf.idx = 0;
+        ret->rd_conn_array[i].ass_buf.status = LIB_TCP_BUF_READY;
         if(!ret->rd_conn_array[i].ass_buf.buf || !ret->rd_conn_array[i].in_buf.buf) goto on_err;
     }
     ret->sa_max_size = max_connections;
@@ -248,14 +249,19 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
 
     pthread_mutex_lock(&own_mutex);
         for(i = 0; i < conn->ass_buf.idx; i++) {
-            if(conn->ass_buf.buf[i] == '\0') {
-                if((i+1) <= out_size) {     /*The message fits into out buffer */
-                    memcpy(out, conn->ass_buf.buf, i+1);
-                    ret = out;
-                 }
-                else {
-                    pu_log(LL_ERROR, "lib_tcp_assemble: incoming message exceeds max bufer size: %d vs %d. Ignored.", i+1, out_size);
-                 }
+            if(conn->ass_buf.buf[i] == '\0') {  /* Message tail found */
+                if(conn->ass_buf.status != LIB_TCP_BUF_REJECT) {    /* Message will be passed */
+                    if ((i + 1) <= out_size) {     /*The message fits into out buffer */
+                        memcpy(out, conn->ass_buf.buf, i + 1);
+                        ret = out;
+                    } else {
+                        pu_log(LL_ERROR, "lib_tcp_assemble: incoming message exceeds max bufer size: %d vs %d. Ignored.", i+1, out_size);
+                    }
+                }
+                else {                      /* Reject status - ignore the message */
+                    pu_log(LL_ERROR, "lib_tcp_assemble: too long incoming message tail found. Ignored");
+                }
+                conn->ass_buf.status = LIB_TCP_BUF_READY;   /* Reset the status */
                 memmove(conn->ass_buf.buf, conn->ass_buf.buf+i+1, conn->ass_buf.idx-(i+1));
                 conn->ass_buf.idx = conn->ass_buf.idx-(i+1);
                 break;
@@ -348,7 +354,8 @@ static unsigned int inc_start_no(unsigned int no, unsigned int size) {
 
 static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
     if((ab->idx >= ab->size) || ((ab->size - ab->idx) < in->len)) {     /*no place in buffer */
-        ab->idx = 0;    /*reset assemblong buffer!*/
+        ab->idx = 0;    /*reset assembling buffer!*/
+        ab->status = LIB_TCP_BUF_REJECT;
         return 0;
     }
     memcpy(ab->buf+ab->idx, in->buf, in->len);

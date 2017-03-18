@@ -168,7 +168,6 @@ void ph_mgr_start() {
 
     if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
     while (err) {
-        sleep(1);   /*in case of bad connection - to avoid too fast requests */
 /*1. Get main url & deviceId from config */
         pc_getMainCloudURL(main_url, sizeof(main_url));
         pc_getProxyDeviceID(device_id, sizeof(device_id));
@@ -183,11 +182,20 @@ void ph_mgr_start() {
             goto on_err;
         }
 /* 2. Get contact url from main */
-        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  /* Lets try again and again */
+        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {   /* Lets try again and again */
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
 /* 3. Make test empty post: if answer OK - use existing one. If answer is not OK - ask for new token */
-        if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) continue;
+        if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) {
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
 /* 4. Open connections */
-        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
+        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
         err = 0;    /* Bon vouage! */
     }
     pu_log(LL_INFO, "Proxy connected to cloud by URL %s", contact_url);
@@ -272,14 +280,19 @@ void ph_reconnect() {
 
     int err = 1;
     while(err) {
-        sleep(1);   /* To slow down the requests in case of internet connection absence */
 /* 0. Close permanent connections */
         erase_connections(post_conn, get_conn, immediate_post);
 /* 1. Get contact url */
-        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  /* Lets try again and again */
+        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {       /* Lets try it again and again */
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
 /* 2. open connections */
 
-        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
+        if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
         pu_log(LL_INFO, "Proxy reconnected with the main url = %s; contact url = %s", main_url, contact_url);
 
         err = 0;
@@ -306,15 +319,20 @@ void ph_update_contact_url() {
     erase_connections(post_conn, get_conn, immediate_post);
     int err = 1;
     while(err) {
-        sleep(1);   /* if no connection - not to be so quick */
 /* 1. Get contact url from main url */
-        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) continue;  /* Lets try again and again */
+        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {   /* Lets try again and again */
+            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            continue;
+        }
 /* 2. Open connections */
 /* If error - open connections with previous contact url */
         if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
             pc_getCloudURL(contact_url, sizeof(contact_url));
 /* If error again - start from step 1 */
-            if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) continue;
+            if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
+                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                continue;
+            }
             pu_log(LL_ERROR, "ph_update_contact_url: get back to the prevoius contact url %s", contact_url);
         }
         else {
@@ -375,7 +393,7 @@ static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t
                     out = 1;
                 }
                 else {
-                    sleep(1);
+                    sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 }
                 break;
             case LIB_HTTP_POST_OK:
@@ -393,7 +411,7 @@ static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t
 /*Return 1 id OK 0 if error */
 static int _get(lib_http_conn_t get_conn, char* resp, size_t size) {
     int ret;
-    while(ret = lib_http_get(get_conn, resp, size), ret == 0) sleep(1);
+    while(ret = lib_http_get(get_conn, resp, size), ret == 0) sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
     return ret;
 }
 
@@ -410,6 +428,12 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s", main);
         lib_http_eraseConn(get_conn);
         return 0;
+    }
+    if(!strlen(resp)) {
+        pu_log(LL_ERROR, "get_contact: No data returned by %s", main);
+        lib_http_eraseConn(get_conn);
+        return 0;
+
     }
     strncpy(conn, resp, conn_size-1);
 

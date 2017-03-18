@@ -1,10 +1,14 @@
-VERSION 1.1.5 15-MAR-2016
+VERSION 1.1.5 18-MAR-2016
 =================================================================================================
 1. c98 standard compatibility
 2. Now it is possible to build using make
     2.1 export HOST=mips-linux
     2.2 make  -f Makefile.make
-    2.3 resulting files is in 
+    2.3 resulting files is in
+3. AUTH_TOKEN file loosing prevented by sync() call after auth_token write
+4. Dealay on reconnect added in case if internet connection lost - LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC added into lib_http.h. Set on 1 second
+5. Log file(s) cleaned if it is reached the max amount of records and start from the beginning. (pu_logeer changed)
+6. Long messages control fixed. Agent's message longer than 7993 rejected
 
 
 VERSION 1.1.4 08-MAR-2016
