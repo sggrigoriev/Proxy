@@ -1,6 +1,6 @@
 VERSION 1.1.6 01-APR-2017
 =================================================================================================
-1. Define PROXY_DEVICE_ID_PREFIX="aioxGW-" added for Proxy to be able change the gatewayID prefix w/o code change
+1. Define PROXY_DEVICE_ID_PREFIX="aioxGW-" added for Proxy (C)make file to be able change the gatewayID prefix w/o code change
 2. "Reboot" notification added:
     {"measures": [{"deviceId": "<deviceID>","params": [{"name": "reboot", "value": "<N>"}]}]}
    - V = 1 if the gateway is going to be rebooted by any reason (including the command from the cloud)
