@@ -177,6 +177,7 @@ static void notify(fw_notify_t n) {
 /* Notify cloud - "in process" - ready for reboot */
             pr_make_fw_status4cloud(alert, sizeof(alert), PR_FWU_STATUS_PROCESS, fw_version, deviceID);
             pu_queue_push(to_cloud, alert, strlen(alert)+1);
+            sleep(2);   /* Just give time to notify cloud */
 /* Notify WUD */
             pr_make_fw_ok4WUD(alert, sizeof(alert), deviceID);
             pu_queue_push(to_main, alert, strlen(alert)+1);

@@ -18,6 +18,8 @@ message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 #staging_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
 #build_dir/target-mipsel_24kec+dsp_uClibc-0.9.33.2/root-ramips/usr/lib/libmbedtls.a
 
+add_definitions( -DPROXY_DEVICE_ID_PREFIX="aioxGW-" )
+
 
 set(GCC_STANDARD $ENV{STANDARD})
 
@@ -49,7 +51,7 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -Wall") #${GCC_STANDARD} -D_GNU_SOURCE
 	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})
 	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $ENV{PLATFORM})
-	#	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
+	#   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/../build)
 	set(REQUIRED_LIBRARIES
 			m
 			pthread

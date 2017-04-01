@@ -39,7 +39,7 @@ NB-2! no thread protection
 #define LIB_HTTP_MAX_MSG_SIZE               8193    /* +1 byte for '\0' */
 #define LIB_HTTP_MAX_URL_SIZE               4097
 #define LIB_HTTP_AUTHENTICATION_STRING_SIZE 129
-#define LIB_HTTP_DEVICE_ID_SIZE             31
+#define LIB_HTTP_DEVICE_ID_SIZE             32
 #define LIB_HTTP_FW_VERSION_SIZE            129
 #define LIB_HTTP_SHA_256_SIZE               64      /* bytes */
 /* Long GET from Proxy's side will be less on LIB_HTTP_PROXY_SERVER_TO_DELTA than the cloud conn timeout */

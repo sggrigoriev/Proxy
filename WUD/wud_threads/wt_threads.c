@@ -21,7 +21,6 @@
 
 #include <string.h>
 #include <errno.h>
-#include <stdlib.h>
 
 #include "pu_queue.h"
 #include "pu_logger.h"
@@ -308,14 +307,17 @@ static void process_command(pr_cmd_item_t cmd) {
             break;
     }
 }
-
+static int reboot_was_sent = 0; /* Workaround for multiple child restarts */
 static void process_reboot() {
     char json[LIB_HTTP_MAX_MSG_SIZE];
     char di[LIB_HTTP_DEVICE_ID_SIZE];
+    if(reboot_was_sent) return;
+    reboot_was_sent = 1;
     wc_getDeviceID(di, sizeof(di));
 
-    pr_make_reboot_alert4cloud(json, sizeof(json), di);
+    pr_make_reboot_alert4cloud(json, sizeof(json), di, PR_BEFORE_REBOOT);
     pu_queue_push(to_cloud, json, strlen(json)+1);  /* Notify cloud about the restart */
+    sleep(5);   /* Just give time to send the reboot notification to the cloud */
     stop = 1;
 }
 
@@ -335,7 +337,7 @@ static void process_alert(pr_alert_item_t alert) {
         case PR_ALERT_FWU_READY_4_INSTALL:   /* fw file received, checked, moved & renamed - ready to start complition - reboot! */
             pu_log(LL_INFO, "%s: fw upgrade: ready for install", PT_THREAD_NAME);
             fw_upgrade_cancel();    /* just to clean-up after the process */
-            wa_stop_children();     /* kill'em all and suicide after that. Reboot in main.c */
+            process_reboot();
             stop = 1;
             break;
         default:

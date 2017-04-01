@@ -24,6 +24,7 @@
 
 #include "lib_timer.h"
 #include "pt_queues.h"
+#include "pr_commands.h"
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
@@ -31,11 +32,13 @@
 #include "pt_server_read.h"
 #include "pt_server_write.h"
 #include "pt_main_agent.h"
+#include "pt_change_cloud_notification.h"
 #ifndef PROXY_SEPARATE_RUN
     #include "pt_wud_write.h"
 #endif
 
 #include "pt_threads.h"
+
 
 #define PT_THREAD_NAME "MAIN_THREAD"
 
@@ -46,6 +49,7 @@ static int main_thread_startup();                       /* Total Proxy therads s
 static void main_thread_shutdown();                     /* Total Proxy shutdown */
 static void send_device_id_to_agent();                  /* Inform the Agent about Proxy's device id */
 static void send_fw_version_to_cloud();                 /* Inform the cloud about the gateway firmware version */
+static void send_reboot_status(pr_reboot_param_t status); /* Sand the alert to the cloud: bofore reboot and after reboot */
 static void process_proxy_commands(const char* msg);    /* Process Proxy commands - commsnd(s) string as input */
 
 #ifndef PROXY_SEPARATE_RUN
@@ -96,6 +100,8 @@ void pt_main_thread() { /* Starts the main thread. */
 
     send_device_id_to_agent();  /* sending the device id to agent */
     send_fw_version_to_cloud(); /* sending the fw version to the cloud */
+    send_reboot_status(PR_AFTER_REBOOT); /* sending the reboot statuc to the cloud */
+
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
@@ -264,7 +270,7 @@ static void send_device_id_to_agent() {
 
 }
 
-/*Sending the fw version to the cloud accordinlgy to the schedule */
+/*Sending the fw version to the cloud accordingly to the schedule */
 static void send_fw_version_to_cloud() {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char fw_ver[DEFAULT_FW_VERSION_SIZE];
@@ -275,10 +281,26 @@ static void send_fw_version_to_cloud() {
 
     pr_make_fw_status4cloud(msg, sizeof(msg), PR_FWU_STATUS_STOP, fw_ver, device_id);
 
-    pu_queue_push(to_server, msg, strlen(msg+1));
+
+    pu_queue_push(to_server, msg, strlen(msg)+1);
     pu_log(LL_INFO, "%s: firmware version was sent to the Cloud: %s", PT_THREAD_NAME, msg);
 }
 
+/********************************************************
+ * Send the alert to the cloud: bofore reboot and after reboot
+ * @param status - PR_BEFORE_REBOOT=1 - send just before rebooting, PR_AFTER_REBOOT=2 - send on startup
+ */
+static void send_reboot_status(pr_reboot_param_t status) {
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+    pr_make_reboot_alert4cloud(msg, sizeof(msg), device_id, status);
+
+    pu_queue_push(to_server, msg, strlen(msg)+1);
+    pu_log(LL_INFO, "%s: reboot status was sent to the Cloud: %s", PT_THREAD_NAME, msg);
+}
 static void process_proxy_commands(const char* msg) {
     msg_obj_t* cmd_array = pr_parse_msg(mt_msg);
 
@@ -315,6 +337,7 @@ static void process_proxy_commands(const char* msg) {
                 if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
+                pt_start_change_cloud_notification();   /* to notify the cloud about the mainURL change */
                 break;
             case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);

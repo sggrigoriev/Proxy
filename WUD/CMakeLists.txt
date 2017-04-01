@@ -3,9 +3,6 @@
 project(WUD C)
 #set (CMAKE_C_STANDARD 90)
 
-#
-
-
 if (PRESTO_PLATFORM STREQUAL "cross")
 
 	# MLevitin additions

@@ -90,6 +90,13 @@ typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_REST
     PR_CMD_UPDATE_MAIN_URL, PR_CMD_REBOOT,
     PR_CMD_SIZE
 } pr_cmd_t;
+/* Proxy-Cloud "reboot" parameter values
+ * PR_NO_REBOOT         - send on recurrig basis with fw version
+ * PR_BEFORE_REBOOT     - send right before the reboot requested
+ * PR_AFTER_REBOOT      - send on startup step
+*/
+typedef enum {PR_BEFORE_REBOOT=1, PR_AFTER_REBOOT=2
+} pr_reboot_param_t;
 
 /*Body for R_CMD_FWU_START, PR_CMD_FWU_CANCEL NB! for cancel params except command_type are not valid */
 typedef struct {
@@ -257,21 +264,31 @@ typedef union {
   status      - firmware upgrade status
   fw_version  - gateway current firmware version
   device_id   - gateway device id
-Return pointer to buf
+  Return pointer to buf
 */
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id);
+
+/****************************************************************************************************
+ * Creates the alert for cloud aboyt the main URL change:
+ * {"measures": [{"deviceId": "Aiox-11038",
+ * "params": [{"name": "cloud", "value": "https://app.alter-presencepro.com"}]}]}
+ *
+ * @param buf           - buffer for alert
+ * @param size          - buffer size
+ * @param device_id     - the proxy device id
+ * @return - the buffer address
+ */
+const char* pr_make_main_url_change_notification4cloud(char* buf, size_t size, const char* main_url, const char* device_id);
 
 /*Create reboot alert to be sent to the cloud
   buf         - buffer to store the message
   size        - buffer size
   m_alert     - alert body
   device_id   - gateway device id
+  val         - reboot status (see pr_reboot_param_t)
 Return pointer to buf
 */
-const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id);
-
-/*Not in use */
-const char* pr_make_monitor_alert4cloud(char* buf, size_t size, pr_alert_monitor_t m_alert, const char* device_id);
+const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id, pr_reboot_param_t status);
 
 /*Wrapper for pr_make_fw_status4cloud status FAIL */
 const char* pr_make_fw_fail4WUD(char* buf, size_t size, const char* device_id);

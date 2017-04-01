@@ -54,6 +54,7 @@ void wh_reconnect(const char* new_url, const char* new_auth_token);
  * @return  - 0 if error, 1 if OK
  */
 int wh_write(char* buf, char* resp, size_t resp_size);
+
 /*Returns 0 if error, 1 if OK
 ********************************************************************************
  * Download the file from the cloud

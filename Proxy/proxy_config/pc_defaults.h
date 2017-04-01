@@ -94,8 +94,8 @@
 #define DEFAULT_FW_VERSION_SIZE             LIB_HTTP_FW_VERSION_SIZE        /* Max size of version */
 #define DEFAULT_FW_VERSION_NUM              "undefined firmware version"    /* Default version if the file is not found */
 
-
-
-
+#ifndef PROXY_DEVICE_ID_PREFIX
+    #define PROXY_DEVICE_ID_PREFIX             "aioxGW-"                       /* DeviceID preffix. Could be changed for different platforms */
+#endif
 
 #endif /*PRESTO_PC_DEFAULTS_H */

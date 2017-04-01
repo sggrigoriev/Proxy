@@ -191,7 +191,7 @@ error_t eui64_toString(char *dest, size_t destLen) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat="
 #ifndef YC_DEVICE_TYPE_32
-    snprintf(dest, destLen, "aioxGW-%04s%02X%02X%02X%02X%02X%02X",
+    snprintf(dest, destLen, "%04s%02X%02X%02X%02X%02X%02X",
 #else
     snprintf(dest, destLen, "AX0-%04s%02X%02X%02X%02X%02X%02X",
 #endif

@@ -24,8 +24,9 @@
 #include <assert.h>
 
 #include "cJSON.h"
-#include "lib_http.h"
 #include "pu_logger.h"
+#include "lib_http.h"
+#include "pr_commands.h"
 
 #include "pc_settings.h"
 #include "pf_traffic_proc.h"
@@ -40,14 +41,20 @@
 */
 static pthread_mutex_t rd_mutex = PTHREAD_MUTEX_INITIALIZER;        /* Mutex to stop r/w operation if connection params are changing */
 static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;         /* To prevent double penetration */
+static pthread_mutex_t nt_mutex = PTHREAD_MUTEX_INITIALIZER;        /* Protect old connection data */
 
-static unsigned int CONNECTIONS_TOTAL = 3;  /* Regular post, regular get & immediate post (God bless the HTTP!) */
+static unsigned int CONNECTIONS_TOTAL = 4;  /* Regular post, regular get, immediate post (God bless the HTTP!), notification post */
 
 /* Dedicated connection handlers */
 static lib_http_conn_t post_conn = -1;
 static lib_http_conn_t get_conn = -1;
 static lib_http_conn_t immediate_post = -1;
 
+
+/* Previous connection data (saving when ph_update_main_url() works */
+char prev_contact_url[LIB_HTTP_MAX_URL_SIZE];
+char prev_main_url[LIB_HTTP_MAX_URL_SIZE];
+char prev_auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 /*********************************************************************/
 
 /* Response types of auth token validity check */
@@ -237,6 +244,12 @@ int ph_update_main_url(const char* new_main) {
     pc_getProxyDeviceID(device_id, sizeof(device_id));  /* No check: device ID is Ok if we're here */
     pc_getAuthToken(auth_token, sizeof(auth_token));
 
+/* Save previous values for the notifiation use */
+    pthread_mutex_lock(&nt_mutex);
+    pc_getCloudURL(prev_contact_url, sizeof(prev_contact_url));
+    strncpy(prev_auth_token, auth_token, sizeof(prev_auth_token));
+    strncpy(prev_main_url, old_main, sizeof(prev_main_url));
+    pthread_mutex_unlock(&nt_mutex);
 /* 0. Close permanent connections */
     erase_connections(post_conn, get_conn, immediate_post);
 /* 1. Get contact url from main */
@@ -373,6 +386,38 @@ int ph_respond(char* buf, char* resp, size_t resp_size) {
     return ret;
 }
 
+int ph_notify(char* resp, size_t resp_size) {
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    lib_http_conn_t post;
+
+    pthread_mutex_lock(&nt_mutex);
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+/* 0. Create the notification message */
+    pr_make_main_url_change_notification4cloud(msg, sizeof(msg), prev_main_url, device_id);
+
+/* 1. Add header to the message bafore sending */
+    pf_add_proxy_head(msg, sizeof(msg), device_id, 11011);
+
+/* 2. Open the connection */
+    if(post = lib_http_createConn(LIB_HTTP_CONN_POST, prev_contact_url, prev_auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post < 0) {
+        pu_log(LL_ERROR, "ph_notify: Can't create POST connection descriptor for %s", prev_contact_url);
+        lib_http_eraseConn(post);
+        return 0;
+    }
+/* 3. Send the message */
+    int ret = _post(post, msg, resp, resp_size, prev_auth_token);
+    if(ret) {
+        pu_log(LL_DEBUG, "ph_notify: change main URL notification %s sent to  cloud", msg);
+    }
+/* 4. Close connection */
+    lib_http_eraseConn(post);
+
+    pthread_mutex_unlock(&nt_mutex);
+    return ret;
+}
 /*****************************************************************************************************************
 
     Local functions implementation

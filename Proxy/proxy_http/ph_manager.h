@@ -40,8 +40,9 @@ void ph_mgr_stop();
     Case when the main url came from the cloud
 1. Get contact url from main
 2. Get auth token
-3. Reopen connections
-4. save new main & new contact & auth token
+3. Save existing main&contact URLs and auth token for further notification
+4. Reopen connections
+5. save new main & new contact & auth token
 if error - close evrything and make the step "initiation connections"; return 0
 */
 int ph_update_main_url(const char* new_main);
@@ -85,5 +86,16 @@ int ph_write(char* buf, char* resp, size_t resp_size);
 /* Same as previous. But uses different connection descriptor for immediate response */
 /* this is the reason of duplication - they will be used in parallel in separate threads */
 int ph_respond(char* buf, char* resp, size_t resp_size);
+
+/************************************************************************************
+ * Open POST connection for prev contact URL
+ * Send the notification to the cloud with prev main URL
+ * NB-1! Uses saved main URL, auth_token and cloud URL
+ * NB-2!     pf_add_proxy_head(msg, sizeof(msg), deviceID, 11011); will be called here!
+ * @param resp          - buffer for response from the cloud
+ * @param resp_size     - buffer size
+ * @return - 1 if OK, 0 if not
+ */
+int ph_notify(char* resp, size_t resp_size);
 
 #endif /* PH_MANAGER_H */

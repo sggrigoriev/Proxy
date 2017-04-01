@@ -125,9 +125,9 @@ static void* write_proc(void* params) {
                                 pu_queue_push(to_agent, resp, strlen(resp)+1);
                                 out = 1;
                             }
-                            len = sizeof(msg);
                         }
                     }
+                    len = sizeof(msg);
                 }
                 break;
             }

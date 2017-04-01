@@ -90,47 +90,31 @@ void wt_set_stop_server_write() {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
                     pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
-/* Sending with retries loop */
+/* Sending with reconnects loop */
                     int out = 0;
-                    int retries = LIB_HTTP_MAX_POST_RETRIES;
-    /* Add head to the message */
+                    /* Add head to the message */
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
                     wc_getDeviceID(devid, sizeof(devid));
                     pf_add_proxy_head(msg, sizeof(msg), devid, 11039);
 
-                    while(!stop && !out) {
+                    while (!stop && !out) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];
 
-                        switch (wh_write(msg, resp, sizeof(resp))) {
-                            case LIB_HTTP_POST_ERROR:
-                                pu_log(LL_ERROR, "%s: Error sending", PT_THREAD_NAME);
+                        if (!wh_write(msg, resp, sizeof(resp))) {
+                            pu_log(LL_ERROR, "%s: Error sending. Reconnect", PT_THREAD_NAME);
+                            char conn_str[LIB_HTTP_MAX_URL_SIZE];
+                            wc_getURL(conn_str, sizeof(conn_str));
+                            wh_reconnect(conn_str, devid);
+                            out = 0;
+                        } else {
+                            pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
+                            if (strlen(resp) > 0) {
+                                pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
                                 out = 1;
-                                break;
-                            case LIB_HTTP_POST_RETRY:
-                                pu_log(LL_WARNING, "%s: Connectivity problems, retry", PT_THREAD_NAME);
-                                if(retries-- == 0) {
-                                    char conn_str[LIB_HTTP_MAX_URL_SIZE];
-                                    wc_getURL(conn_str, sizeof(conn_str));
-
-                                    pu_log(LL_ERROR,  "%s: can't connect to %s. Message is not sent. %s", PT_THREAD_NAME, conn_str, msg);
-                                    out = 1;
-                                }
-                                else {
-                                    sleep(1);
-                                }
-                                break;
-                            case LIB_HTTP_POST_OK:
-                                pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
-                                if (strlen(resp) > 0) {
-                                    pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);
-                                    out = 1;
-                                }
-                                 break;
-                            default:
-                                break;
+                            }
                         }
-                    }
-                }
+                    } /* while (!stop && !out) */
+                } /* while (pu_queue_pop(to_cloud, msg, &len)) */
                 break;
             }
             case WT_Timeout:
@@ -143,7 +127,6 @@ void wt_set_stop_server_write() {
                 pu_log(LL_ERROR, "%s: Undefined event %d on wait (to server)!", PT_THREAD_NAME, ev);
                 break;
         }
-
     }
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);

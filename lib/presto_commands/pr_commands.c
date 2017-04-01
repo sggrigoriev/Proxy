@@ -307,18 +307,29 @@ Alerts functions
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \""; 
     const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; 
-    const char* part3 = "\"},{\"name\": \"firmwareUpdateStatus\", \"value\": \"";  
+    const char* part3 = "\"},{\"name\": \"firmwareUpdateStatus\", \"value\": \"";
     const char* part4 = "\"}]}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%d%s", part1, device_id, part2, fw_version, part3, status, part4);
     return buf;
 }
+/*
+ * {"measures": [{"deviceId": "Aiox-11038", "params": [{"name": "cloud", "value": "https://app.alter-presencepro.com"}]}]}
+ */
+const char* pr_make_main_url_change_notification4cloud(char* buf, size_t size, const char* main_url, const char* device_id) {
+    const char* part1 = "{\"measures\": [{\"deviceId\": \"";
+    const char* part2 = "\",\"params\": [{\"name\": \"cloud\", \"value\": \"";
+    const char* part3 = "\"}]}]}";
 
-const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id) {
+    snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, main_url, part3);
+    return buf;
+}
+const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id, pr_reboot_param_t status) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \"";   
-    const char* part2 = "\", \"params\": [{\"name\": \"reboot\", \"value\": \"1\"}]}]}";
+    const char* part2 = "\", \"params\": [{\"name\": \"reboot\", \"value\": \"";
+    const char* part3 = "\"}]}]}";
 
-    snprintf(buf, size-1, "%s%s%s", part1, device_id, part2);
+    snprintf(buf, size-1, "%s%s%s%d%s", part1, device_id, part2, status, part3);
     return buf;
 }
 
@@ -367,11 +378,6 @@ const char* pr_make_fw_fail4WUD(char* buf, size_t size, const char* device_id) {
 
 const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id) {
     return make_alert4WUD(buf, size, PR_ALERT_FWU_READY_4_INSTALL, "Firmware upgrade ready for installation. Do you beleive it?!", NULL, device_id);
-}
-
-/*Create message to inform cloud about monitor alert */
-const char* pr_make_monitor_alert4cloud(char* buf, size_t size, pr_alert_monitor_t m_alert, const char* device_id) {
-    return make_alert4WUD(buf, size, PR_ALERT_MONITOR, m_alert.reason, NULL, device_id);
 }
 
 /* {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}] */
@@ -424,6 +430,7 @@ PR_CMD_FWU_START "parameters": [
 PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
 PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", value": "<device_id>"}, {"name":"authToken", value": "<authToken>"}]
 PG_CMD_REBOOT     "parameters": [{"name": "reboot", "value": "1"}]
+PR_CMD_UPDATE_MAIN_URL: "parameters": [{"name": "cloud", "value": "url"}]
  */
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
     pr_cmd_item_t ret;
@@ -465,6 +472,13 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         }
         else if(!strcmp(name, cmd_reboot) && !strcmp(value, "1")) {
             ret.command_type = PR_CMD_REBOOT;
+        }
+        else if(!strcmp(name, cmd_main_url_cloud)) {
+            ret.update_main_url.command_type = PR_CMD_UPDATE_MAIN_URL;
+            strcpy(ret.update_main_url.main_url, value);
+        }
+        else {
+            ret.command_type = PR_CMD_UNDEFINED;
         }
     }
     return ret;

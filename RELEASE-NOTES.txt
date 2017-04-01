@@ -1,4 +1,23 @@
-VERSION 1.1.5 18-MAR-2016
+VERSION 1.1.6 01-APR-2017
+=================================================================================================
+1. Define PROXY_DEVICE_ID_PREFIX="aioxGW-" added for Proxy to be able change the gatewayID prefix w/o code change
+2. "Reboot" notification added:
+    {"measures": [{"deviceId": "<deviceID>","params": [{"name": "reboot", "value": "<N>"}]}]}
+   - V = 1 if the gateway is going to be rebooted by any reason (including the command from the cloud)
+   - V = 2 on gateway's startup - i.e. after the reboot
+3. Notification for main URL change by the gateway:
+    {"measures": [{"deviceId": "<deviceID>", "params": [{"name": "cloud", "value": "<new cloud URL>"}]}]}
+    The order is:
+    - Gateway get new main URL
+    - Gateway get new contact URL & new auth token
+    - Gateway switches on new contact URL
+    - Gateway sends the notification by old contact URL in he case of succesful switch to new URL.
+4. Two new files appears in Proxy/proxy_threads directory:
+    pt_change_cloud_notification.h
+    pt_change_cloud_notification.c
+5. Dates of releases for 2017 are fixed (2016 -> 2017)
+
+VERSION 1.1.5 18-MAR-2017
 =================================================================================================
 1. c98 standard compatibility
 2. Now it is possible to build using make
@@ -11,13 +30,13 @@ VERSION 1.1.5 18-MAR-2016
 6. Long messages control fixed. Agent's message longer than 7993 rejected
 
 
-VERSION 1.1.4 08-MAR-2016
+VERSION 1.1.4 08-MAR-2017
 =================================================================================================
 1. Directory name for firmware upgrade adjusted with the firmware script (/root/download
 2. WUD startup delay decreased to 30 seconds
 3. activation token from version 1.1.3 is stored in separate file auth_token.
 
-VERSION 1.1.3 06-MAR-2016
+VERSION 1.1.3 06-MAR-2017
 =================================================================================================
 1. Added compatibility with OpenWRT build system
    - change dir to the OpenWRT root
@@ -38,11 +57,11 @@ VERSION 1.1.3 06-MAR-2016
     {"name": "reboot", "value": "1"}]}]}
 7. Uptime value is used for all timeouts to avoid system time jumps.
 
-VERSION 1.1.2 28-FEB-2016
+VERSION 1.1.2 28-FEB-2017
 =================================================================================================
 1. CMake version downgraded to the 2.8.0
 
-VERSION 1.1.1 24-FEB-2016
+VERSION 1.1.1 24-FEB-2017
 =================================================================================================
 1. The Proxy startup sequence:
  1.1 Start Agent
