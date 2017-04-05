@@ -47,8 +47,25 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 			curl
 			c
 			)
+elseif (PRESTO_PLATFORM STREQUAL "quark")
+
+	# MLevitin additions
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+	message(STATUS "Cross-compiling for the Quark")
+	configure_file(wud.conf.mips ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
+	set(QUARK_PATH $ENV{QUARK_PATH})
+	set(ROOTFS_PATH    ${QUARK_PATH}/sysroots)
+	set(TOOLCHAIN_PATH ${QUARK_PATH}/sysroots/x86_64-linux/usr/bin/i586-ostro-linux)
+	set(COMPILER_PREFIX i586-ostro-linux-)
+	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/${COMPILER_PREFIX}gcc)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -m32 -march=i586  -std=c89  --sysroot=${QUARK_PATH}/sysroots/x86_64-linux  -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib  -D_GNU_SOURCE -Wall -s")
+	set(REQUIRED_LIBRARIES
+			m
+			pthread
+			curl
+			)
 else()
-	message(STATUS "Please set PLATFORM to [cross|ubuntu|openwrt].")
+	message(STATUS "Please set PLATFORM to [cross|ubuntu|openwrt|quark].")
 	return()
 endif()
 

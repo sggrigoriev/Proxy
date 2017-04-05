@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(PRESTO_PLATFORM $ENV{PLATFORM})
 
 if (PRESTO_PLATFORM STREQUAL "cross")
-    # this is for croll-compile using OpenWRT toolchain
+    # this is for cross-compile using OpenWRT toolchain
     set(PRESTO_PLATFORM $ENV{PLATFORM})
     message(STATUS "Cross-compile build. Platform is set to ${PRESTO_PLATFORM}")
     set(GCC_STANDARD "-std=c99")
@@ -30,8 +30,16 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
     set(GCC_STANDARD "-std=c89")
     add_subdirectory(Proxy)
     add_subdirectory(WUD)
+elseif(PRESTO_PLATFORM STREQUAL "quark")
+    # this is for the Quark
+    set(CMAKE_VERBOSE_MAKEFILE OFF)
+    set(PRESTO_PLATFORM $ENV{PLATFORM})
+    message (STATUS "Intel Quark build. Platform is set to ${PRESTO_PLATFORM}")
+    set(GCC_STANDARD "-std=c89")
+    add_subdirectory(Proxy)
+    add_subdirectory(WUD)
 else()
-    message (STATUS "PLATFORM is undefined. Please set to [ubuntu|cross|openwrt] ${PRESTO_PLATFORM}")
+    message (STATUS "PLATFORM is undefined. Please set to [ubuntu|cross|openwrt|quark] ${PRESTO_PLATFORM}")
 endif()
 
 #NB! do not forget put it into top-level include file!
