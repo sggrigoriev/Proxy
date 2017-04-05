@@ -86,7 +86,7 @@ elseif (PRESTO_PLATFORM STREQUAL "quark")
 				curl
 				)
 else()
-	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt]")
+	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt|quark]")
 	return()
 endif()
 
