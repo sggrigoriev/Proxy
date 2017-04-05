@@ -16,6 +16,8 @@ VERSION 1.1.6 01-APR-2017
     pt_change_cloud_notification.h
     pt_change_cloud_notification.c
 5. Dates of releases for 2017 are fixed (2016 -> 2017)
+6. Intel Quark support in Makefile.make
+   to build directly on quark SoC HOST=intel-quark make -f Makefile.mk
 
 VERSION 1.1.5 18-MAR-2017
 =================================================================================================
