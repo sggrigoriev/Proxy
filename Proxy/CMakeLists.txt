@@ -68,8 +68,25 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 #			mbedtls
 			c
 		)
+elseif (PRESTO_PLATFORM STREQUAL "quark")
+		# MLevitin additions
+		file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
+		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+		message(STATUS "Compiling Proxy  for the Quark")
+		configure_file(proxyJSON.conf.mips ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
+		set(QUARK_PATH $ENV{QUARK_PATH})
+		set(ROOTFS_PATH    ${QUARK_PATH}/sysroots)
+		set(TOOLCHAIN_PATH ${QUARK_PATH}/sysroots/x86_64-linux/usr/bin/i586-ostro-linux)
+		set(COMPILER_PREFIX i586-ostro-linux-)
+		set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/${COMPILER_PREFIX}gcc)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32 -march=i586 -std=c89 --sysroot=${QUARK_PATH}/sysroots/x86_64-linux -D_DEFAULT_SOURCE -L${ROOTFS_PATH}/usr/lib -L${ROOTFS_PATH}/root-ramips/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
+		set(REQUIRED_LIBRARIES
+				m
+				pthread
+				curl
+				)
 else()
-	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt]")
+	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt|quark]")
 	return()
 endif()
 

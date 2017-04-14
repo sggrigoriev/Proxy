@@ -26,7 +26,7 @@ SOURCES_C += ./proxy_threads/pt_server_read.c
 SOURCES_C += ./proxy_threads/pt_server_write.c
 SOURCES_C += ./proxy_threads/pt_threads.c
 SOURCES_C += ./proxy_threads/pt_wud_write.c
-
+SOURCES_C += ./proxy_threads/pt_change_cloud_notification.c
 SOURCES_C += ../lib/libtimer/lib_timer.c
 SOURCES_C += ../lib/presto_commands/pf_traffic_proc.c
 SOURCES_C += ../lib/presto_commands/pr_commands.c
@@ -82,6 +82,12 @@ OBJECTS_CPP = $(SOURCES_CPP:.cpp=.o)
 LDEXTRA +=  -lcurl -lpthread -lm
 ifeq ($(HOST), mips-linux)
     LDEXTRA+=-lmbedtls
+    LDFLAGS += -Wl,-rpath $(ROOTFS_PATH)/usr/lib
+    CFGNAME=proxyJSON.conf.mips
+endif
+
+ifeq ($(HOST), intel-quark)
+#    LDEXTRA+=-lmbedtls
     LDFLAGS += -Wl,-rpath $(ROOTFS_PATH)/usr/lib
     CFGNAME=proxyJSON.conf.mips
 endif

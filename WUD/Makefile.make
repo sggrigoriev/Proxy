@@ -89,6 +89,13 @@ ifeq ($(HOST), mips-linux)
     CFGNAME=wud.conf.mips
 endif
 
+ifeq ($(HOST), intel-quark)
+    LDFLAGS += -Wl,-rpath $(ROOTFS_PATH)/usr/lib
+    CFGNAME=wud.conf.mips
+endif
+
+
+
 CFLAGS += -Os
 CFLAGS += -Wall
 
