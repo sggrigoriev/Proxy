@@ -275,7 +275,7 @@ out:
 }
 
 void lib_http_eraseConn(lib_http_conn_t conn) {
-    if((conn >= CONN_ARRAY_SIZE) || (!CONN_ARRAY[conn])) return;
+    if((conn < 0) || (conn >= CONN_ARRAY_SIZE) || (!CONN_ARRAY[conn])) return;
     if(CONN_ARRAY[conn]->slist) curl_slist_free_all(CONN_ARRAY[conn]->slist);
     if(CONN_ARRAY[conn]->hndlr) curl_easy_cleanup(CONN_ARRAY[conn]->hndlr);
     free(CONN_ARRAY[conn]);

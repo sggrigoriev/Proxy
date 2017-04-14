@@ -26,11 +26,13 @@
 
 #include "pf_traffic_proc.h"
 
-
+/*
+ *  {JSON} -> {head_list, JSON}
+ */
 size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id, unsigned int seq_number) {
 
     if(!strlen(msg)) {
-        snprintf(msg, msg_size, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%d\"}", device_id, seq_number);
+        snprintf(msg, msg_size-1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%d\"}", device_id, seq_number);
     }
     else {
         char buf[LIB_HTTP_MAX_MSG_SIZE*2];
@@ -38,9 +40,12 @@ size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id, unsi
 
         while((msg[i++] != '{') && (i < strlen(msg)));
 
-        if(i >= strlen(msg)) i = 0;
-
-        snprintf(buf, sizeof(buf)-1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%d\", %s}", device_id, seq_number, msg+i);
+        if(i >= strlen(msg)) {
+            snprintf(buf, sizeof(buf) - 1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%d\", %s}", device_id, seq_number);
+        }
+        else {
+            snprintf(buf, sizeof(buf)-1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%d\", %s", device_id, seq_number, msg+1);
+        }
 
         strncpy(msg, buf, msg_size-1);
         msg[msg_size-1] = '\0';

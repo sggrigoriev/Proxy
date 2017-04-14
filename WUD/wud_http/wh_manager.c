@@ -125,21 +125,22 @@ int wh_write(char* buf, char* resp, size_t resp_size) {
 int wh_read_file(const char* file_with_path,  const char* url, unsigned int attempts_amount) {
     FILE* rx_fd = NULL;
     int ret = 0;
+    lib_http_conn_t conn = -1;
 
     pthread_mutex_lock(&frd_mutex);
 
-    rx_fd = fopen(file_with_path, "wb");
-    if(!rx_fd) {
-        pu_log(LL_ERROR, "wh_read_file: can't open %s file: %d, %s", file_with_path, errno, strerror(errno));
-        goto on_finish;
-    }
-
-    lib_http_conn_t conn = lib_http_createConn(LIB_HTTP_FILE_GET, url, NULL, NULL, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC);
-    if(conn < 0) {
-        pu_log(LL_ERROR, "wh_read_file: can't create HTTP connection to receive firmware");
-        goto on_finish;
-    }
     while(attempts_amount--) {
+        rx_fd = fopen(file_with_path, "wb");
+        if(!rx_fd) {
+            pu_log(LL_ERROR, "wh_read_file: can't open %s file: %d, %s", file_with_path, errno, strerror(errno));
+            goto on_finish;
+        }
+
+        conn = lib_http_createConn(LIB_HTTP_FILE_GET, url, NULL, NULL, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC);
+        if(conn < 0) {
+            pu_log(LL_ERROR, "wh_read_file: can't create HTTP connection to receive firmware");
+            goto on_finish;
+        }
         switch(lib_http_get_file(conn, rx_fd)) {
             case 1:             /* Got it! */
                 pu_log(LL_INFO, "wh_read_file: download of %s succeed.", file_with_path);
@@ -148,11 +149,8 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
             case 0:             /* timeout... try it again and again, until the attempts_amount separates us */
                 sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 fclose(rx_fd);
-                rx_fd = fopen(file_with_path, "wb");
-                if(!rx_fd) {
-                    pu_log(LL_ERROR, "wh_read_file: can't reopen %s", file_with_path);
-                    goto on_finish;
-                }
+                lib_http_eraseConn(conn);
+                pu_log(LL_WARNING, "wh_read_file: timeout reading %s - attempt # %d", file_with_path, attempts_amount);
                 break;
             case -1:            /* Error. Get out of here. We can't live in such a dirty world! */
                 pu_log(LL_ERROR, "wh_read_file, can't dowload the %s. Maybe in the next life...", file_with_path);
