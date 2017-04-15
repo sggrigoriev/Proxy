@@ -95,7 +95,7 @@ void wt_set_stop_server_write() {
                     /* Add head to the message */
                     char devid[LIB_HTTP_DEVICE_ID_SIZE];
                     wc_getDeviceID(devid, sizeof(devid));
-                    pf_add_proxy_head(msg, sizeof(msg), devid, 11039);
+                    pf_add_proxy_head(msg, sizeof(msg), devid);
 
                     while (!stop && !out) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];

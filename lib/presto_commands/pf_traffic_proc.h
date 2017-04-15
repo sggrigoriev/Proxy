@@ -26,13 +26,13 @@ Add the head to the message sent to the cloud:
 #define PRESTO_PF_TRAFFIC_PROC_H
 
 #include <stdlib.h>
-/*Add head required by cloud protocol
+
+/*Add head required by cloud protocol The sequential number will be assigned inside
   msg         - the message in JSON format to be sent
   msg_size    - buffer's containing message size
   device_id   - string with the gateway device id
-  seq_number  - message squential number (add hock one) - cloud does not care about this
 Return updated message length
 */
-size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id, unsigned int seq_number);
+size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id);
 
 #endif /*PRESTO_PF_TRAFFIC_PROC_H */

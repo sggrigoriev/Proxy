@@ -399,7 +399,7 @@ int ph_notify(char* resp, size_t resp_size) {
     pr_make_main_url_change_notification4cloud(msg, sizeof(msg), prev_main_url, device_id);
 
 /* 1. Add header to the message bafore sending */
-    pf_add_proxy_head(msg, sizeof(msg), device_id, 11011);
+    pf_add_proxy_head(msg, sizeof(msg), device_id);
 
 /* 2. Open the connection */
     if(post = lib_http_createConn(LIB_HTTP_CONN_POST, prev_contact_url, prev_auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post < 0) {
@@ -550,7 +550,7 @@ static int get_new_token(lib_http_conn_t post_d, const char* device_id, char* ne
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
-    pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
+    pf_add_proxy_head(buf, sizeof(buf), device_id);
     if(!_post(post_d, buf, reply, sizeof(reply), "")) {
         pu_log(LL_ERROR, "get_new_token: auth token request failed");
         return 0;
@@ -576,7 +576,7 @@ static test_auth_token_rc_t test_auth_token(lib_http_conn_t post_d, const char* 
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
-    pf_add_proxy_head(buf, sizeof(buf), device_id, 11037);
+    pf_add_proxy_head(buf, sizeof(buf), device_id);
     if(!_post(post_d, buf, reply, sizeof(reply), old_token)) {
         pu_log(LL_ERROR, "test_auth_token: auth token request failed");
         return PH_TEST_AT_ERR;

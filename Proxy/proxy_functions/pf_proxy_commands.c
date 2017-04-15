@@ -71,7 +71,7 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
     cJSON_Delete(resp_obj);
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pf_add_proxy_head(buf, buf_size, device_id, 11037);
+    pf_add_proxy_head(buf, buf_size, device_id);
 
     return buf;
 }

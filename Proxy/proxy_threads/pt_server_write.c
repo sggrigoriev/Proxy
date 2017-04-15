@@ -107,7 +107,7 @@ static void* write_proc(void* params) {
 /* Sending with retries loop */
                     int out = 0;
     /* Adding the head to message */
-                    pf_add_proxy_head(msg, sizeof(msg), devid, 11038);
+                    pf_add_proxy_head(msg, sizeof(msg), devid);
 
                     while(!stop && !out) {
                         char resp[PROXY_MAX_MSG_LEN];

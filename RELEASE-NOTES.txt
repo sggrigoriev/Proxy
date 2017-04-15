@@ -1,3 +1,11 @@
+VERSION 1.1.7 15-APR-2017
+=================================================================================================
+1. CMakeLists: the "ubuntu" branch - -g option added for gcc
+2. Bug fix: pf_add_proxy_head, last '}' removed in a message preffix creation
+3. Bug fix: FW UPGRADE, remote file reading - incorrect connection reopening fixed
+4. Bug fix: http erase connection - conn value check for negative value added
+5. For all messges sent to the cloud the incremental numeration added. NB! WUD and Proxy have independent numbers!
+
 VERSION 1.1.6 01-APR-2017
 =================================================================================================
 1. Define PROXY_DEVICE_ID_PREFIX="aioxGW-" added for Proxy (C)make file to be able change the gatewayID prefix w/o code change
