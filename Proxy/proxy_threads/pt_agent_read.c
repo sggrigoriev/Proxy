@@ -41,7 +41,7 @@ static pthread_attr_t attr;
 static char out_buf[LIB_HTTP_MAX_MSG_SIZE] = {0};   /* buffer to receive the data */
 
 int read_socket;                            /* socket to read from  */
-static pu_queue_t* to_main;                 /* main queue pointer - local transport */
+static pu_queue_t* to_server;                 /* main queue pointer - local transport */
 
 /* Thread function. Reads info, assemple it to the buffer and forward to the main thread by queue */
 static void* agent_read(void* params);
@@ -64,7 +64,7 @@ void stop_agent_read() {
 
 static void* agent_read(void* params) {
 
-    to_main = pt_get_gueue(PS_FromAgentQueue);
+    to_server = pt_get_gueue(PS_ToServerQueue);
 
     lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, PROXY_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE);
     if(!all_conns) {
@@ -103,7 +103,7 @@ static void* agent_read(void* params) {
             break;
         }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
-            pu_queue_push(to_main, out_buf, strlen(out_buf) + 1); /*TODO Mlevitin */
+            pu_queue_push(to_server, out_buf, strlen(out_buf) + 1);
 
             pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
         }

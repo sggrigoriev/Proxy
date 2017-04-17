@@ -40,7 +40,7 @@ static pthread_attr_t attr;
 static volatile int stop;                       /* Thread stip flag */
 static pu_queue_msg_t msg[PROXY_MAX_MSG_LEN];   /* Buffer for sending message */
 
-static pu_queue_t* from_main;       /* to read and forward to the cloud*/
+static pu_queue_t* to_cloud;        /* to read and forward to the cloud*/
 static pu_queue_t* to_agent;        /* to send cloud answers to the agent_write */
 
 /*******************************************************************************
@@ -85,7 +85,7 @@ static void* write_proc(void* params) {
     pu_queue_event_t events;
 
     stop = 0;
-    from_main = pt_get_gueue(PS_ToServerQueue);
+    to_cloud = pt_get_gueue(PS_ToServerQueue);
     to_agent = pt_get_gueue(PS_ToAgentQueue);
 
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
@@ -102,9 +102,8 @@ static void* write_proc(void* params) {
         switch (ev = pu_wait_for_queues(events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
             case PS_ToServerQueue: {
                 size_t len = sizeof(msg);
-                while (pu_queue_pop(from_main, msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
-/* Sending with retries loop */
+                while (pu_queue_pop(to_cloud, msg, &len)) {
+ /* Sending with retries loop */
                     int out = 0;
     /* Adding the head to message */
                     pf_add_proxy_head(msg, sizeof(msg), devid);

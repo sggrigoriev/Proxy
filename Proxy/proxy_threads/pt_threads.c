@@ -62,7 +62,6 @@ static void send_wd();          /* Send Watchdog to thw WUD */
 static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];    /* The only main thread's buffer! */
 
 static pu_queue_t* from_server;     /* server_read -> main_thread */
-static pu_queue_t* from_agent;      /* agent read -> main_thread */
 static pu_queue_t* to_server;       /* main_thread -> server_write */
 static pu_queue_t* to_agent;        /* main_thread -> agent_write */
 
@@ -116,13 +115,6 @@ void pt_main_thread() { /* Starts the main thread. */
                     len = sizeof(mt_msg);
                 }
                 break;
-            case PS_FromAgentQueue:
-                while(pu_queue_pop(from_agent, mt_msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: got from agent_read %s", PT_THREAD_NAME, mt_msg);
-                    pu_queue_push(to_server, mt_msg, len);
-                    len = sizeof(mt_msg);
-                }
-                break;
             case PS_STOP:
                 main_finish = 1;
                 pu_log(LL_INFO, "%s received STOP event. Terminated", PT_THREAD_NAME);
@@ -161,7 +153,6 @@ static int main_thread_startup() {
     init_queues();
 
     from_server = pt_get_gueue(PS_FromServerQueue);
-    from_agent = pt_get_gueue(PS_FromAgentQueue);
     to_server = pt_get_gueue(PS_ToServerQueue);
     to_agent = pt_get_gueue(PS_ToAgentQueue);
 

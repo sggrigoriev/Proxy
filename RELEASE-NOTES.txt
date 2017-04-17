@@ -5,6 +5,7 @@ VERSION 1.1.7 15-APR-2017
 3. Bug fix: FW UPGRADE, remote file reading - incorrect connection reopening fixed
 4. Bug fix: http erase connection - conn value check for negative value added
 5. For all messges sent to the cloud the incremental numeration added. NB! WUD and Proxy have independent numbers!
+6. Agent messages are switching right to the SERVER_WRITE thread w/o forwarding it to the PROXY_MAIN thread
 
 VERSION 1.1.6 01-APR-2017
 =================================================================================================
