@@ -135,6 +135,9 @@ void pt_main_thread() { /* Starts the main thread. */
         if(lib_timer_alarm(cloud_url_update_clock)) {
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
             ph_update_contact_url();
+#ifndef PROXY_SEPARATE_RUN
+            initiate_wud();     /* Notify WUD about the contact URL changing */
+#endif
             lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
         }
 /* 3. Regular sending the fw version to the cloud */
@@ -328,7 +331,12 @@ static void process_proxy_commands(const char* msg) {
                 if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
-                pt_start_change_cloud_notification();   /* to notify the cloud about the mainURL change */
+                else {
+#ifndef PROXY_SEPARATE_RUN
+                    initiate_wud();     /* Send to WUD new connection information */
+#endif
+                    pt_start_change_cloud_notification();   /* to notify the cloud about the mainURL change */
+                }
                 break;
             case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);

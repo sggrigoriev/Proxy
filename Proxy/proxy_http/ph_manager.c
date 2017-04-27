@@ -22,6 +22,8 @@
 #include <memory.h>
 #include <pthread.h>
 #include <assert.h>
+#include <sys/time.h>
+#include <errno.h>
 
 #include "cJSON.h"
 #include "pu_logger.h"
@@ -36,12 +38,8 @@
 
 
 /************************************************************************************************
-
     Local data
 */
-static pthread_mutex_t rd_mutex = PTHREAD_MUTEX_INITIALIZER;        /* Mutex to stop r/w operation if connection params are changing */
-static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;         /* To prevent double penetration */
-static pthread_mutex_t nt_mutex = PTHREAD_MUTEX_INITIALIZER;        /* Protect old connection data */
 
 static unsigned int CONNECTIONS_TOTAL = 4;  /* Regular post, regular get, immediate post (God bless the HTTP!), notification post */
 
@@ -49,6 +47,22 @@ static unsigned int CONNECTIONS_TOTAL = 4;  /* Regular post, regular get, immedi
 static lib_http_conn_t post_conn = -1;
 static lib_http_conn_t get_conn = -1;
 static lib_http_conn_t immediate_post = -1;
+
+/***************************************************************************************
+ * Synchronizarion data and functions
+ */
+static volatile int io = 0;   /* increments when any IO operation starts and decrements when it ends */
+static volatile int block = 0;   /* increments when the reconnect starts and decrements whan it ends */
+static volatile int was_reconnect = 0; /* To prevent double reconnection */
+
+static pthread_mutex_t cond_mutex = PTHREAD_MUTEX_INITIALIZER;        /* condition section protection */
+static pthread_mutex_t reconnect_mutex = PTHREAD_MUTEX_INITIALIZER;        /* reconnect reentrance protection*/
+static pthread_cond_t cond;
+
+static void start_io();     /* wait until !block; inc io; was_reconnect = 1 */
+static void stop_io();      /* dec io */
+static int block_io();      /* wait until !block, block = 1; wait until !io. 0 if it is the first entrance */
+static void unblock_io();   /* block = 0; */
 
 
 /* Previous connection data (saving when ph_update_main_url() works */
@@ -69,7 +83,6 @@ typedef enum{
 } decode_cloud_reply_rc_t;
 
 /****************************************************************************
-
     Local functions
 */
 /* Local POST implementation. No w_mutex inside
@@ -81,14 +94,6 @@ typedef enum{
  *  Return 1 if OK and 0 if error
  */
 static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
-
-/* Local GET implementation No r_mutex inside. Calls http_get until the answer or error with 1 second delay between attempts
- *      get_conn    - connection handler
- *      resp        - buffer for message received
- *      size        - buffer size
- *  Return 1 id OK 0 if error
- */
-static int _get(lib_http_conn_t get_conn, char* resp, size_t size);
 
 /* Get contact URL from the cloud, using main URL
 1. Open POST connection to main
@@ -170,9 +175,8 @@ void ph_mgr_start() {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
     int err = 1;
-    pthread_mutex_lock(&rd_mutex);
-    pthread_mutex_lock(&wr_mutex);
-
+    pthread_mutex_lock(&reconnect_mutex);
+    block_io();
     if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
     while (err) {
 /*1. Get main url & deviceId from config */
@@ -211,23 +215,21 @@ void ph_mgr_start() {
 /* Save all parameters updated */
     pc_saveCloudURL(contact_url);
     pc_saveAuthToken(auth_token);
-
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
     return;
-on_err:
+    on_err:
     lib_http_close();
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
     pf_reboot();
 }
 
 void ph_mgr_stop() {
-    pthread_mutex_lock(&rd_mutex);
-    pthread_mutex_lock(&wr_mutex);
-        lib_http_close();
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    pthread_mutex_lock(&reconnect_mutex);
+    block_io();
+    lib_http_close();
+    pthread_mutex_unlock(&reconnect_mutex);
 }
 
 int ph_update_main_url(const char* new_main) {
@@ -237,19 +239,17 @@ int ph_update_main_url(const char* new_main) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
     assert(new_main);
-    pthread_mutex_lock(&rd_mutex);
-    pthread_mutex_lock(&wr_mutex);
+    pthread_mutex_lock(&reconnect_mutex);
+    block_io();
 
     pc_getMainCloudURL(old_main, sizeof(old_main));
     pc_getProxyDeviceID(device_id, sizeof(device_id));  /* No check: device ID is Ok if we're here */
     pc_getAuthToken(auth_token, sizeof(auth_token));
 
 /* Save previous values for the notifiation use */
-    pthread_mutex_lock(&nt_mutex);
     pc_getCloudURL(prev_contact_url, sizeof(prev_contact_url));
     strncpy(prev_auth_token, auth_token, sizeof(prev_auth_token));
     strncpy(prev_main_url, old_main, sizeof(prev_main_url));
-    pthread_mutex_unlock(&nt_mutex);
 /* 0. Close permanent connections */
     erase_connections(post_conn, get_conn, immediate_post);
 /* 1. Get contact url from main */
@@ -266,13 +266,13 @@ int ph_update_main_url(const char* new_main) {
     pc_saveCloudURL(contact_url);
     pc_saveAuthToken(auth_token);
 
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
     return 1;
 /* if error - close everything and make the step "initiation connections"; return 0 */
-on_err:
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    on_err:
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
     ph_mgr_stop();
     ph_mgr_start();
     return 0;
@@ -288,9 +288,11 @@ void ph_reconnect() {
     pc_getProxyDeviceID(device_id, sizeof(device_id));
     pc_getAuthToken(auth_token, sizeof(auth_token));
 
-    pthread_mutex_lock(&rd_mutex);
-    pthread_mutex_lock(&wr_mutex);
-
+    pthread_mutex_lock(&reconnect_mutex);
+    if(block_io()) {    /* Secondary reconnect call, reconnect just was done! */
+        pthread_mutex_unlock(&reconnect_mutex);
+        return;
+    }
     int err = 1;
     while(err) {
 /* 0. Close permanent connections */
@@ -311,8 +313,8 @@ void ph_reconnect() {
         err = 0;
         pc_saveCloudURL(contact_url);
     }
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
 }
 
 void ph_update_contact_url() {
@@ -325,8 +327,8 @@ void ph_update_contact_url() {
     pc_getProxyDeviceID(device_id, sizeof(device_id));
     pc_getAuthToken(auth_token, sizeof(auth_token));
 
-    pthread_mutex_lock(&rd_mutex);
-    pthread_mutex_lock(&wr_mutex);
+    pthread_mutex_lock(&reconnect_mutex);
+    block_io();
 
 /* 0. Close permament conections */
     erase_connections(post_conn, get_conn, immediate_post);
@@ -355,33 +357,33 @@ void ph_update_contact_url() {
         }
         err = 0;
     }
-    pthread_mutex_unlock(&rd_mutex);
-    pthread_mutex_unlock(&wr_mutex);
+    unblock_io();
+    pthread_mutex_unlock(&reconnect_mutex);
 }
 
 int ph_read(char* in_buf, size_t size) {
-    pthread_mutex_lock(&rd_mutex);
-        int ret = lib_http_get(get_conn, in_buf, size);
-    pthread_mutex_unlock(&rd_mutex);
+    start_io();
+    int ret = lib_http_get(get_conn, in_buf, size);
+    stop_io();
     return ret;
 }
 
 int ph_write(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-    pthread_mutex_lock(&wr_mutex);
-        pc_getAuthToken(auth_token, sizeof(auth_token));
-        int ret = _post(post_conn, buf, resp, resp_size, auth_token);
-    pthread_mutex_unlock(&wr_mutex);
+    start_io();
+    pc_getAuthToken(auth_token, sizeof(auth_token));
+    int ret = _post(post_conn, buf, resp, resp_size, auth_token);
+    stop_io();
 
     return ret;
 }
 
 int ph_respond(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-    pthread_mutex_lock(&wr_mutex);
+    start_io();
     pc_getAuthToken(auth_token, sizeof(auth_token));
-    int ret = _post(post_conn, buf, resp, resp_size, auth_token);
-    pthread_mutex_unlock(&wr_mutex);
+    int ret = _post(immediate_post, buf, resp, resp_size, auth_token);
+    stop_io();
 
     return ret;
 }
@@ -391,7 +393,7 @@ int ph_notify(char* resp, size_t resp_size) {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     lib_http_conn_t post;
 
-    pthread_mutex_lock(&nt_mutex);
+    start_io();
 
     pc_getProxyDeviceID(device_id, sizeof(device_id));
 
@@ -415,11 +417,10 @@ int ph_notify(char* resp, size_t resp_size) {
 /* 4. Close connection */
     lib_http_eraseConn(post);
 
-    pthread_mutex_unlock(&nt_mutex);
+    stop_io();
     return ret;
 }
 /*****************************************************************************************************************
-
     Local functions implementation
 */
 static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
@@ -453,13 +454,6 @@ static int _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t
     return ret;
 }
 
-/*Return 1 id OK 0 if error */
-static int _get(lib_http_conn_t get_conn, char* resp, size_t size) {
-    int ret;
-    while(ret = lib_http_get(get_conn, resp, size), ret == 0) sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
-    return ret;
-}
-
 static int get_contact(const char* main, const char* device_id, char* conn, size_t conn_size) {
     char resp[LIB_HTTP_MAX_MSG_SIZE];
     lib_http_conn_t get_conn;
@@ -469,7 +463,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         lib_http_eraseConn(get_conn);
         return 0;
     }
-    if(!_get(get_conn, resp, sizeof(resp))) {
+    if(lib_http_get(get_conn, resp, sizeof(resp)) != 1) {
         pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s", main);
         lib_http_eraseConn(get_conn);
         return 0;
@@ -538,10 +532,10 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
         pu_log(LL_ERROR, "get_auth_token: New auth token was not approved by cloud");
         goto on_err;
     }
-on_ok:
+    on_ok:
     lib_http_eraseConn(post_d);
     return 1;
-on_err:
+    on_err:
     lib_http_eraseConn(post_d);
     return 0;
 }
@@ -582,8 +576,8 @@ static test_auth_token_rc_t test_auth_token(lib_http_conn_t post_d, const char* 
         return PH_TEST_AT_ERR;
     }
     switch(decode_cloud_reply(reply, buf, sizeof(buf))) {
-         case PH_DECODE_CLOUD_REPLY_ACK :
-             return PH_TEST_AT_OK;
+        case PH_DECODE_CLOUD_REPLY_ACK :
+            return PH_TEST_AT_OK;
         case PH_DECODE_CLOUD_REPLY_WRONG_TOKEN:
             return PH_TEST_AT_WRONG;
         case PH_DECODE_CLOUD_REPLY_ERR:
@@ -640,19 +634,69 @@ static decode_cloud_reply_rc_t decode_cloud_reply(const char* reply, char* resul
     }
     strncpy(result, token->valuestring, size-1);
     ret = PH_DECODE_CLOUD_REPLY_TOKEN;
-on_exit:
+    on_exit:
     if(obj) cJSON_Delete(obj);
     return ret;
 }
 
+/*******************************
+ * Sync functions
+ */
 
 
+static void start_io() {     /* wait until !block; inc io; was_reconnect = 1 */
+    struct timespec timeToWait;
+    struct timeval now;
 
+    pthread_mutex_lock(&cond_mutex);
+    while(block) {                              /* Wait until IO will be unblocked */
+        gettimeofday(&now, NULL);
+        timeToWait.tv_sec = now.tv_sec+1;
+        timeToWait.tv_nsec = 0;
+        pthread_cond_timedwait(&cond, &cond_mutex, &timeToWait);
+    }
+    io++;
+    was_reconnect = 0;
+    pthread_mutex_unlock(&cond_mutex);
+    pu_log(LL_DEBUG, "start_io()");
+}
+static void stop_io() {      /* dec io */
+    pthread_mutex_lock(&cond_mutex);
+    io--;
+    pthread_cond_broadcast(&cond);
+    pthread_mutex_unlock(&cond_mutex);
+    pu_log(LL_DEBUG, "stop_io()");
+ }
+/**************************************************
+ * Block http IO in all threads
+ * @return 0 if it is first call, return 1 if we got reentrance - the second block_io in a row
+ */
+static int block_io() {
+    struct timespec timeToWait;
+    struct timeval now;
 
-
-
-
-
-
-
-
+    pthread_mutex_lock(&cond_mutex);
+    if(was_reconnect) {     /* There were no IO operations after the last reconnect - get out of here! */
+        pthread_mutex_unlock(&cond_mutex);
+        pu_log(LL_DEBUG, "block_io(): double peneteration! Return WO ation.");
+        return 1;
+    }
+    block = 1;
+    while(io) {                              /* Wait until no IO operations run */
+        gettimeofday(&now, NULL);
+        timeToWait.tv_sec = now.tv_sec+1;
+        timeToWait.tv_nsec = 0;
+        pthread_cond_timedwait(&cond, &cond_mutex, &timeToWait);
+    }
+    was_reconnect = 1;
+    pthread_mutex_unlock(&cond_mutex);
+    pu_log(LL_DEBUG, "block_io()");
+    return 0;
+}
+static void unblock_io() {   /* block = 0; */
+    pthread_mutex_lock(&cond_mutex);
+    block = 0;
+    pthread_cond_broadcast(&cond);
+    pthread_mutex_unlock(&cond_mutex);
+    pu_log(LL_DEBUG, "unblock_io()");
+}

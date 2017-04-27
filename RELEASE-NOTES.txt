@@ -1,3 +1,9 @@
+VERSION 1.1.8 27-APR-2017
+=================================================================================================
+1. Bug fix: WUD reconnection added for changing main URL
+2. Bug fix: WUD reconnection added for changing contact URL
+3. Bug fix: EM-81 - slow reconnection - added blocking http IO operations
+
 VERSION 1.1.7 15-APR-2017
 =================================================================================================
 1. CMakeLists: the "ubuntu" branch - -g option added for gcc

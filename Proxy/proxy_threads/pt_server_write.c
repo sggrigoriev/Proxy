@@ -42,6 +42,9 @@ static pu_queue_msg_t msg[PROXY_MAX_MSG_LEN];   /* Buffer for sending message */
 
 static pu_queue_t* to_cloud;        /* to read and forward to the cloud*/
 static pu_queue_t* to_agent;        /* to send cloud answers to the agent_write */
+#ifndef PROXY_SEPARATE_RUN
+    static pu_queue_t* to_wud;          /* to send reconnect notification to WUD */
+#endif
 
 /*******************************************************************************
  * Local functions
@@ -54,7 +57,13 @@ static void* write_proc(void* params);
  *      device_id   - gateway device id
 */
 static void conn_state_notf_to_agent(int connect, const char* device_id);
-
+/****************************************************************************
+ * Send to WUD cloud connection info - copypasted from pt_theads. TODO- make WUD reconnect notofication it in one place
+ * @return 1
+*/
+#ifndef PROXY_SEPARATE_RUN
+    static int initiate_wud();
+#endif
 /*******************************************************************************
  * Public functions implementation
  */
@@ -87,7 +96,9 @@ static void* write_proc(void* params) {
     stop = 0;
     to_cloud = pt_get_gueue(PS_ToServerQueue);
     to_agent = pt_get_gueue(PS_ToAgentQueue);
-
+#ifndef PROXY_SEPARATE_RUN
+    to_wud =   pt_get_gueue(PS_ToWUDQueue);
+#endif
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
 
     char devid[LIB_HTTP_DEVICE_ID_SIZE];
@@ -115,6 +126,9 @@ static void* write_proc(void* params) {
                             conn_state_notf_to_agent(0, devid);
                             ph_reconnect();    /* loop until the succ inside */
                             conn_state_notf_to_agent(1, devid);
+#ifndef PROXY_SEPARATE_RUN
+                            initiate_wud();
+#endif
                             out = 0;
                         }
                         else {  /* data has been written */
@@ -165,3 +179,25 @@ static void conn_state_notf_to_agent(int connect, const char* device_id) {  /* s
 
     pu_queue_push(to_agent, msg, strlen(msg)+1);
 }
+
+#ifndef PROXY_SEPARATE_RUN
+/* Send to WUD cloud connection info */
+static int initiate_wud() {
+    char json[LIB_HTTP_MAX_MSG_SIZE];
+    char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char url[LIB_HTTP_MAX_URL_SIZE];
+    char di[LIB_HTTP_DEVICE_ID_SIZE];
+    char ver[LIB_HTTP_FW_VERSION_SIZE];
+
+    pc_getAuthToken(at, sizeof(at));
+    pc_getCloudURL(url, sizeof(url));
+    pc_getProxyDeviceID(di, sizeof(di));
+    pc_getFWVersion(ver, sizeof(ver));
+
+    pr_make_conn_info_cmd(json, sizeof(json), url, di, at, ver);
+    pu_log(LL_DEBUG, "%s: gona send to WUD_WRITE %s", PT_THREAD_NAME, json);
+    pu_queue_push(to_wud, json, strlen(json)+1);
+
+    return 1;
+}
+#endif

@@ -164,6 +164,7 @@ static void read_from_cloud(char* buf, size_t size) {
                 strcpy(buf, emu);
                     out = 1;
 #endif
+                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 break;
             case 1:     /* got smth */
                 out = 1;
