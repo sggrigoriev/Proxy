@@ -165,18 +165,18 @@ static test_auth_token_rc_t test_auth_token(lib_http_conn_t post_t, const char* 
 */
 static decode_cloud_reply_rc_t decode_cloud_reply(const char* reply, char* result, size_t size);
 
-/*************************************************************************************************************
- * Public functions - they are thread-protected: no concurrent POST, GET or immediate response!
+/**************************************************
+ * Unprotected service start
+ * @return  - 0 if error 1 of OK
  */
-void ph_mgr_start() {
+static int _mgr_start() {
     char main_url[LIB_HTTP_MAX_URL_SIZE];
     char contact_url[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
     int err = 1;
-    pthread_mutex_lock(&reconnect_mutex);
-    block_io();
+
     if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
     while (err) {
 /*1. Get main url & deviceId from config */
@@ -215,20 +215,41 @@ void ph_mgr_start() {
 /* Save all parameters updated */
     pc_saveCloudURL(contact_url);
     pc_saveAuthToken(auth_token);
-    unblock_io();
-    pthread_mutex_unlock(&reconnect_mutex);
-    return;
+
+    return 1;
     on_err:
     lib_http_close();
-    unblock_io();
-    pthread_mutex_unlock(&reconnect_mutex);
     pf_reboot();
+    return 0;
+}
+/********************************************************
+ * Unprotected service stop
+ */
+static void _mgr_stop() {
+    lib_http_close();
+}
+/*************************************************************************************************************
+ * Public functions - they are thread-protected: no concurrent POST, GET or immediate response!
+ */
+void ph_mgr_start() {
+    pthread_mutex_lock(&reconnect_mutex);
+    block_io();
+    if(!_mgr_start()) {
+        lib_http_close();
+        unblock_io();
+        pthread_mutex_unlock(&reconnect_mutex);
+        pf_reboot();
+    }
+    else {
+        unblock_io();
+        pthread_mutex_unlock(&reconnect_mutex);
+    }
 }
 
 void ph_mgr_stop() {
     pthread_mutex_lock(&reconnect_mutex);
     block_io();
-    lib_http_close();
+    _mgr_stop();
     pthread_mutex_unlock(&reconnect_mutex);
 }
 
@@ -271,10 +292,10 @@ int ph_update_main_url(const char* new_main) {
     return 1;
 /* if error - close everything and make the step "initiation connections"; return 0 */
     on_err:
+    _mgr_stop();
+    _mgr_start();
     unblock_io();
     pthread_mutex_unlock(&reconnect_mutex);
-    ph_mgr_stop();
-    ph_mgr_start();
     return 0;
 }
 

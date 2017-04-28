@@ -38,7 +38,7 @@
     ]
 }
 */
-#define SEND_TO_SEC 1
+#define SEND_TO_SEC 30
 static lib_timer_clock_t send_clock = {0};
 static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
 const char* write_source() {

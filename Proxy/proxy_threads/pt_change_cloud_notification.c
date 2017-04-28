@@ -28,7 +28,7 @@
 #include "pf_traffic_proc.h"
 #include "pt_change_cloud_notification.h"
 
-#define PT_THREAD_NAME "CHANGE_CLOUD_URL_NOTIFYER"
+#define PT_THREAD_NAME "CHANGE_CLOUD_URL_NOTIFIER"
 /***************************************************************
     Local data
 */
