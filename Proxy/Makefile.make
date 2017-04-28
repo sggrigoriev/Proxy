@@ -67,7 +67,7 @@ CFLAGS += -I../lib/json
 #CFLAGS += -I../../lib/3rdparty/${CJSON_VERSION}
 
 # Version information
-CFLAGS += -DGIT_FIRMWARE_VERSION=$(shell git log -1 --pretty=format:0x%h)
+#CFLAGS += -DGIT_FIRMWARE_VERSION=$(shell git log -1 --pretty=format:0x%h)
 
 #CC = gcc
 #CPP = g++
