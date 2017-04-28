@@ -159,14 +159,14 @@ static void* write_proc(void* params) {
     pthread_exit(NULL);
 }
 
-/* Constants for Agent notificatiuons - should be mobed into Proxy_commands garbage can */
-static char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
-static char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
-static char* conn_yes = "connected";
-static char* conn_no = "disconnected";
-static char* conn_msg_3 = "\"}}]}";
-
 static void conn_state_notf_to_agent(int connect, const char* device_id) {  /* sends to the cloud notification about the connection state */
+    /* Constants for Agent notificatiuons - should be mobed into Proxy_commands garbage can */
+    char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
+    char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
+    char* conn_yes = "connected";
+    char* conn_no = "disconnected";
+    char* conn_msg_3 = "\"}}]}";
+
     char msg[LIB_HTTP_MAX_MSG_SIZE];
     strncpy(msg, conn_msg_1, sizeof(msg)-1);
     strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);

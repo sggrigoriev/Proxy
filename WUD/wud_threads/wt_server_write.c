@@ -106,7 +106,8 @@ void wt_set_stop_server_write() {
                             wc_getURL(conn_str, sizeof(conn_str));
                             wh_reconnect(conn_str, devid);
                             out = 0;
-                        } else {
+                        }
+                        else {
                             pu_log(LL_INFO, "%s: Sent to cloud: %s", PT_THREAD_NAME, msg);
                             if (strlen(resp) > 0) {
                                 pu_log(LL_INFO, "%s: Answer from cloud: %s", PT_THREAD_NAME, resp);

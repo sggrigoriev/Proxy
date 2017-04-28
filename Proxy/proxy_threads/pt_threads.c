@@ -50,7 +50,8 @@ static void main_thread_shutdown();                     /* Total Proxy shutdown 
 static void send_device_id_to_agent();                  /* Inform the Agent about Proxy's device id */
 static void send_fw_version_to_cloud();                 /* Inform the cloud about the gateway firmware version */
 static void send_reboot_status(pr_reboot_param_t status); /* Sand the alert to the cloud: bofore reboot and after reboot */
-static void process_proxy_commands(const char* msg);    /* Process Proxy commands - commsnd(s) string as input */
+static void process_proxy_commands(const char* msg);      /* Process Proxy commands - commsnd(s) string as input */
+static void conn_state_notf_to_agent(int connect) ;      /* sends to the cloud notification about the connection state */
 
 #ifndef PROXY_SEPARATE_RUN
 static int initiate_wud();     /* Send to WUD cloud connection info */
@@ -134,7 +135,9 @@ void pt_main_thread() { /* Starts the main thread. */
 /*2. Regular contact url update */
         if(lib_timer_alarm(cloud_url_update_clock)) {
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
+            conn_state_notf_to_agent(0);
             ph_update_contact_url();
+            conn_state_notf_to_agent(1);
 #ifndef PROXY_SEPARATE_RUN
             initiate_wud();     /* Notify WUD about the contact URL changing */
 #endif
@@ -328,6 +331,7 @@ static void process_proxy_commands(const char* msg) {
                 main_finish = 1;
 #endif
             case PR_CMD_UPDATE_MAIN_URL:
+                conn_state_notf_to_agent(0);
                 if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
@@ -337,6 +341,7 @@ static void process_proxy_commands(const char* msg) {
 #endif
                     pt_start_change_cloud_notification();   /* to notify the cloud about the mainURL change */
                 }
+                conn_state_notf_to_agent(1);
                 break;
             case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);
@@ -356,4 +361,28 @@ static void process_proxy_commands(const char* msg) {
     }
     pr_erase_msg(cmd_array);
 }
+/* Copypasted from server_write. TODO - conn_state_notf_to_agent shouild be in one place!!! */
+static void conn_state_notf_to_agent(int connect) {  /* sends to the cloud notification about the connection state */
+    /* Constants for Agent notificatiuons - should be mobed into Proxy_commands garbage can */
+    char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
+    char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
+    char* conn_yes = "connected";
+    char* conn_no = "disconnected";
+    char* conn_msg_3 = "\"}}]}";
 
+    char msg[LIB_HTTP_MAX_MSG_SIZE];
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id)-1);
+
+    strncpy(msg, conn_msg_1, sizeof(msg)-1);
+    strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);
+    strncat(msg, conn_msg_2, sizeof(msg)-strlen(msg)-1);
+    if(connect)
+        strncat(msg, conn_yes, sizeof(msg)-strlen(msg)-1);
+    else
+        strncat(msg, conn_no, sizeof(msg)-strlen(msg)-1);
+    strncat(msg, conn_msg_3, sizeof(msg)-strlen(msg)-1);
+
+    pu_queue_push(to_agent, msg, strlen(msg)+1);
+}
