@@ -236,13 +236,16 @@ void pr_split_msg(msg_obj_t* msg, const char* device_id, char* msg4proxy, size_t
             pu_log(LL_ERROR, "Error extracting %d command from commands array. Skip", i);
             continue;
         }
-        if(!cmp_device_id(item, device_id)) agent_cmd = add_ref2array(agent_cmd, item);
-
-        pr_cmd_item_t cmd = pr_get_cmd_item(item);
-        if (cmd.command_type != PR_CMD_UNDEFINED)
-            proxy_cmd = add_ref2array(proxy_cmd, item);
-        else
+        if(!cmp_device_id(item, device_id)) {               /* Alien deviceID - Agent's busines */
             agent_cmd = add_ref2array(agent_cmd, item);
+        }
+        else {                                             /* There is a command for paring with Proxy deviceID, so we need to recognize the command itself */
+            pr_cmd_item_t cmd = pr_get_cmd_item(item);
+            if (cmd.command_type != PR_CMD_UNDEFINED)
+                proxy_cmd = add_ref2array(proxy_cmd, item); /* Proxy command */
+            else
+                agent_cmd = add_ref2array(agent_cmd, item); /* Proxy hash't such a command, so let Agent to work with it */
+        }
     }
     if(agent_cmd) {
         cJSON* agent_with_head = cJSON_CreateObject();                  /*Adding "commands" to the head and let it go*/

@@ -3,6 +3,7 @@ VERSION 1.1.8 27-APR-2017
 1. Bug fix: WUD reconnection added for changing main URL
 2. Bug fix: WUD reconnection added for changing contact URL
 3. Bug fix: EM-81 - slow reconnection - added blocking http IO operations
+4. Bug fix: EM-85 - delete end-device command duplication on Proxy side
 
 VERSION 1.1.7 15-APR-2017
 =================================================================================================
