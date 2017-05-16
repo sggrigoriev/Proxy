@@ -38,6 +38,7 @@ static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;       /* To prevent 
 
 static unsigned int CONNECTIONS_TOTAL = 2;    /*Regular post, + file GET) */
 static lib_http_conn_t post_conn = -1;
+
 /*************************************************************
     Local functions
     NB! Local functions are not thread-protected!
@@ -63,27 +64,13 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
 /*************************************************************
  * Public functions implementation
  */
-
-void wh_mgr_start() {
-    pthread_mutex_lock(&wr_mutex);
-    pthread_mutex_lock(&frd_mutex);
-
-    if(!lib_http_init(CONNECTIONS_TOTAL)) goto on_err;
-
-/* Open POST connection */
-    if(!get_post_connection(&post_conn)) goto on_err;
-
-    pthread_mutex_unlock(&wr_mutex);
-    pthread_mutex_unlock(&frd_mutex);
-    return;
-on_err:
-    pthread_mutex_unlock(&wr_mutex);
-    pthread_mutex_unlock(&frd_mutex);
-    lib_http_close();
-    wa_reboot();
+void wh_mgr_init(){
+    if(!lib_http_init(CONNECTIONS_TOTAL)) {
+        lib_http_close();
+        wa_reboot();
+    }
 }
-
-void wh_mgr_stop() {
+void wh_mgr_destroy(){
     pthread_mutex_lock(&wr_mutex);
     pthread_mutex_lock(&frd_mutex);
     lib_http_close();
@@ -91,14 +78,11 @@ void wh_mgr_stop() {
     pthread_mutex_unlock(&frd_mutex);
 }
 
-void wh_reconnect(const char* new_url, const char* new_auth_token) {
+void wh_reconnect() {
     pthread_mutex_lock(&wr_mutex);
     pthread_mutex_lock(&frd_mutex);
 
-    lib_http_eraseConn(post_conn);
-
-    wc_setURL(new_url);
-    wc_setAuthToken(new_auth_token);
+    lib_http_eraseConn(&post_conn);
 
     if(get_post_connection(&post_conn)) {
         pthread_mutex_unlock(&wr_mutex);
@@ -113,7 +97,6 @@ void wh_reconnect(const char* new_url, const char* new_auth_token) {
 
 int wh_write(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-
     pthread_mutex_lock(&wr_mutex);
         wc_getAuthToken(auth_token, sizeof(auth_token));
         int ret = _post(post_conn, buf, resp, resp_size, auth_token);
@@ -149,7 +132,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
             case 0:             /* timeout... try it again and again, until the attempts_amount separates us */
                 sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 fclose(rx_fd);
-                lib_http_eraseConn(conn);
+                lib_http_eraseConn(&conn);
                 pu_log(LL_WARNING, "wh_read_file: timeout reading %s - attempt # %d", file_with_path, attempts_amount);
                 break;
             case -1:            /* Error. Get out of here. We can't live in such a dirty world! */
@@ -160,7 +143,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
     pu_log(LL_ERROR, "wh_write: all %attempts to get the upgrade failed.");
     on_finish:
     pthread_mutex_unlock(&frd_mutex);
-    lib_http_eraseConn(conn);
+    lib_http_eraseConn(&conn);
     if(rx_fd) fclose(rx_fd);
     return ret;
 }
@@ -186,7 +169,7 @@ static int get_post_connection(lib_http_conn_t* conn) {
 /* Open POST connection */
         if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *conn < 0) {
             pu_log(LL_ERROR, "get_post_connection: Can't create POST connection descriptor for %s", contact_url);
-            lib_http_eraseConn(*conn);
+            lib_http_eraseConn(conn);
             sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
             continue;
         }
@@ -205,9 +188,6 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
     if(conn < 0) return 0;
     while(!out) {
         switch (lib_http_post(conn, msg, reply, reply_size, auth_token)) {
-            case LIB_HTTP_POST_ERROR:
-                out = 1;
-                break;
             case LIB_HTTP_POST_RETRY:
                 pu_log(LL_WARNING, "_post: Connectivity problems, retry");
                 if (retries-- == 0) {
@@ -223,8 +203,10 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
                 break;
 
             default:
+                out = 1;
                 break;
         }
     }
     return ret;
 }
+

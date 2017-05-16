@@ -163,9 +163,9 @@ int lib_http_init(unsigned int max_conns_amount) {
 }
 
 void lib_http_close() {
-    unsigned int i;
+    lib_http_conn_t i;
     for(i = 0; i < CONN_ARRAY_SIZE; i++) {
-        if(CONN_ARRAY[i]) lib_http_eraseConn(i);
+        if(CONN_ARRAY[i]) lib_http_eraseConn(&i);
     }
     free(CONN_ARRAY);
     CONN_ARRAY = NULL;
@@ -208,6 +208,9 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
     }
     if(conn_type != LIB_HTTP_FILE_GET) {                    /*Add device id (all have it)*/
         strncat(handler->url, deviceID, sizeof(handler->url) - strlen(handler->url) - 1);
+    }
+    if(conn_type == LIB_HTTP_CONN_INIT_MAIN) {             /* add ssl for contact URL request */
+        strncat(handler->url, "&ssl=true", sizeof(handler->url) - strlen(handler->url) - 1);
     }
     if(conn_type == LIB_HTTP_CONN_GET) {                    /*Add timeout for routine GET*/
         char buf[20];
@@ -268,18 +271,18 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
 out:
     if(curlResult != CURLE_OK) {
         pu_log(LL_ERROR, "lib_http_createConn: %s", curl_easy_strerror(curlResult));
-        lib_http_eraseConn(conn);
-        return -1;
+        lib_http_eraseConn(&conn);
     }
     return conn;
 }
 
-void lib_http_eraseConn(lib_http_conn_t conn) {
-    if((conn < 0) || (conn >= CONN_ARRAY_SIZE) || (!CONN_ARRAY[conn])) return;
-    if(CONN_ARRAY[conn]->slist) curl_slist_free_all(CONN_ARRAY[conn]->slist);
-    if(CONN_ARRAY[conn]->hndlr) curl_easy_cleanup(CONN_ARRAY[conn]->hndlr);
-    free(CONN_ARRAY[conn]);
-    CONN_ARRAY[conn] = NULL;
+void lib_http_eraseConn(lib_http_conn_t* conn) {
+    if((*conn < 0) || (*conn >= CONN_ARRAY_SIZE) || (!CONN_ARRAY[*conn])) return;
+    if(CONN_ARRAY[*conn]->slist) curl_slist_free_all(CONN_ARRAY[*conn]->slist);
+    if(CONN_ARRAY[*conn]->hndlr) curl_easy_cleanup(CONN_ARRAY[*conn]->hndlr);
+    free(CONN_ARRAY[*conn]);
+    CONN_ARRAY[*conn] = NULL;
+    *conn = -1;
 }
 
 int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
@@ -536,7 +539,7 @@ static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int c
 }
 
 static http_handler_t* check_conn(lib_http_conn_t conn) {
-    assert(conn < CONN_ARRAY_SIZE); assert(CONN_ARRAY[conn]);
+    if((conn < 0) || (conn >= CONN_ARRAY_SIZE) || !CONN_ARRAY[conn]) return NULL;
     return CONN_ARRAY[conn];
 }
 
@@ -590,15 +593,15 @@ static lib_http_post_result_t calc_post_result(char* result, int rc) {
             }
             else if(!strcmp(item->valuestring, "UNAUTHORIZED")) {
                 pu_log(LL_WARNING, "Cloud answered for unauthorized request from Proxy %s", result);
-                ret = LIB_HTTP_POST_OK;
+                ret = LIB_POST_UNAUTH;
             }
             else if(!strcmp(item->valuestring, "UNKNOWN")) {
                 pu_log(LL_WARNING, "Cloud answered for received unknown request from Proxy %s", result);
-                ret = LIB_HTTP_POST_OK;
+                ret = LIB_HTTP_POST_UNKNOWN;
             }
             else {  /* UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem */
                 pu_log(LL_WARNING, "Cloud answered strange request from Proxy %s", result);
-                ret = LIB_HTTP_POST_RETRY;
+                ret = LIB_HTTP_POST_ERROR;
             }
             cJSON_Delete(obj);
         }

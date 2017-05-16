@@ -25,16 +25,14 @@
 
 #include "lib_http.h"
 
-/*
-    Case of initiation connections:
-1. Get main url & deviceId from config
-2. Get contact url from main
-3. If no auth_token, get auth token
-4. Open connections
-If error - start from 1.
+/***************************************************
+ * Initiates PH manager, no cloud connections are made
+ */
+void ph_mgr_init();
+/***************************************************
+ * Close all existing connections, deinit PH manager
 */
-void ph_mgr_start();
-void ph_mgr_stop();
+void ph_mgr_destroy();
 
 /*
     Case when the main url came from the cloud
@@ -53,8 +51,9 @@ int ph_update_main_url(const char* new_main);
 2. Reopen connections
 3. if error start from 1
 4. save new contact url
+ Returns 1 if it was true reconnect and returns 0 if it was secondary call
 */
-void ph_reconnect();
+int ph_reconnect();
 
 /*
     Case of periodic update the contact url
@@ -86,16 +85,5 @@ int ph_write(char* buf, char* resp, size_t resp_size);
 /* Same as previous. But uses different connection descriptor for immediate response */
 /* this is the reason of duplication - they will be used in parallel in separate threads */
 int ph_respond(char* buf, char* resp, size_t resp_size);
-
-/************************************************************************************
- * Open POST connection for prev contact URL
- * Send the notification to the cloud with prev main URL
- * NB-1! Uses saved main URL, auth_token and cloud URL
- * NB-2!     pf_add_proxy_head(msg, sizeof(msg), deviceID, 11011); will be called here!
- * @param resp          - buffer for response from the cloud
- * @param resp_size     - buffer size
- * @return - 1 if OK, 0 if not
- */
-int ph_notify(char* resp, size_t resp_size);
 
 #endif /* PH_MANAGER_H */

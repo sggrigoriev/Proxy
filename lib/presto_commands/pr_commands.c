@@ -32,10 +32,8 @@
  the strucure: {"alerts":[{"alertId":<seq#>,"deviceId":"<proxyID>","alertType":"CCC-NNN","timestamp":<NNNNNNN>,"paramsMap"{...}}]}
 header items:
 */
-static const char* alerts = "alerts";
+
 static const char* commands = "commands";
-static const char* alertId = "alertId";
-static const char* commandId = "commandId";
 static const char* deviceId = "deviceId";
 /*common items:*/
 static const char* alertType = "alertType";
@@ -46,6 +44,7 @@ static const char* paramsArray = "parameters";
 static const char* cmd_par_name = "name";
 static const char* cmd_par_value = "value";
 /*all WUD alerts */
+static const char* alerts = "alerts";
 static const char* alertText = "alertText";
 static const char* component = "component";
 static const char* wud_ping = "wud_ping";       /*special case, blin... */
@@ -66,6 +65,8 @@ static const char* cmd_stop = "shutYouselfDown";
 static const char* cmd_device_id = "deviceId";
 static const char* cmd_auth_token = "authToken";
 static const char* cmd_firmware = "firmware";
+
+static const char* cmd_cloud_off = "cloudOff";
 
 static const char* cmd_reboot = "reboot";
 
@@ -149,13 +150,14 @@ static int get_name_value_pair(cJSON* cmd_item, char** name, char** value);
 Return poiner to the value ir NULL if the cmd_item does not contain the parameter with this name
 */
 static char* get_parameter(cJSON* cmd_item, const char* name);
+
 /*
 Command functions
 
 NB! Commented string could used in testing puposes only: no thread protection on JSON static data!
 Returns NULL if bad
 */
-msg_obj_t* pr_parse_msg(const char* msg) {
+msg_obj_t* pr_parse_msg(char* msg) {
     msg_obj_t* ret = cJSON_Parse(msg);
 /*
     if(!ret) {
@@ -188,6 +190,16 @@ void  pr_obj2char(msg_obj_t* obj_msg, char* text_msg, size_t size) {
     char* str = cJSON_PrintUnformatted(obj_msg);
     strncpy(text_msg, str, size-1);
     free(str);
+}
+
+msg_obj_t* pr_get_cmd_array(msg_obj_t* obj) {
+    return cJSON_GetObjectItem(obj, commands);
+}
+
+msg_obj_t* pr_get_alerts_array(msg_obj_t* obj) {
+    cJSON* ret = cJSON_GetObjectItem(obj, alerts);
+    if(ret) return ret;
+    return cJSON_GetObjectItem(obj, wud_ping);
 }
 
 /*
@@ -265,40 +277,59 @@ pr_msg_type_t pr_get_message_type(msg_obj_t* msg) {
     if(obj) return PR_COMMANDS_MSG;
     obj = cJSON_GetObjectItem(msg, alerts);
     if(obj) return PR_ALERTS_MSG;
+    obj = cJSON_GetObjectItem(msg, wud_ping);
+    if(obj) return PR_ALERTS_MSG;
     return PR_OTHER_MSG;
 }
 
-/*Same as previous but for separate element */
-pr_msg_type_t pr_get_item_type(msg_obj_t* item) {
-    cJSON* obj = cJSON_GetObjectItem(item, commandId);
-    if(obj) return PR_COMMANDS_MSG;
-    obj = cJSON_GetObjectItem(item, alertId);
-    if(obj) return PR_ALERTS_MSG;
-    obj = cJSON_GetObjectItem(item, wud_ping);
-    if(obj) return PR_ALERTS_MSG;
-    return PR_OTHER_MSG;
-}
 /*/
 Commands creation
 */
+/*
+{"commands": [
+    {"type": 1, "commandId": "11038", "deviceId": "<proxy device id>", "parameters": [
+        {"name": "connString", "value": "<URL>"}, {"name": "deviceId", "value": "<proxy device id>"},
+        {"name": "authToken", "value": "<auth_token>"}, {"name": "firmware", "value": "<fw fersion">}]
+    }
+]}
+ */
 const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version) {
-    const char* head1 = "{\"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
+    const char* head1 = "{\"commands\": [{\"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
     const char* part1 = "\"parameters\": [{\"name\":\"connString\", \"value\": \""; 
     const char* part2 = "\"}, {\"name\":\"deviceId\", \"value\":\"";  
     const char* part3 = "\"}, {\"name\":\"authToken\", \"value\": \"";    
     const char* part4 = "\"}, {\"name\":\"firmware\", \"value\": \"";   
-    const char* part5 = "\"}]}";
+    const char* part5 = "\"}]}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s%s%s%s%s%s%s", head1, device_id, head2, part1, conn_string, part2, device_id, part3, auth_token, part4, version, part5);
     return buf;
 }
+/*
+{"commands": [
+    {"type": 1, "commandId": "11038", "deviceId": "<gw device id>", "parameters": [{"name": "cloudOff", "value": "1"}]}
+]}
+ */
+const char* pr_make_cloud_off_cmd(char* buf, size_t size, const char* device_id) {
+    const char* head1 = "{\"commands\": [{\"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
+    const char* head2 = "\",";
+    const char* part1 = "\"parameters\": [{\"name\":\"";
+    const char* part2 = "\", \"value\": \"1\"}]}]}";
 
+    snprintf(buf, size-1, "%s%s%s%s%s%s", head1, device_id, head2, part1, cmd_cloud_off, part2);
+    return buf;
+}
+
+/*
+{"commands": [
+    {"type": 1, "commandId": "11038", "deviceId": "<gw device id>", "paramsMap": {"restartChild": "<child_name>"}}
+]}
+ */
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name) {
-    const char* head1 = "{ \"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
+    const char* head1 = "{\"commands\": [{ \"type\": 1, \"commandId\": \"11038\", \"deviceId\": \"";
     const char* head2 = "\",";
     const char* part1 = "\"paramsMap\": {\"restartChild\": \"";  
-    const char* part2 = "\"}}";
+    const char* part2 = "\"}}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s%s", head1, "the best device id!", head2, part1, child_name, part2);
     return buf;
@@ -307,6 +338,12 @@ const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_
 /
 Alerts functions
 */
+/*
+{"measures": [{"deviceId": "<gw device id>", "params": [
+    {"name": "firmware", "value": "<fw version>"},
+    {"name": "firmwareUpdateStatus": "<0 - stop/1 - start/2 - in process>"}]
+}
+ */
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \""; 
     const char* part2 = "\",\"params\": [{\"name\": \"firmware\", \"value\": \""; 
@@ -327,6 +364,9 @@ const char* pr_make_main_url_change_notification4cloud(char* buf, size_t size, c
     snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, main_url, part3);
     return buf;
 }
+/*
+ * {"measures": [{"deviceId": "<Proxy device id>", "params": [{"name": "reboot", "value": "<1-before reboot 2 - after reboot>"}]}]}
+ */
 const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* device_id, pr_reboot_param_t status) {
     const char* part1 = "{\"measures\": [{\"deviceId\": \"";   
     const char* part2 = "\", \"params\": [{\"name\": \"reboot\", \"value\": \"";
@@ -338,18 +378,17 @@ const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* devic
 
 /*
     PR_ALERT_FWU_FAILED = 1, PR_ALERT_FWU_READY_4_INSTALL = 2, PR_ALERT_MONITOR = 3,
-    {"alertId":	"1", "deviceId": "<ProxyId>", "alertType": "<pr_alert_t>", "timestamp":	time_t, "paramsMap": {"alertText": "<text message>"}}
-    PR_ALERT_WATCHDOG = 4
-
-    {"wud_ping":[{"deviceId":"gateway device id", "paramsMap":{"component":"zbagent"}}]}
+{"alerts":[
+    {"alertId":	"1", "deviceId": "<ProxyId>", "alertType": "<pr_alert_t>", "timestamp":	time_t, "paramsMap": {"alertText": "<text message>"}}]
+}
 */
 static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, const char* diagnostics, const char* comp, const char* device_id) {
-    const char* part1 = "{\"alertId\": \"12345\", \"deviceId\": \"";  
+    const char* part1 = "{\"alerts\":[{\"alertId\": \"12345\", \"deviceId\": \"";
     const char* part2 = "\", \"alertType\": \"";   
     const char* part3 = "\", \"timestamp\":";    
     const char* part4 = ", \"paramsMap\": {\"";  
     const char* part5 = "\": \"";   
-    const char* part6 = "\"}}";
+    const char* part6 = "\"}}]}";
 
     if(diagnostics)
         snprintf(buf, size-1, "%s%s%s%d%s%lu%s%s%s%s%s", part1, device_id, part2, status, part3, time(NULL), part4, alertText, part5, diagnostics, part6);
@@ -358,15 +397,15 @@ static const char* make_alert4WUD(char* buf, size_t size, pr_alert_t status, con
     return buf;
 }
 
-/* {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}]} */
+/*
+    NB! special case!!!
+    PR_ALERT_WATCHDOG = 4
+{"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}]}
+*/
 static pr_alert_item_t processWUDping(msg_obj_t* alert_item) {
     pr_alert_item_t ret;
     ret.alert_type = PR_ALERT_UNDEFINED;
-    cJSON* wp = cJSON_GetObjectItem(alert_item, wud_ping);
-    if(!wp) return ret;
-    if(!cJSON_GetArraySize(wp)) return ret;
-    wp = cJSON_GetArrayItem(wp, 0);
-    wp = cJSON_GetObjectItem(wp, paramsMap);
+    cJSON* wp = cJSON_GetObjectItem(alert_item, paramsMap);
     if(!wp) return ret;
     wp = cJSON_GetObjectItem(wp, component);
     if(!wp) return ret;
@@ -383,13 +422,33 @@ const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id) {
     return make_alert4WUD(buf, size, PR_ALERT_FWU_READY_4_INSTALL, "Firmware upgrade ready for installation. Do you beleive it?!", NULL, device_id);
 }
 
-/* {"wud_ping": [{"deviceId":"gateway device id", "paramsMap":{"component":"<component_name>"}}] */
+/* {"wud_ping": [{"deviceId":"<gateway device id>", "paramsMap":{"component":"<component_name>"}}] */
 const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const char* device_id) {
     const char* part1 = "{\"wud_ping\": [{\"deviceId\":\""; 
     const char* part2 = "\", \"paramsMap\":{\"component\":\""; 
     const char* part3 = "\"}}]}";
 
     snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, comp, part3);
+    return buf;
+}
+
+/* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>"}}]}*/
+const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect) {
+    char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
+    char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
+    char* conn_yes = "connected";
+    char* conn_no = "disconnected";
+    char* conn_msg_3 = "\"}}]}";
+
+    strncpy(buf, conn_msg_1, size-1);
+    strncat(buf, device_id, size-strlen(buf)-1);
+    strncat(buf, conn_msg_2, size-strlen(buf)-1);
+    if(connect)
+        strncat(buf, conn_yes, size-strlen(buf)-1);
+    else
+        strncat(buf, conn_no, size-strlen(buf)-1);
+    strncat(buf, conn_msg_3, size-strlen(buf)-1);
+
     return buf;
 }
 
@@ -432,6 +491,7 @@ PR_CMD_FWU_START "parameters": [
 {"name": "firmwareUpdateStatus","value": "1"},{"name": "firmwareUrl","value": "<url>"},{"name": "firmwareCheckSum","value": "<check_sum>"}]
 PR_CMD_FWU_CANCEL "parameters": [{"name": "firmwareUpdateStatus","value": "0"}]
 PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name":"deviceId", value": "<device_id>"}, {"name":"authToken", value": "<authToken>"}]
+PR_CMD_CLOUD_OFF "parameters": [{"name": "cloudOff", "value": "1"}]
 PG_CMD_REBOOT     "parameters": [{"name": "reboot", "value": "1"}]
 PR_CMD_UPDATE_MAIN_URL: "parameters": [{"name": "cloud", "value": "url"}]
  */
@@ -479,6 +539,9 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
         else if(!strcmp(name, cmd_main_url_cloud)) {
             ret.update_main_url.command_type = PR_CMD_UPDATE_MAIN_URL;
             strcpy(ret.update_main_url.main_url, value);
+        }
+        else if(!strcmp(name, cmd_cloud_off)) {
+            ret.command_type = PR_CMD_CLOUD_OFF;
         }
         else {
             ret.command_type = PR_CMD_UNDEFINED;

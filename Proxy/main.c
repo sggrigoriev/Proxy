@@ -55,12 +55,12 @@ int main(int argc, char* argv[]) {
 
     if(!pf_get_cloud_conn_params()) exit(-1);
 
-    ph_mgr_start();
+    ph_mgr_init();          /* Initiates PH manager, no cloud connections are made */
 
     pt_main_thread();
 
 /* HTTP mgr stop */
-    ph_mgr_stop();
+    ph_mgr_destroy();       /* Close all existing connections, deinit PH manager */
 /* Logger stop */
     pu_stop_logger();
     exit(0);
@@ -75,9 +75,9 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tProxy-Agent communication port: %d", pc_getAgentPort());
     pu_log(LL_INFO, "\tProxy-WUD communication port: %d", pc_getWUDPort());
     pu_log(LL_INFO, "\tProxy name: %s", pc_getProxyName());
-    pu_log(LL_INFO, "\tProxy watchdog sendind interval in seconds: %d", pc_getProxyWDTO());
+    pu_log(LL_INFO, "\tProxy watchdog sending interval in seconds: %d", pc_getProxyWDTO());
     pc_getMainCloudURL(buf, sizeof(buf));
     pu_log(LL_INFO, "\tMain cloud URL: %s", buf);
     pu_log(LL_INFO, "\tRequest for update the Contact URL interval in hours: %d", pc_getCloudURLTOHrs());
-    pu_log(LL_INFO, "\tFirmware wersion info to Cloud interval in hours: %d", pc_getFWVerSendToHrs());
+    pu_log(LL_INFO, "\tFirmware version info to Cloud interval in hours: %d", pc_getFWVerSendToHrs());
 }

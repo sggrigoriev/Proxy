@@ -28,23 +28,13 @@
 
 #include "lib_http.h"
 
-/********************************************************************************
- * Init cURL and create connections pul size 2: - 1 for POST and 1 for file GET;
- * make POST connection
- */
-void wh_mgr_start();
-
-/********************************************************************************
- * Close cURL & erase connections pool
- */
-void wh_mgr_stop();
+void wh_mgr_init();     /* Initiates httplib but not creates the connections */
+void wh_mgr_destroy();  /* Deletes connections (if any and deinit httplib */
 
 /********************************************************************************
  * (re)create post connection; update conn parameters
- * @param new_url           - contact cloud URL to connect
- * @param new_auth_token    - gateway authentication token
  */
-void wh_reconnect(const char* new_url, const char* new_auth_token);
+void wh_reconnect();
 
 /********************************************************************************
  * POST a message to the cloud; receive anser (if any) or error

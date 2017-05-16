@@ -11,7 +11,7 @@ message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
-#Shouild be switched off! Just for internel use
+#Shouild be switched off! Just for internal use
 #add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
 
@@ -136,7 +136,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 #        proxy_threads/*.c
         proxy_config/pc_settings.c
         proxy_eui64/eui64.c
-#		proxy_http/*.c
+		proxy_http/*.c
         ../lib/presto_commands/*.c
         ../lib/libtcp/*.c
         ../lib/pu_logger/*.c

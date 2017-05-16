@@ -65,7 +65,7 @@ typedef enum {LIB_HTTP_CONN_INIT_MAIN, LIB_HTTP_CONN_POST, LIB_HTTP_CONN_GET, LI
 } lib_http_conn_type_t;
 
 /* POST return types for upper level analysis */
-typedef enum {LIB_HTTP_POST_ERROR = -1, LIB_HTTP_POST_RETRY = 0, LIB_HTTP_POST_OK = 1
+typedef enum {LIB_HTTP_POST_ERROR = -1, LIB_HTTP_POST_RETRY = 0, LIB_HTTP_POST_OK = 1, LIB_HTTP_POST_UNKNOWN = 2, LIB_POST_UNAUTH = 3
 } lib_http_post_result_t;
 
 /* http connection handler type */
@@ -98,7 +98,7 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
  * Erase the connection. Free the place in connection pool
  * @param conn  - connection handler
  */
-void lib_http_eraseConn(lib_http_conn_t conn);
+void lib_http_eraseConn(lib_http_conn_t* conn);
 
 /***************************************************
  * Perform "long GET" request

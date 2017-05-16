@@ -76,7 +76,7 @@ void set_stop_wud_write() {
 }
 
 /************************************************************************
- * Local functions implemebtation
+ * Local functions implementation
  */
 static void* wud_write(void* params) {
     to_wud = pt_get_gueue(PS_ToWUDQueue);

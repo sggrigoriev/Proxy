@@ -32,7 +32,6 @@
 #include "pt_server_read.h"
 #include "pt_server_write.h"
 #include "pt_main_agent.h"
-#include "pt_change_cloud_notification.h"
 #ifndef PROXY_SEPARATE_RUN
     #include "pt_wud_write.h"
 #endif
@@ -50,11 +49,11 @@ static void main_thread_shutdown();                     /* Total Proxy shutdown 
 static void send_device_id_to_agent();                  /* Inform the Agent about Proxy's device id */
 static void send_fw_version_to_cloud();                 /* Inform the cloud about the gateway firmware version */
 static void send_reboot_status(pr_reboot_param_t status); /* Sand the alert to the cloud: bofore reboot and after reboot */
-static void process_proxy_commands(const char* msg);      /* Process Proxy commands - commsnd(s) string as input */
-static void conn_state_notf_to_agent(int connect) ;      /* sends to the cloud notification about the connection state */
+static void process_cloud_message(char* msg);       /* Parse the info from the clud and sends ACKs to Agent and/or provede commands to the Proxy */
+static void process_proxy_commands(char* msg);      /* Process Proxy commands - commsnd(s) string as input */
+static void report_cloud_conn_status(int online);         /* send off/on line status notification to the Agent, sent conn info to the WUD if online */
 
 #ifndef PROXY_SEPARATE_RUN
-static int initiate_wud();     /* Send to WUD cloud connection info */
 static void send_wd();          /* Send Watchdog to thw WUD */
 #endif
 /***********************************************************************************************
@@ -75,6 +74,8 @@ lib_timer_clock_t cloud_url_update_clock = {0};         /*  timer for contact UR
 lib_timer_clock_t gw_fw_version_sending_clock = {0};    /* timer for firmware version info sending */
 /*TODO! If fw upgrade failed lock should be set to 0 again!!! */
 int lock_gw_fw_version_sending = 0;     /* set to 1 when the fw upgrade starts. */
+
+int proxy_is_online = 0;                /* 0 - no connection to the cloud; 1 - got connection to the cloud */
 
 static pu_queue_event_t events;         /* main thread events set */
 
@@ -98,9 +99,10 @@ void pt_main_thread() { /* Starts the main thread. */
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
     lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
 
-    send_device_id_to_agent();  /* sending the device id to agent */
-    send_fw_version_to_cloud(); /* sending the fw version to the cloud */
-    send_reboot_status(PR_AFTER_REBOOT); /* sending the reboot statuc to the cloud */
+    send_device_id_to_agent();      /* sending the device id to agent */
+    report_cloud_conn_status(proxy_is_online);    /* sending to the agent offline status - no connection with the cloud */
+    send_fw_version_to_cloud();     /* sending the fw version to the cloud */
+    send_reboot_status(PR_AFTER_REBOOT); /* sending the reboot status to the cloud */
 
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
@@ -111,9 +113,9 @@ void pt_main_thread() { /* Starts the main thread. */
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: got command(s) array from server_read %s", PT_THREAD_NAME, mt_msg);
-                    process_proxy_commands(mt_msg);
-                    len = sizeof(mt_msg);
+                    pu_log(LL_DEBUG, "%s: got message from the cloud %s", PT_THREAD_NAME, mt_msg);
+                    process_cloud_message(mt_msg);
+                     len = sizeof(mt_msg);
                 }
                 break;
             case PS_STOP:
@@ -135,12 +137,12 @@ void pt_main_thread() { /* Starts the main thread. */
 /*2. Regular contact url update */
         if(lib_timer_alarm(cloud_url_update_clock)) {
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
-            conn_state_notf_to_agent(0);
+            proxy_is_online = 0;
+            report_cloud_conn_status(proxy_is_online);
             ph_update_contact_url();
-            conn_state_notf_to_agent(1);
-#ifndef PROXY_SEPARATE_RUN
-            initiate_wud();     /* Notify WUD about the contact URL changing */
-#endif
+            proxy_is_online = 1;
+            report_cloud_conn_status(proxy_is_online);
+
             lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
         }
 /* 3. Regular sending the fw version to the cloud */
@@ -194,7 +196,7 @@ static int main_thread_startup() {
     }
     pu_log(LL_INFO, "%s: started", "WUD_WRITE");
 
-    return initiate_wud();
+    return 1;
 #else
     return 1;
 #endif
@@ -220,26 +222,6 @@ static void main_thread_shutdown() {
 }
 
 #ifndef PROXY_SEPARATE_RUN
-    /* Send to WUD cloud connection info */
-    static int initiate_wud() {
-        char json[LIB_HTTP_MAX_MSG_SIZE];
-        char at[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-        char url[LIB_HTTP_MAX_URL_SIZE];
-        char di[LIB_HTTP_DEVICE_ID_SIZE];
-        char ver[LIB_HTTP_FW_VERSION_SIZE];
-
-        pc_getAuthToken(at, sizeof(at));
-        pc_getCloudURL(url, sizeof(url));
-        pc_getProxyDeviceID(di, sizeof(di));
-        pc_getFWVersion(ver, sizeof(ver));
-
-        pr_make_conn_info_cmd(json, sizeof(json), url, di, at, ver);
-        pu_log(LL_DEBUG, "%s: gona send to WUD_WRITE %s", PT_THREAD_NAME, json);
-        pu_queue_push(to_wud, json, strlen(json)+1);
-
-        return 1;
-    }
-
     /* Send Watchdog to the WUD */
     static void send_wd() {
         char buf[LIB_HTTP_MAX_MSG_SIZE];
@@ -283,10 +265,6 @@ static void send_fw_version_to_cloud() {
     pu_log(LL_INFO, "%s: firmware version was sent to the Cloud: %s", PT_THREAD_NAME, msg);
 }
 
-/********************************************************
- * Send the alert to the cloud: bofore reboot and after reboot
- * @param status - PR_BEFORE_REBOOT=1 - send just before rebooting, PR_AFTER_REBOOT=2 - send on startup
- */
 static void send_reboot_status(pr_reboot_param_t status) {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
     char msg[LIB_HTTP_MAX_MSG_SIZE];
@@ -298,8 +276,42 @@ static void send_reboot_status(pr_reboot_param_t status) {
     pu_queue_push(to_server, msg, strlen(msg)+1);
     pu_log(LL_INFO, "%s: reboot status was sent to the Cloud: %s", PT_THREAD_NAME, msg);
 }
-static void process_proxy_commands(const char* msg) {
-    msg_obj_t* cmd_array = pr_parse_msg(mt_msg);
+
+static void process_cloud_message(char* cloud_msg) {
+    msg_obj_t* msg = pr_parse_msg(cloud_msg);
+    if(!msg) {
+        pu_log(LL_ERROR, "%s: Incoming message %s ignored", PT_THREAD_NAME, cloud_msg);
+        return;
+    }
+    if(pr_get_message_type(msg) != PR_COMMANDS_MSG) { /* currently we're not make business with alerts and/or measuruments in Proxy */
+        pr_erase_msg(msg);
+        pu_log(LL_INFO, "%s: message from cloud to Agent: %s", PT_THREAD_NAME, cloud_msg);
+        pu_queue_push(to_agent, cloud_msg, strlen(cloud_msg)+1);
+    }
+    else {      /* Here are commands! */
+        char for_agent[LIB_HTTP_MAX_MSG_SIZE]={0};
+        char for_proxy[LIB_HTTP_MAX_MSG_SIZE]={0};
+
+        char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+
+        pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+/* Separate the info berween Proxy & Agent */
+        pr_split_msg(msg, device_id, for_proxy, sizeof(for_proxy), for_agent, sizeof(for_agent));
+        pr_erase_msg(msg);
+        if(strlen(for_agent)) {
+            pu_log(LL_INFO, "%s: from cloud to Agent: %s", PT_THREAD_NAME, for_agent);
+            pu_queue_push(to_agent, for_agent, strlen(for_agent)+1);
+        }
+        if(strlen(for_proxy)) {
+            pu_log(LL_INFO, "%s: command(s) array from cloud to Proxy: %s", PT_THREAD_NAME, for_proxy);
+            process_proxy_commands(for_proxy);
+        }
+    }
+}
+
+static void process_proxy_commands(char* msg) {
+    msg_obj_t* cmd_array = pr_parse_msg(msg);
 
     if(!cmd_array) {
         pu_log(LL_ERROR, "%s: wrong commands array structure in message %s. Ignored", PT_THREAD_NAME, msg);
@@ -331,17 +343,13 @@ static void process_proxy_commands(const char* msg) {
                 main_finish = 1;
 #endif
             case PR_CMD_UPDATE_MAIN_URL:
-                conn_state_notf_to_agent(0);
-                if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
+                proxy_is_online = 0;
+                report_cloud_conn_status(proxy_is_online);
+                 if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
                     pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
                 }
-                else {
-#ifndef PROXY_SEPARATE_RUN
-                    initiate_wud();     /* Send to WUD new connection information */
-#endif
-                    pt_start_change_cloud_notification();   /* to notify the cloud about the mainURL change */
-                }
-                conn_state_notf_to_agent(1);
+                proxy_is_online = 1;
+                report_cloud_conn_status(proxy_is_online);
                 break;
             case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);
@@ -351,6 +359,26 @@ static void process_proxy_commands(const char* msg) {
                 pu_queue_push(to_wud, for_wud, strlen(for_wud) + 1);
                 break;
             }
+            case PR_CMD_CLOUD_CONN: /* reconnection case */
+                if(!proxy_is_online) {  /* proxy was offline and now got new connecion! */
+                    pu_log(LL_INFO, "%s: Proxy connected with the cloud", PT_THREAD_NAME);
+                    proxy_is_online = 1;
+                    report_cloud_conn_status(proxy_is_online);
+                }
+                else {
+                    pu_log(LL_INFO, "%s: Secondary connection alert. Ignored", PT_THREAD_NAME);
+                }
+                break;
+            case PR_CMD_CLOUD_OFF:
+                if(proxy_is_online) {   /* connection disapeared - has to notify about it */
+                    pu_log(LL_INFO, "%s: Proxy disconnected with the cloud", PT_THREAD_NAME);
+                    proxy_is_online = 0;
+                    report_cloud_conn_status(proxy_is_online);
+                }
+                else {
+                    pu_log(LL_INFO, "%s: Secondary disconnection alert. Ignored", PT_THREAD_NAME);
+                }
+                break;
             case PR_CMD_UNDEFINED:
                 pu_log(LL_ERROR, "%s: bad command syntax command %s in msg %s. Ignored.", PT_THREAD_NAME, cmd_arr_elem, msg);
                 break;
@@ -361,28 +389,27 @@ static void process_proxy_commands(const char* msg) {
     }
     pr_erase_msg(cmd_array);
 }
-/* Copypasted from server_write. TODO - conn_state_notf_to_agent shouild be in one place!!! */
-static void conn_state_notf_to_agent(int connect) {  /* sends to the cloud notification about the connection state */
-    /* Constants for Agent notificatiuons - should be mobed into Proxy_commands garbage can */
-    char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
-    char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
-    char* conn_yes = "connected";
-    char* conn_no = "disconnected";
-    char* conn_msg_3 = "\"}}]}";
 
-    char msg[LIB_HTTP_MAX_MSG_SIZE];
-    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+static void report_cloud_conn_status(int online) {
+    char buf[LIB_HTTP_MAX_MSG_SIZE];
+    char deviceID[LIB_HTTP_DEVICE_ID_SIZE];
+/* 1. Send the alert to the Agent */
 
-    pc_getProxyDeviceID(device_id, sizeof(device_id)-1);
+    pc_getProxyDeviceID(deviceID, sizeof(deviceID));
+    pr_conn_state_notf_to_agent(buf, sizeof(buf), deviceID, online);
+    pu_queue_push(to_agent, buf, strlen(buf)+1);
 
-    strncpy(msg, conn_msg_1, sizeof(msg)-1);
-    strncat(msg, device_id, sizeof(msg)-strlen(msg)-1);
-    strncat(msg, conn_msg_2, sizeof(msg)-strlen(msg)-1);
-    if(connect)
-        strncat(msg, conn_yes, sizeof(msg)-strlen(msg)-1);
-    else
-        strncat(msg, conn_no, sizeof(msg)-strlen(msg)-1);
-    strncat(msg, conn_msg_3, sizeof(msg)-strlen(msg)-1);
+/* 2. if the status == online - send the connection info to the WUD */
+    if(online) {
+        char conn_string[LIB_HTTP_MAX_URL_SIZE];
+        char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+        char fw_version[LIB_HTTP_FW_VERSION_SIZE];
 
-    pu_queue_push(to_agent, msg, strlen(msg)+1);
+        pc_getCloudURL(conn_string, sizeof(conn_string));
+        pc_getAuthToken(auth_token, sizeof(auth_token));
+        pc_getFWVersion(fw_version, sizeof(fw_version));
+
+        pr_make_conn_info_cmd(buf, sizeof(buf), conn_string, deviceID, auth_token, fw_version);
+        pu_queue_push(to_wud, buf, strlen(buf)+1);
+    }
 }

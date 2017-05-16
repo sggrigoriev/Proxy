@@ -32,7 +32,7 @@
 
 #include "wt_server_write.h"
 
-#define PT_THREAD_NAME "SERVER_WRITE"
+#define PT_THREAD_NAME "CLOUD_WRITE"
 
 /*******************************************
  * Local data definition

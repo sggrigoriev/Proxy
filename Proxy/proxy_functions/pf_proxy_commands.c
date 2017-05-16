@@ -20,13 +20,15 @@
 */
 
 #include <string.h>
-#include <pf_traffic_proc.h>
 #include <assert.h>
 
-#include "cJSON.h"
-#include "pu_logger.h"
-#include "lib_http.h"
 
+#include "cJSON.h"
+
+#include "pu_logger.h"
+#include "ph_manager.h"
+
+#include "pf_traffic_proc.h"
 #include "pc_settings.h"
 #include "pf_proxy_commands.h"
 
@@ -69,10 +71,32 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size) {
     strncpy(buf, res, buf_size-1);
     free(res);
     cJSON_Delete(resp_obj);
-    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
-    pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pf_add_proxy_head(buf, buf_size, device_id);
 
     return buf;
+}
+
+void pf_reconnect(pu_queue_t* to_proxy_main) {
+    char buf[LIB_HTTP_MAX_MSG_SIZE];
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    char conn_string[LIB_HTTP_MAX_URL_SIZE];
+    char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
+    char fw_version[LIB_HTTP_FW_VERSION_SIZE];
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+/* Send off-line status to the proxy_main */
+    pr_make_cloud_off_cmd(buf, sizeof(buf), device_id);
+    pu_queue_push(to_proxy_main, buf, strlen(buf)+1);
+
+/* Make the reconnection */
+    ph_reconnect();
+
+/* Sent on-line status to the proxy main */
+    pc_getCloudURL(conn_string, sizeof(conn_string));
+    pc_getAuthToken(auth_token, sizeof(auth_token));
+    pc_getFWVersion(fw_version, sizeof(fw_version));
+
+    pr_make_conn_info_cmd(buf, sizeof(buf), conn_string, device_id, auth_token, fw_version);
+    pu_queue_push(to_proxy_main, buf, strlen(buf)+1);
 }
 

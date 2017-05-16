@@ -1,3 +1,13 @@
+VERSION 1.2.0 16-MAY-2017
+=================================================================================================
+1. Bug fix: 102, 105, 106, 107, 112
+2. Changes in the files list: Proxy/proxy_threads/pt_change_cloud_notification.* were removed. Please change corresponding makefile!
+3. CMakeLists.txt changes: proxy_http/*.c added to the test_client process
+4. The gateway starts work with the Agent independently on internet connection.
+5. The first request to the main URL has the ssl=true parameter, so the default main URL could starts from http or https w/o difference
+6. The gateway could be reauthorized during its work now.
+7. Some typos fixed in log records
+
 VERSION 1.1.8 27-APR-2017
 =================================================================================================
 1. Bug fix: WUD reconnection added for changing main URL

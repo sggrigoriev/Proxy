@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <wh_manager.h>
 
 #include "pr_ptr_list.h"
 
@@ -121,8 +122,9 @@ int main(int argc, char* argv[]) {
     pu_log(LL_INFO, "WUD startup: %s start", wc_getProxyProcessName());
     print_WUD_start_params();
 
+    wh_mgr_init();
     wt_request_processor();
-
+    wh_mgr_destroy();
     wa_reboot();
 
     printf("WUD stop\n");

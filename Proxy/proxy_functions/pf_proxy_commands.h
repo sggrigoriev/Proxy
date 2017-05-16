@@ -25,11 +25,19 @@
 #include <stdlib.h>
 
 #include "cJSON.h"
+
+#include "pu_queue.h"
 #include "pr_commands.h"
 
 /* Make answer from the message and put into buf. Returns buf addess */
 /* TODO! Move to pr_commands */
 const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size);
+
+/*********************************************************************
+ * Make reconnect and send notification to the main proxy thread before  and after the reconnection
+ * @param to_proxy_main     - point to input queue for the main proxy queue
+ */
+void pf_reconnect(pu_queue_t* to_proxy_main);
 
 
 #endif /* PRESTO_PF_PROXY_COMMANDS_H */

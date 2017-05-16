@@ -81,12 +81,14 @@ PR_CMD_UNDEFINED      - for unrecognized commands
 PR_CMD_FWU_START      - start firmware upgrade    (cloud -> Proxy)
 PR_CMD_FWU_CANCEL     - cancel firmware upgrade   (Proxy -> WUD)
 PR_CMD_RESTART_CHILD  - restart one child         (Watchdog->WUD)
-PR_CMD_CLOUD_CONN     - cloud connections parameters (Proxy -> WUD)
+PR_CMD_CLOUD_CONN     - cloud connections parameters (Proxy -> WUD; Proxy IO threads tp Proxy main)
+PR_CMD_CLOUD_OFF      - cloud connection off signal (Proxy IO threads to Proxy main)
 PR_CMD_STOP           - ??? just for some case
 PR_CMD_UPDATE_MAIN_URL- update main cloud url     (cloud -> Proxy)
 PR_CMD_REBOOT         - command for reboot        (watchdog->WUD)
 */
-typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_RESTART_CHILD, PR_CMD_CLOUD_CONN, PR_CMD_STOP,
+typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_RESTART_CHILD, PR_CMD_CLOUD_CONN, PR_CMD_CLOUD_OFF,
+    PR_CMD_STOP,
     PR_CMD_UPDATE_MAIN_URL, PR_CMD_REBOOT,
     PR_CMD_SIZE
 } pr_cmd_t;
@@ -98,7 +100,7 @@ typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_REST
 typedef enum {PR_BEFORE_REBOOT=1, PR_AFTER_REBOOT=2
 } pr_reboot_param_t;
 
-/*Body for R_CMD_FWU_START, PR_CMD_FWU_CANCEL NB! for cancel params except command_type are not valid */
+/*Body for PR_CMD_FWU_START, PR_CMD_FWU_CANCEL NB! for cancel params except command_type are not valid */
 typedef struct {
     pr_cmd_t command_type;          /*PR_CMD_FWU_START, PR_CMD_FWU_CANCEL NB! for cancel params below are not valid */
     char file_server_url[LIB_HTTP_MAX_URL_SIZE];    /*full path to the file */
@@ -142,7 +144,7 @@ Parse JSON string to JSON object. NB! The object shouild be deleted!
   msg     - JSON string
 Returns JSON object or NULL if parsing error
 */
-msg_obj_t* pr_parse_msg(const char* msg);
+msg_obj_t* pr_parse_msg(char* msg);
 
 /*Erase JSON object
   msg - JSON object to be deleted
@@ -169,6 +171,21 @@ msg_obj_t* pr_get_arr_item(msg_obj_t* array, size_t idx);
 */
 void pr_obj2char(msg_obj_t* obj_msg, char* text_msg, size_t size);
 
+/*********************************************
+ * Get cJSON object with commands array
+ * @param obj - parsed commands message -
+ * @return    - array or NULL if smth wrong
+ */
+msg_obj_t* pr_get_cmd_array(msg_obj_t* obj);
+
+/*********************************************
+ * Get cJSON object with alerts array.
+ * NB! wud_ping processed as a separate case
+ * @param obj - parsed alerts message
+ * @return    - arrat or NULL if smth wrong
+ */
+msg_obj_t* pr_get_alerts_array(msg_obj_t* obj);
+
 /*Command type recognition by command item - parameters mostly. The command defines by its parameters... New experience for me. But very modern one
   cmd_item    - element from commands array.
 Return commant type
@@ -191,13 +208,7 @@ Return message type.
 */
 pr_msg_type_t pr_get_message_type(msg_obj_t* msg);
 
-/*Get the message type: command, alert or other for one of message elements. Yes. It is needed. Just because of emergent development.
-  msg - message as JSON object
-Return message type.
-*/
-pr_msg_type_t pr_get_item_type(msg_obj_t* item);
-
-/*/
+/*
 Commands generation
 
 Create the connection info command (PR_CMD_CLOUD_CONN)
@@ -211,6 +222,16 @@ Return pointer to the buf
 */
 const char* pr_make_conn_info_cmd(char* buf, size_t size, const char* conn_string, const char* device_id, const char* auth_token, const char* version);
 
+/*********************************************************************
+ * Make cloud off command. Used to pass the off-line status from Proxy SERVER_READ & SERVER_WRITE functions to the Proxy_main
+ * Symmetrical command (about the on-line status -> PR_CMD_CLOUD_CONN (pr_make_conn_info_cmd)
+ * @param buf       - buffer to put the command
+ * @param size      - buffer size
+ * @param device_id - Proxy ID
+ * @return      - pointer to the buffer
+ */
+const char* pr_make_cloud_off_cmd(char* buf, size_t size, const char* device_id);
+
 /*Create child process restart command (PR_CMD_RESTART_CHILD)
   buf             - buffer to save the command
   size            - buffer size
@@ -219,7 +240,7 @@ Return pointer to the buf
 */
 const char* pr_make_restart_child_cmd(char* buf, size_t size, const char* child_name);
 /*
-Alert spart
+Alerts part
 
 
 Firmware upgrade statuses. NB! They;re inline with cloud constants - do no change w/o sync with cloud team
@@ -269,7 +290,7 @@ typedef union {
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id);
 
 /****************************************************************************************************
- * Creates the alert for cloud aboyt the main URL change:
+ * Creates the alert for cloud about the main URL change:
  * {"measures": [{"deviceId": "Aiox-11038",
  * "params": [{"name": "cloud", "value": "https://app.alter-presencepro.com"}]}]}
  *
@@ -304,6 +325,16 @@ const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id);
 Return pointer to the buf
 */
 const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, const char* device_id);
+
+/*************************************************************************************************
+ * Create the notification to the Agent about no/off line cloud connection status
+ * @param buf       - buffer to store the message
+ * @param size      - buffer size
+ * @param device_id - Proxy device ID
+ * @param connect   - 0 Proxy of line, 1 - Proxy online
+ * @return          - the buffer with the command
+ */
+const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect);
 
 /*Recognise the alert type by alert item
   alert_item  - alert item as JSON object
