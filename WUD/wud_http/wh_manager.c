@@ -132,6 +132,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
             case 0:             /* timeout... try it again and again, until the attempts_amount separates us */
                 sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 fclose(rx_fd);
+                rx_fd = NULL;
                 lib_http_eraseConn(&conn);
                 pu_log(LL_WARNING, "wh_read_file: timeout reading %s - attempt # %d", file_with_path, attempts_amount);
                 break;
