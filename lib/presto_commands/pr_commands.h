@@ -178,6 +178,14 @@ void pr_obj2char(msg_obj_t* obj_msg, char* text_msg, size_t size);
  */
 msg_obj_t* pr_get_cmd_array(msg_obj_t* obj);
 
+/**********************************************
+ * Create the array object size 1 from one element
+ * NB! New memory allocated for returned value!
+ * @param cmd_arr_elem - JSON command element
+ * @return - the array size 1
+ */
+msg_obj_t* pr_make_cmd_array(msg_obj_t* cmd_arr_elem);
+
 /*********************************************
  * Get cJSON object with alerts array.
  * NB! wud_ping processed as a separate case

@@ -140,7 +140,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
                 goto on_finish;
         }
     }
-    pu_log(LL_ERROR, "wh_write: all %attempts to get the upgrade failed.");
+    pu_log(LL_ERROR, "wh_write: all attempts to get the upgrade failed.");
     on_finish:
     pthread_mutex_unlock(&frd_mutex);
     lib_http_eraseConn(&conn);

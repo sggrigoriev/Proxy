@@ -196,6 +196,14 @@ msg_obj_t* pr_get_cmd_array(msg_obj_t* obj) {
     return cJSON_GetObjectItem(obj, commands);
 }
 
+msg_obj_t* pr_make_cmd_array(msg_obj_t* cmd_arr_elem) {
+    cJSON* ret = cJSON_CreateObject();
+    cJSON* arr = cJSON_CreateArray();
+    cJSON_AddItemReferenceToArray(arr, cmd_arr_elem);
+    cJSON_AddItemToObject(ret, commands, arr);
+    return ret;
+}
+
 msg_obj_t* pr_get_alerts_array(msg_obj_t* obj) {
     cJSON* ret = cJSON_GetObjectItem(obj, alerts);
     if(ret) return ret;

@@ -325,8 +325,8 @@ static void process_proxy_commands(char* msg) {
     }
     size_t i;
     for(i = 0; i < size; i++) {
-        msg_obj_t* cmd_arr_elem = pr_get_arr_item(cmd_array, i);
-        pr_cmd_item_t cmd_item = pr_get_cmd_item(cmd_arr_elem);
+        msg_obj_t* cmd_arr_elem = pr_get_arr_item(cmd_array, i);    /* Get Ith command */
+        pr_cmd_item_t cmd_item = pr_get_cmd_item(cmd_arr_elem);     /* Get params of Ith command */
         switch (cmd_item.command_type) {
 #ifndef PROXY_SEPARATE_RUN
             case PR_CMD_FWU_START: {
@@ -334,8 +334,10 @@ static void process_proxy_commands(char* msg) {
 
 /*            case PR_CMD_FWU_CANCEL:    // And who will initiate the cancellation??? */
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];
-                pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
+                msg_obj_t* cmd_array = pr_make_cmd_array(cmd_arr_elem);
+                pr_obj2char(cmd_array, for_wud, sizeof(for_wud));
                 pu_queue_push(to_wud, for_wud, strlen(for_wud)+1);
+                pr_erase_msg(cmd_array);
                 break;
             }
             case PR_CMD_STOP:
@@ -355,8 +357,10 @@ static void process_proxy_commands(char* msg) {
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);
 
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];
-                pr_obj2char(cmd_arr_elem, for_wud, sizeof(for_wud));
+                msg_obj_t* cmd_array = pr_make_cmd_array(cmd_arr_elem);
+                pr_obj2char(cmd_array, for_wud, sizeof(for_wud));
                 pu_queue_push(to_wud, for_wud, strlen(for_wud) + 1);
+                pr_erase_msg(cmd_array);
                 break;
             }
             case PR_CMD_CLOUD_CONN: /* reconnection case */
