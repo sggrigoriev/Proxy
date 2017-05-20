@@ -26,7 +26,6 @@ SOURCES_C += ./proxy_threads/pt_server_read.c
 SOURCES_C += ./proxy_threads/pt_server_write.c
 SOURCES_C += ./proxy_threads/pt_threads.c
 SOURCES_C += ./proxy_threads/pt_wud_write.c
-SOURCES_C += ./proxy_threads/pt_change_cloud_notification.c
 SOURCES_C += ../lib/libtimer/lib_timer.c
 SOURCES_C += ../lib/presto_commands/pf_traffic_proc.c
 SOURCES_C += ../lib/presto_commands/pr_commands.c
