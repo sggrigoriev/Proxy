@@ -60,7 +60,7 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
   	message(STATUS "Compiling for the OpenWRT")
 	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -Wall -O2 -std=c89 -pthread -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE -Wall -O2 -std=c89 -D_BSD_SOURCE -pthread -s")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread
