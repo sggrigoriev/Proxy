@@ -137,7 +137,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
                 pu_log(LL_WARNING, "wh_read_file: timeout reading %s - attempt # %d", file_with_path, attempts_amount);
                 break;
             case -1:            /* Error. Get out of here. We can't live in such a dirty world! */
-                pu_log(LL_ERROR, "wh_read_file, can't dowload the %s. Maybe in the next life...", file_with_path);
+                pu_log(LL_ERROR, "wh_read_file, can't dowload the %s.", file_with_path);
                 goto on_finish;
         }
     }
@@ -189,7 +189,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
     if(conn < 0) return 0;
     while(!out) {
         switch (lib_http_post(conn, msg, reply, reply_size, auth_token)) {
-            case LIB_HTTP_POST_RETRY:
+            case LIB_HTTP_IO_RETRY:
                 pu_log(LL_WARNING, "_post: Connectivity problems, retry");
                 if (retries-- == 0) {
                     out = 1;
@@ -198,7 +198,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
                     sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 }
                 break;
-            case LIB_HTTP_POST_OK:
+            case LIB_HTTP_IO_OK:
                 out = 1;
                 ret = 1;
                 break;

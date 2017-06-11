@@ -93,15 +93,16 @@ static int cloud_notify(const char* old_contact, const char* auth_token, const c
  *      reply       - buffer for cloud answer
  *      reply_size  - buffer size
  *      auth_token  - gateway authentication token
- *  Return 1 if OK and 0 if error
+ *  Return lib_http_io_result_t (see lib_http.h)
  */
-static lib_http_post_result_t _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
+static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
+
 /*************************************************************
  * Converts POST result into OK/BAD
  * @param result - _post RC
  * @return       - 0 BAD, 1 - good
  */
-static int post_result_2_bool(lib_http_post_result_t result);
+static int io_result_2_bool(lib_http_io_result_t result);
 /* Get contact URL from the cloud, using main URL
 1. Open POST connection to main
 2. Post to get back contact url
@@ -278,8 +279,25 @@ void ph_update_contact_url() {
 }
 
 int ph_read(char* in_buf, size_t size) {
+    int ret;
     start_io();
-    int ret = lib_http_get(get_conn, in_buf, size);
+    lib_http_io_result_t rc;
+    switch(rc = lib_http_get(get_conn, in_buf, size, 0)) {
+        case LIB_HTTP_IO_ERROR:
+        case LIB_HTTP_IO_UNKNOWN:
+        case LIB_HTTP_IO_UNAUTH:
+            ret = -1;
+            break;
+        case LIB_HTTP_IO_RETRY:
+            ret = 0;
+            break;
+        case LIB_HTTP_IO_OK:
+            ret = 1;
+        default:
+            ret = -1;
+            pu_log(LL_ERROR,"ph_read: Unsupported RC from lib_http_get %d", rc);
+            break;
+    }
     stop_io();
     return ret;
 }
@@ -288,7 +306,7 @@ int ph_write(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     start_io();
     pc_getAuthToken(auth_token, sizeof(auth_token));
-    int ret = _post(post_conn, buf, resp, resp_size, auth_token);
+    int ret = io_result_2_bool(_post(post_conn, buf, resp, resp_size, auth_token));
     stop_io();
 
     return ret;
@@ -298,7 +316,7 @@ int ph_respond(char* buf, char* resp, size_t resp_size) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
     start_io();
     pc_getAuthToken(auth_token, sizeof(auth_token));
-    int ret = _post(immediate_post, buf, resp, resp_size, auth_token);
+    int ret = io_result_2_bool(_post(immediate_post, buf, resp, resp_size, auth_token));
     stop_io();
 
     return ret;
@@ -364,7 +382,7 @@ static int cloud_notify(const char* old_contact, const char* old_token, const ch
 /* 3. Send the message */
     int ret;
     char resp[LIB_HTTP_MAX_MSG_SIZE];
-    if (ret = post_result_2_bool(_post(post, msg, resp, sizeof(resp), old_token)), !ret ) {
+    if (ret = io_result_2_bool(_post(post, msg, resp, sizeof(resp), old_token)), !ret ) {
         pu_log(LL_ERROR, "cloud_notify :Error sending. ");
     }
     else {
@@ -376,22 +394,22 @@ static int cloud_notify(const char* old_contact, const char* old_token, const ch
     return ret;
 }
 
-static lib_http_post_result_t _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
+static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
     reply[0] = '\0';
 
     int out = 0;
-    lib_http_post_result_t ret = LIB_HTTP_POST_ERROR;
+    lib_http_io_result_t ret = LIB_HTTP_IO_ERROR;
     int retries = LIB_HTTP_MAX_POST_RETRIES;
     if(post_conn < 0) return ret;
     while(!out) {
         ret = lib_http_post(post_conn, msg, reply, reply_size, auth_token);
         switch (ret) {
-            case LIB_HTTP_POST_ERROR:
-            case LIB_HTTP_POST_UNKNOWN:
-            case LIB_POST_UNAUTH:
+            case LIB_HTTP_IO_ERROR:
+            case LIB_HTTP_IO_UNKNOWN:
+            case LIB_HTTP_IO_UNAUTH:
                 out = 1;
                 break;
-            case LIB_HTTP_POST_RETRY:
+            case LIB_HTTP_IO_RETRY:
                 pu_log(LL_WARNING, "_post: Connectivity problems, retry");
                 if (retries-- == 0) {
                     out = 1;
@@ -400,7 +418,7 @@ static lib_http_post_result_t _post(lib_http_conn_t post_conn, const char* msg, 
                     sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
                 }
                 break;
-            case LIB_HTTP_POST_OK:
+            case LIB_HTTP_IO_OK:
                 out = 1;
                 break;
 
@@ -411,8 +429,8 @@ static lib_http_post_result_t _post(lib_http_conn_t post_conn, const char* msg, 
     return ret;
 }
 
-static int post_result_2_bool(lib_http_post_result_t result) {
-    return (result == LIB_HTTP_POST_OK);
+static int io_result_2_bool(lib_http_io_result_t result) {
+    return (result == LIB_HTTP_IO_OK);
 }
 
 static int get_contact(const char* main, const char* device_id, char* conn, size_t conn_size) {
@@ -424,8 +442,9 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         lib_http_eraseConn(&get_conn);
         return 0;
     }
-    if(lib_http_get(get_conn, resp, sizeof(resp)) != 1) {
-        pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s", main);
+    lib_http_io_result_t rc = lib_http_get(get_conn, resp, sizeof(resp), 1);
+    if(rc != LIB_HTTP_IO_OK) {
+        pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s. RC = %d. Responce = %s", main, rc, resp);
         lib_http_eraseConn(&get_conn);
         return 0;
     }
@@ -500,7 +519,7 @@ static int get_new_token(lib_http_conn_t post_d, const char* device_id, char* ne
 
     pf_add_proxy_head(buf, sizeof(buf), device_id);
     switch(_post(post_d, buf, reply, sizeof(reply), "")) {
-         case LIB_POST_UNAUTH: {     /* cloud could return the token - lets check it! */
+         case LIB_HTTP_IO_UNAUTH: {     /* cloud could return the token - lets check it! */
             cJSON *obj = cJSON_Parse(reply);
             if(!obj) {
                 pu_log(LL_ERROR, "get_new_token: Can't parse the cloud reply: %s", reply);
@@ -528,7 +547,7 @@ static int test_auth_token(lib_http_conn_t post_d, const char* device_id, const 
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
     pf_add_proxy_head(buf, sizeof(buf), device_id);
-    return post_result_2_bool(_post(post_d, buf, reply, sizeof(reply), old_token));
+    return io_result_2_bool(_post(post_d, buf, reply, sizeof(reply), old_token));
  }
 /*******************************
  * Sync functions
@@ -569,7 +588,7 @@ static int block_io() {
     pthread_mutex_lock(&cond_mutex);
     if(was_reconnect) {     /* There were no IO operations after the last reconnect - get out of here! */
         pthread_mutex_unlock(&cond_mutex);
-        pu_log(LL_DEBUG, "block_io(): double penetration! Return w/o action.");
+        pu_log(LL_DEBUG, "block_io(): secondary entrance! Return w/o action.");
         return 1;
     }
     block = 1;

@@ -315,7 +315,7 @@ static void process_alerts(msg_obj_t* alerts) {
 
         switch(alert.alert_type) {
             case PR_ALERT_UNDEFINED:
-                pu_log(LL_ERROR, "%s: Undefined alert type.Ignored", PT_THREAD_NAME);
+                pu_log(LL_ERROR, "%s: Undefined alert type. Ignored", PT_THREAD_NAME);
                 break;
             case PR_ALERT_WATCHDOG:
                 pu_log(LL_INFO, "%s: watchdog message from %s", PT_THREAD_NAME, alert.alert_wd.component);

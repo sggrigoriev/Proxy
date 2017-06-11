@@ -189,7 +189,7 @@ static void* write_proc(void* socket) {
         while(ret = lib_tcp_write(write_socket, info, strlen(info)+1, 1), !ret&&!rw_stop);  /* run until the timeout */
         if(rw_stop) continue; /* goto reconnect */
         if(ret < 0) { /* op start failed */
-            pu_log(LL_ERROR, "write_proc: Write op start failed as usual %d %s. Reconnect", errno, strerror(errno));
+            pu_log(LL_ERROR, "write_proc: Write op start failed: %d %s. Reconnect", errno, strerror(errno));
             rw_stop = 1;
         }
         pu_log(LL_DEBUG, "write_proc: sent to Proxy: %s", info);
@@ -198,6 +198,8 @@ static void* write_proc(void* socket) {
     pu_log(LL_INFO, "Client's write is finished");
     pthread_exit(NULL);
 }
+
+
 /******************************************************************************************/
 static pthread_t readThreadId;
 static pthread_attr_t readThreadAttr;

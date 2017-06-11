@@ -1,3 +1,11 @@
+VERSION 1.2.1 11-JUN-2017
+=================================================================================================
+1. EM-102 fixed. The GW analysing all incoming messages for status value and makes reconnect in case of "UNAUTHORIZED" and "UNKNOWN" values
+2. EM-116 fixed. New define variable PROXY_ETHERNET_INTERFACE added to all branches of CMakeLists file. The interface used has to be set to this varaible to inform the cloud about local IP Address. The information is sent from GW to the Cloud every time after the reconnect procedure. If the interface defined is nod found during the run-time or not defined at all the Proxy will log the warning and will not send the ipAddress to the Cloud.
+3. The MAIN CLOUD URL value is kept in separate file. New setting appeared in proxyJSON.conf file: "MAIN_CLOUD_URL_FILE_NAME": "./cloud_url". The file pointed has to contain just one string with mail cloud url value.
+4. The name of the file with the FW upgrade now is configured in wud.conf file. New setting "FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz" appeared.
+5. All informal diagnostics logged by Proxy and WUD were changed for bored, sorry, professional variants.
+
 VERSION 1.2.0 16-MAY-2017
 =================================================================================================
 1. Bug fix: 102, 105, 106, 107, 112

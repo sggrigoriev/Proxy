@@ -102,15 +102,17 @@ static lib_http_conn_t get_free_conn(http_handler_t** conn_array, unsigned int c
 static http_handler_t* check_conn(lib_http_conn_t conn);
 
 /******************************************
- *  Calc http_write (POST) result
+ *  Calc http_read/write (GET/POST) result
  * @param result    - answer from the cloud. Checked only if rc = 1
  * @param rc        - received code from POST operation.
  * @return
- *    LIB_HTTP_POST_ERROR if rc == -1 or synrax error in result;
- *    LIB_HTTP_POST_RETRY if rc == 0 or result has status == "ERR" or status has unknown value
- *    LIB_HTTP_POST_OK in the rest of cases
+ *    LIB_HTTP_IO_ERROR if rc == -1 or synrax error in result;
+ *    LIB_HTTP_IO_RETRY if rc == 0 or result has status == "ERR" or status has unknown value
+ *    LIB_HTTP_IO_UNKNOWN status == UNKOWN - the GW is not registered in the cloud - reconnection required
+ *    LIB_HTTP_IO_UNAUTH  status == UNAUTHORIZED -the GW has to re-request auth token from the cloud = reconnect
+ *    LIB_HTTP_IO_OK in the rest of cases
  */
-static lib_http_post_result_t calc_post_result(char* result, int rc);
+static lib_http_io_result_t calc_io_result(char* result, int rc);
 
 /******************************************
  * Called when a message HAS TO BE SENT to the server.
@@ -156,7 +158,7 @@ int lib_http_init(unsigned int max_conns_amount) {
     if(CONN_ARRAY = alloc_conn_pull(max_conns_amount), CONN_ARRAY == NULL) return 0;
     CONN_ARRAY_SIZE = max_conns_amount;
     if (curl_global_init(CURL_GLOBAL_ALL) != 0) {
-        pu_log(LL_ERROR, "Error on cUrl initialiation. Something goes wrong. Exiting.");
+        pu_log(LL_ERROR, "Error on cUrl initialiation. Exiting.");
         return 0;
     }
     return 1;
@@ -285,7 +287,7 @@ void lib_http_eraseConn(lib_http_conn_t* conn) {
     *conn = -1;
 }
 
-int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
+int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json) {
     long httpResponseCode = 0;
     long httpConnectCode = 0;
     long curlErrno = 0;
@@ -342,22 +344,27 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size) {
         goto out;
     }
     out:
-    handler->rx_buf[0] = '\0';    /* prepare rx_buf for new inputs */
-    if((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) return 0;   /* timrout case */
-    if(!curlErrno) return 1; /* Got smth to read */
-    return -1;
+    {
+        lib_http_io_result_t ret;
+        handler->rx_buf[0] = '\0';    /* prepare rx_buf for new inputs */
+        if ((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) ret = LIB_HTTP_IO_RETRY;   /* timrout case */
+        else if (!curlErrno) ret = LIB_HTTP_IO_OK;   /* Got smth to read */
+        else ret = LIB_HTTP_IO_ERROR;
+        if(no_json) return ret;
+        else return calc_io_result(msg, ret);    /* Make final analysis based on "status" field in the msg */;
+     }
 }
 
-lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
+lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
     CURLcode curlResult;
     http_handler_t* handler = NULL;
     char tx_buf[LIB_HTTP_MAX_MSG_SIZE];
     assert(msg); assert(reply); assert(auth_token);
 
-    if(handler = check_conn(post_conn), handler == NULL) return LIB_HTTP_POST_ERROR;
+    if(handler = check_conn(post_conn), handler == NULL) return LIB_HTTP_IO_ERROR;
 
     HttpIoInfo_t outBoundCommInfo ={tx_buf, (int)(strlen(msg))};
-    strncpy(tx_buf, msg, outBoundCommInfo.size+1);
+    strncpy(tx_buf, msg, (size_t)(outBoundCommInfo.size+1));
 
     handler->inBoundCommInfo.buffer =  handler->rx_buf;
     handler->inBoundCommInfo.size = sizeof(handler->rx_buf);
@@ -426,13 +433,16 @@ lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg,
     }
     out:
     {
-        int ret;
-        if (handler->slist) { curl_slist_free_all(handler->slist); handler->slist = NULL;}
+        lib_http_io_result_t ret;
+        if (handler->slist) {
+            curl_slist_free_all(handler->slist);
+            handler->slist = NULL;
+        }
 
-        if (curlErrno == EAGAIN) ret = 0;   /* timeout case */
-        else if (!curlErrno) ret = 1; /* Got smth to read */
-        else ret = -1;
-        return calc_post_result(reply, ret);
+        if (curlErrno == EAGAIN) ret = LIB_HTTP_IO_RETRY;   /* timeout case */
+        else if (!curlErrno) ret = LIB_HTTP_IO_OK; /* Got smth to read */
+        else ret = LIB_HTTP_IO_ERROR;
+        return calc_io_result(reply, ret);  /* Make final analysis based on "status" field in the reply */
     }
 }
 
@@ -547,8 +557,7 @@ static http_handler_t* check_conn(lib_http_conn_t conn) {
     Calc http_write (POST) result; fill the reply if needed.
     Return 1 if OK, 0 if connectivity problems, -1 if error
 */
-/*  TODO! Here is the place to react on message status level!
-
+/*
 ACK             The message was received and parsed successfully. The device or gateway should send the next message
                     according to its upload interval.
 CONT            The message was received and parsed successfully. The device or gateway should continue sending measured
@@ -560,48 +569,48 @@ UNAUTHORIZED	When the device is registered with bidirectional authentication ena
                         include your device's original cryptographic authentication token in the HTTP header of every
                         request it sends to the server. This error indicates the authentication token you provided does
                         not match the authentication token stored on the server.
- */
-static lib_http_post_result_t calc_post_result(char* result, int rc) {
-    lib_http_post_result_t ret;
+*/
+static lib_http_io_result_t calc_io_result(char* result, int rc) {
+    lib_http_io_result_t ret;
 
     if(rc < 0) {    /* Some curl-level problem - everything logged */
-        ret = LIB_HTTP_POST_ERROR;
+        ret = LIB_HTTP_IO_ERROR;
     }
     else if (!rc) {  /* rc == 0 technically write is OK */
-        ret = LIB_HTTP_POST_RETRY;
+        ret = LIB_HTTP_IO_RETRY;
     }
     else { /* ...and what we got? rc == 1 */
         cJSON* obj = cJSON_Parse(result);
         if(!obj) {
-            ret = LIB_HTTP_POST_ERROR;
+            ret = LIB_HTTP_IO_ERROR;
         }
         else {
             cJSON* item = cJSON_GetObjectItem(obj, "status");
             if(!item) {
-                ret = LIB_HTTP_POST_ERROR;
+                ret = LIB_HTTP_IO_ERROR;
             }
             else if(!strcmp(item->valuestring, "ACK") || !strcmp(item->valuestring, "CONT")) {
-                ret = LIB_HTTP_POST_OK;
+                ret = LIB_HTTP_IO_OK;
             }
             else if(!strcmp(item->valuestring, "ERR")) {
                 pu_log(LL_WARNING, "Cloud couldn't read the request from Proxy %s", result);
-                ret = LIB_HTTP_POST_RETRY;
+                ret = LIB_HTTP_IO_RETRY;
             }
             else if(!strcmp(item->valuestring, "ERR_FORMAT")) {
                 pu_log(LL_WARNING, "Cloud answered for bad request from Proxy %s", result);
-                ret = LIB_HTTP_POST_OK;
+                ret = LIB_HTTP_IO_OK;
             }
             else if(!strcmp(item->valuestring, "UNAUTHORIZED")) {
                 pu_log(LL_WARNING, "Cloud answered for unauthorized request from Proxy %s", result);
-                ret = LIB_POST_UNAUTH;
+                ret = LIB_HTTP_IO_UNAUTH;
             }
             else if(!strcmp(item->valuestring, "UNKNOWN")) {
-                pu_log(LL_WARNING, "Cloud answered for received unknown request from Proxy %s", result);
-                ret = LIB_HTTP_POST_UNKNOWN;
+                pu_log(LL_WARNING, "Cloud answered for unknown request from Proxy %s", result);
+                ret = LIB_HTTP_IO_UNKNOWN;
             }
             else {  /* UNKNOWN, ... - let's wait untill somewhere takes a look on poor cycling modem */
-                pu_log(LL_WARNING, "Cloud answered strange request from Proxy %s", result);
-                ret = LIB_HTTP_POST_ERROR;
+                pu_log(LL_WARNING, "Unsuppored answer from the Cloud by Proxy request: %s", result);
+                ret = LIB_HTTP_IO_ERROR;
             }
             cJSON_Delete(obj);
         }
@@ -670,7 +679,7 @@ static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream) {
  **/
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     HttpIoInfo_t *dataToWrite = (HttpIoInfo_t *) userp;
-    int dataWritten = 0;
+    size_t dataWritten = 0;
     if (dataToWrite == NULL || dataToWrite->buffer == NULL) {
         pu_log(LL_ERROR, "read_callback: dataToWrite == NULL");
         return 0;
@@ -684,11 +693,12 @@ static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
             dataWritten = size * nmemb;
         }
         else {
-            dataWritten = dataToWrite->size;
+            dataWritten = (size_t)dataToWrite->size;
         }
         memcpy (ptr, dataToWrite->buffer, dataWritten);
         dataToWrite->buffer += dataWritten;
         dataToWrite->size -= dataWritten;
+        if(dataToWrite->size < 0) dataToWrite->size = 0;
 
         return dataWritten; /* we return 1 byte at a time! */
     }

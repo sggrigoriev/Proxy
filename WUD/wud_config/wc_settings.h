@@ -39,6 +39,7 @@ unsigned int wc_getChildrenShutdownTO();    /* Return the timeout in seconds bef
 
 const char* wc_getFWDownloadFolder();       /* Return the folder to store the downloaded firmware file */
 const char* wc_getFWUpgradeFolder();        /* Return the folder to store ready for installation firmware file */
+const char* wc_getFWUpgradeFileName();      /* Return the file name for firmware file */
 
 const char* wc_getAgentProcessName();       /* Return the Agent process' name */
 

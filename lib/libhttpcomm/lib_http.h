@@ -33,6 +33,8 @@ NB-2! no thread protection
 
 #define LIB_HTTP_DEVICE_ID_PREFFIX          "aioxGW-"
 
+#define LIB_HTTP_MAX_IPADDRES_SIZE          46  /*45 for IPv6 +1 */
+#define LIB_HTTP_MAX_IP_INTERFACE_SIZE      129 /* its smaller than 128 bytes for sure! */
 #define LIB_HTTP_MAX_POST_RETRIES           3
 #define LIB_HTTP_MAX_FGET_RETRIES           5
 #define LIB_HTTP_HEADER_SIZE                200
@@ -65,8 +67,8 @@ typedef enum {LIB_HTTP_CONN_INIT_MAIN, LIB_HTTP_CONN_POST, LIB_HTTP_CONN_GET, LI
 } lib_http_conn_type_t;
 
 /* POST return types for upper level analysis */
-typedef enum {LIB_HTTP_POST_ERROR = -1, LIB_HTTP_POST_RETRY = 0, LIB_HTTP_POST_OK = 1, LIB_HTTP_POST_UNKNOWN = 2, LIB_POST_UNAUTH = 3
-} lib_http_post_result_t;
+typedef enum {LIB_HTTP_IO_ERROR = -1, LIB_HTTP_IO_RETRY = 0, LIB_HTTP_IO_OK = 1, LIB_HTTP_IO_UNKNOWN = 2, LIB_HTTP_IO_UNAUTH = 3
+} lib_http_io_result_t;
 
 /* http connection handler type */
 typedef int lib_http_conn_t;
@@ -105,9 +107,10 @@ void lib_http_eraseConn(lib_http_conn_t* conn);
  * @param get_conn      - connection handler LIB_HTTP_CONN_GET or LIB_HTTP_CONN_INIT_MAIN type
  * @param msg           - buffer for received message
  * @param msg_size      - buffer size
- * @return  - 1 if get msg, 0 if timeout, -1 if error. Logged inside
+ * @param no_json       - 0 if no JSON expected in answer
+ * @return  - see lib_http_io_result_t; Logged inside
  */
-int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size);
+lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json);
 
 /***************************************************
  * Perform POST request
@@ -116,9 +119,9 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size);
  * @param reply         - buffer for possible reply
  * @param reply_size    - buffer size
  * @param auth_token    - gateway authentication token
- * @return  - 1 if OK, 0 if timeout, -1 if error. if strlen(relpy)>0 there is some answer from the server. All logging inside
+ * @return  see lib_http_io_result_t; Logged inside
  */
-lib_http_post_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
+lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, char* reply, size_t reply_size, const char* auth_token);
 
 /***************************************************
  * Reag file

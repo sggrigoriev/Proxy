@@ -40,11 +40,11 @@ int wa_start_child(pr_child_t id) {
     while(buf[i]) { pu_log(LL_DEBUG," param[%d] = %s", i, buf[i]); i++;}
 
     if( access( wm_child_get_binary_name(id), F_OK ) == -1 ) {
-        pu_log(LL_ERROR, "%s file doesn't exisis. Abort", wm_child_get_binary_name(id));
+        pu_log(LL_ERROR, "%s file doesn't exist. Abort", wm_child_get_binary_name(id));
         return 0;
     }
     if( access( wm_child_get_binary_name(id), X_OK ) == -1 ) {
-        pu_log(LL_ERROR, "No permission to execute %s. Abort", wm_child_get_binary_name(id));
+        pu_log(LL_ERROR, "No permission granted to execute %s. Abort", wm_child_get_binary_name(id));
         return 0;
     }
 

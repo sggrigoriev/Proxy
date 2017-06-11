@@ -144,7 +144,7 @@ static void* read_proc(void* params) {
     pu_log(LL_INFO, "%s: FW Upgrade file check sum verified OK.", PT_THREAD_NAME);
 
 /* Move the file to upgrade dir and rename it */
-    if(!wu_move_n_rename(wc_getFWDownloadFolder(), file_name, wc_getFWUpgradeFolder(), WC_FWU_FILE_NAME)) {  /* Huston, we got a problem! */
+    if(!wu_move_n_rename(wc_getFWDownloadFolder(), file_name, wc_getFWUpgradeFolder(), wc_getFWUpgradeFileName())) {  /* Huston, we got a problem! */
         notify(FWU_NOTIFY_FAIL);
         goto on_exit;
     }

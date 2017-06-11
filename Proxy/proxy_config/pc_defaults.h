@@ -30,6 +30,7 @@
 
 #define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"          /* Default Proxy configuration file */
 #define DEFAULT_AUTH_TOKEN_FILE_NAME      "./auth_token"    /* File name for authentication token. Configurable */
+#define DEFAULT_CLOUD_URL_FLIE_NAME       "./cloud_url"     /* File name with main contact URL */
 
 
 /* Common defaults */
@@ -59,6 +60,7 @@
 #define DEFAULT_PROXY_WATCHDOG_TO_SEC   600                         /* Proxy watchdog preiod in seconds. Configured */
 #define DEFAULT_AGENT_PROCESS_NAME  "Agent"                         /* Agent process name (for emilator). Configured */
 
+#define DEFAULT_MAIN_CLOUD_URL_FILE_NAME "./cloud_url"         /* Default name for thr file with main cloud URL name. Configured */
 #define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com"   /* Default main cloud URL. Configured */
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24                          /* Preiod of cloud conection URL request in hours. Configured */
 #define DEFAULT_FW_VER_SENDING_TO_HRS   24                          /* Period of firmware version sending to the cloud in hours. Configured */

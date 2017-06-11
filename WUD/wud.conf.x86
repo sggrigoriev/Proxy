@@ -11,6 +11,7 @@
 
 "FW_DOWNLOAD_FOLDER":           "./download",
 "FW_UPGRADE_FOLDER":            "./upgrade",
+"FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz",
 
 "AGENT_PROCESS_NAME":           "Agent",
 "AGENT_BINARY_NAME":            "./comm_client",

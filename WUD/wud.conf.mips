@@ -11,6 +11,7 @@
 
 "FW_DOWNLOAD_FOLDER":           "/tmp/presto/upload",
 "FW_UPGRADE_FOLDER":            "/root/download",
+"FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz",
 
 "AGENT_PROCESS_NAME":           "zbagent",
 "AGENT_BINARY_NAME":            "/root/presto/zbagent/zbagent",

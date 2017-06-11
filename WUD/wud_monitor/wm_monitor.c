@@ -24,15 +24,15 @@
 #include "wm_monitor.h"
 
 int wm_init_monitor_data() {
-    pu_log(LL_ERROR, "I'm wm_init_monitor_data(). Please write me");
+    pu_log(LL_ERROR, "I'm poor wm_init_monitor_data(). Please write me");
     return 1;
 }
 
 void wn_destroy_monitor_data() {
-    pu_log(LL_ERROR, "I'm wn_destroy_monitor_data(). Please write me");
+    pu_log(LL_ERROR, "I'm poor wn_destroy_monitor_data(). Please write me");
 }
 
 const char* wm_monitor() {
-    pu_log(LL_ERROR, "I'm wm_monitor(). Please write me");
+    pu_log(LL_ERROR, "I'm poor wm_monitor(). Please write me");
     return NULL;
 }

@@ -49,7 +49,7 @@
 #define WC_DEFAULT_WUD_NAME                 "wud"                       /* Process name. Used to construct file name with own pid */
 #define WC_DEFAULT_PIDF_EXTENCION           "pid"                       /* File extention for the file with own pid */
 #define WC_PROC_DIR                         "/proc/"                    /* The source directory to find the own PID */
-#define WC_FWU_FILE_NAME                    "presto_mt7688.tgz"         /* File name for ready for install firmware */
+#define WC_DEFAULT_FWU_FILE_NAME                    "presto_mt7688.tgz"         /* File name for ready for install firmware */
 
 #define WUD_DEFAULT_WORKING_DIRECTORY       "./"                        /* WUD working directory. Configurable */
 #define WUD_DEFAULT_COMM_PORT               8887                        /* WUD communication port. Configurable */

@@ -297,6 +297,16 @@ typedef union {
 */
 const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status, const char* fw_version, const char* device_id);
 
+/***************************************************************************************************
+ * Create messge to infom the Cloud about local GW IP address. Sendind after each reconnect
+ * @param buf               -
+ * @param size
+ * @param local_ip_address
+ * @param device_id
+ * @return
+ */
+const char* pr_make_local_ip_notification(char* buf, size_t size, const char* local_ip_address, const char* device_id);
+
 /****************************************************************************************************
  * Creates the alert for cloud about the main URL change:
  * {"measures": [{"deviceId": "Aiox-11038",

@@ -362,6 +362,17 @@ const char* pr_make_fw_status4cloud(char* buf, size_t size, fwu_status_t status,
     return buf;
 }
 /*
+ * {"measures": [{"deviceId": "Aiox-11038", "params": [{"name": "ipAddress", "value": "<local IP address>}]}]}
+ */
+const char* pr_make_local_ip_notification(char* buf, size_t size, const char* local_ip_address, const char* device_id) {
+    const char* part1 = "{\"measures\": [{\"deviceId\": \"";
+    const char* part2 = "\",\"params\": [{\"name\": \"ipAddress\", \"value\": \"";
+    const char* part3 = "\"}]}]}";
+
+    snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, local_ip_address, part3);
+    return buf;
+}
+/*
  * {"measures": [{"deviceId": "Aiox-11038", "params": [{"name": "cloud", "value": "https://app.alter-presencepro.com"}]}]}
  */
 const char* pr_make_main_url_change_notification4cloud(char* buf, size_t size, const char* main_url, const char* device_id) {

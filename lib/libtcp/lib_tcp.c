@@ -22,7 +22,12 @@
 #include <assert.h>
 #include <malloc.h>
 #include <string.h>
+
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -335,6 +340,34 @@ void lib_tcp_client_close(int write_socket) {
         shutdown(write_socket, SHUT_RDWR);
         close(write_socket);
     }
+}
+
+const char* lib_tcp_local_ip(const char* interface, char* ip_address, size_t size) {
+    struct ifaddrs* addrs;
+    struct ifaddrs* tmp;
+
+    ip_address[0] = '\0';
+    if((!interface) || (interface[0] == '\0')) {
+        return ip_address;
+    }
+
+    getifaddrs(&addrs);
+    tmp = addrs;
+
+    while (tmp) {
+        if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
+            struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
+            if(!strcmp(tmp->ifa_name, interface)) { /* Found the interface! */
+                strncpy(ip_address, inet_ntoa(pAddr->sin_addr), size-1);
+                break;
+            }
+        }
+
+        tmp = tmp->ifa_next;
+    }
+
+    freeifaddrs(addrs);
+    return ip_address;
 }
 
 /*

@@ -24,6 +24,7 @@
 
 #include "lib_timer.h"
 #include "pt_queues.h"
+#include "lib_tcp.h"
 #include "pr_commands.h"
 
 #include "pc_defaults.h"
@@ -395,8 +396,8 @@ static void process_proxy_commands(char* msg) {
 }
 
 static void report_cloud_conn_status(int online) {
-    char buf[LIB_HTTP_MAX_MSG_SIZE];
-    char deviceID[LIB_HTTP_DEVICE_ID_SIZE];
+    char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
+    char deviceID[LIB_HTTP_DEVICE_ID_SIZE] = {0};
 /* 1. Send the alert to the Agent */
 
     pc_getProxyDeviceID(deviceID, sizeof(deviceID));
@@ -405,9 +406,11 @@ static void report_cloud_conn_status(int online) {
 
 /* 2. if the status == online - send the connection info to the WUD */
     if(online) {
-        char conn_string[LIB_HTTP_MAX_URL_SIZE];
-        char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
-        char fw_version[LIB_HTTP_FW_VERSION_SIZE];
+        char conn_string[LIB_HTTP_MAX_URL_SIZE] = {0};
+        char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE] = {0};
+        char fw_version[LIB_HTTP_FW_VERSION_SIZE] = {0};
+        char local_ip_address[LIB_HTTP_MAX_IPADDRES_SIZE] = {0};
+        char interface[LIB_HTTP_MAX_IP_INTERFACE_SIZE] = {0};
 
         pc_getCloudURL(conn_string, sizeof(conn_string));
         pc_getAuthToken(auth_token, sizeof(auth_token));
@@ -415,5 +418,17 @@ static void report_cloud_conn_status(int online) {
 
         pr_make_conn_info_cmd(buf, sizeof(buf), conn_string, deviceID, auth_token, fw_version);
         pu_queue_push(to_wud, buf, strlen(buf)+1);
+/* 3. Send the local IP-address to the cloud. */
+#ifdef PROXY_ETHERNET_INTERFACE
+        strncpy(interface, PROXY_ETHERNET_INTERFACE, sizeof(interface)-1);
+#endif
+        lib_tcp_local_ip(interface, local_ip_address, sizeof(local_ip_address));
+        if(strlen(local_ip_address)) {
+            pr_make_local_ip_notification(buf, sizeof(buf), local_ip_address, deviceID);
+            pu_queue_push(to_server, buf, strlen(buf)+1);
+        }
+        else {
+            pu_log(LL_WARNING, "report_cloud_conn_status: No info about local IP Address. Check PROXY_ETHERNET_INTERFACE define in Make file!");
+        }
     }
 }

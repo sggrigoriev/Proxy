@@ -51,6 +51,7 @@
 
 #define WUD_FW_DOWNLOAD_FOLDER      "FW_DOWNLOAD_FOLDER"
 #define WUD_FW_UPGRADE_FOLDER       "FW_UPGRADE_FOLDER"
+#define WUD_FW_UPGRADE_FILE_NAME    "FW_UPGRADE_FILE_NAME"
 
 #define WUD_AGENT_PROCESS_NAME      "AGENT_PROCESS_NAME"
 #define WUD_AGENT_BINARY_NAME       "AGENT_BINARY_NAME"
@@ -82,6 +83,7 @@ static unsigned int children_to_sec;
 
 static char fw_download_folder[WC_MAX_PATH];
 static char fw_upgrade_folder[WC_MAX_PATH];
+static char fw_upgrade_file_name[WC_MAX_PATH];
 
 static char         agent_process_name[WC_MAX_PROCESS_NAME_LEN];
 static char         agent_binary_name[WC_MAX_PATH];
@@ -189,6 +191,10 @@ const char* wc_getFWUpgradeFolder() {
     WC_RET(WUD_DEFAULT_FW_UPGRADE_FOLDER, fw_upgrade_folder);
 }
 
+const char* wc_getFWUpgradeFileName() {
+    WC_RET(WUD_FW_UPGRADE_FILE_NAME, fw_upgrade_file_name);
+}
+
 const char* wc_getAgentProcessName() {
     WC_RET(WUD_DEFAULT_AGENT_PROCESS_NAME, agent_process_name);
 }
@@ -265,6 +271,7 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_CHILDREN_SHUTDOWN_TO_SEC, &children_to_sec))                                          WC_ERR();
     if(!getStrValue(cfg, WUD_FW_DOWNLOAD_FOLDER, fw_download_folder, sizeof(fw_download_folder)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_FW_UPGRADE_FOLDER, fw_upgrade_folder, sizeof(fw_upgrade_folder)))                      WC_ERR();
+    if(!getStrValue(cfg, WUD_FW_UPGRADE_FILE_NAME, fw_upgrade_file_name, sizeof(fw_upgrade_file_name)))             WC_ERR();
 
     if(!getStrValue(cfg, WUD_AGENT_PROCESS_NAME, agent_process_name, sizeof(agent_process_name)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_AGENT_BINARY_NAME, agent_binary_name, sizeof(agent_binary_name)))                      WC_ERR();
@@ -353,6 +360,7 @@ static void initiate_defaults() {
 
     strcpy(fw_download_folder, WUD_DEFAULT_FW_DOWNLOAD_FOLDER);
     strcpy(fw_upgrade_folder, WUD_DEFAULT_FW_UPGRADE_FOLDER);
+    strcpy(fw_upgrade_file_name, WC_DEFAULT_FWU_FILE_NAME);
 
     strcpy(agent_process_name, WUD_DEFAULT_AGENT_PROCESS_NAME);
     strcpy(agent_binary_name, WUD_DEFAULT_AGENT_BINARY_NAME);

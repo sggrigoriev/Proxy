@@ -151,4 +151,13 @@ int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec);
 */
 void lib_tcp_client_close(int write_socket);
 
+/******************************************************************************************
+ * Get the local IP address IPv4 format by interface. If nothing foung return empty string
+ * @param interface     - interface associated with local IP
+ * @param ip_address    - buffer to store the string with IP
+ * @param size          - buffer size
+ * @return              - buffer address
+ */
+const char* lib_tcp_local_ip(const char* interface, char* ip_address, size_t size);
+
 #endif /*PRESTO_LIB_TCP_H*/

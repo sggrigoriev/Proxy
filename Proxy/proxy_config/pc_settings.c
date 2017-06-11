@@ -51,6 +51,7 @@
 
 #define PROXY_AUTH_TOKEN_FILE_NAME  "AUTH_TOKEN_FILE_NAME"
 
+#define PROXY_MAIN_CLOUD_URL_FILE_NAME "MAIN_CLOUD_URL_FILE_NAME"
 #define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
 
 #define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
@@ -77,6 +78,7 @@ static char             device_id[PROXY_DEVICE_ID_SIZE];
 static unsigned int     device_type;
 static char             cloud_url[PROXY_MAX_PATH];
 static char             main_cloud_url[PROXY_MAX_PATH];
+static char             main_cloud_url_file_name[PROXY_MAX_PATH];
 
 static unsigned int     cloud_url_req_to_hrs;
 static unsigned int     fw_ver_sending_to_hrs;
@@ -109,12 +111,12 @@ static void initiate_defaults();
 /* Copy default value in case of absence of the field in the object */
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting);
 
-/* Reads auth token from the file. If no token - set it as an empty string */
+/* Reads string value from the file. If no file or no data inside - set it as an empty string */
 /* no thread protection! */
-static void read_auth_token(const char* at_file_name, char* at, size_t size);
+static int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name);
 
 /* Return 0 if error */
-static int save_auth_token(const char* at_file_name, const char* new_at);
+static int save_one_string_file(const char* file_name, const char* new_val, const char* value_name);
 
 /***************************************************************************************/
 #define PC_RET(a,b) return (!initiated)?a:b
@@ -209,10 +211,16 @@ int pc_load_config(const char* cfg_file_name) {
     if(getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                         fprintf(stderr, "DeviceID get from config file\n");
 
     if(getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name))) fprintf(stderr, "Default value will be used instead\n");
-    read_auth_token(auth_token_file_name, auth_token, sizeof(auth_token));
+    read_one_string_file(auth_token_file_name, auth_token, sizeof(auth_token), PROXY_AUTH_TOKEN_FILE_NAME);
 
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
-    if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL, main_cloud_url, sizeof(cloud_url)))              fprintf(stderr, "Default value will be used instead\n");
+
+    if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL_FILE_NAME, main_cloud_url_file_name, sizeof(main_cloud_url_file_name))) fprintf(stderr, "Default value will be used instead\n");
+    if(!read_one_string_file(main_cloud_url_file_name, main_cloud_url, sizeof(main_cloud_url), PROXY_MAIN_CLOUD_URL_FILE_NAME)) {
+        fprintf(stderr, "Main Cloud URL got default value %s\n", DEFAULT_MAIN_CLOUD_URL);
+        strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);  /* Set default value */
+    }
+
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_FW_VER_SEND_TO_HRS, &fw_ver_sending_to_hrs))                    fprintf(stderr, "Default value will be used instead\n");
 
@@ -284,7 +292,7 @@ int pc_saveAuthToken(const char* new_at) {
     pthread_mutex_lock(&local_mutex);
 
     strncpy(auth_token, new_at, sizeof(auth_token)-1);
-    int ret = save_auth_token(auth_token_file_name, auth_token);
+    int ret = save_one_string_file(auth_token_file_name, auth_token, PROXY_AUTH_TOKEN_FILE_NAME);
 
     pthread_mutex_unlock(&local_mutex);
     return ret;
@@ -296,7 +304,7 @@ int pc_saveProxyDeviceID(const char* new_da) {
 
     pthread_mutex_lock(&local_mutex);
 
-    strncpy(device_id, new_da, sizeof(device_id));
+    strncpy(device_id, new_da, sizeof(device_id)-1);
 
     pthread_mutex_unlock(&local_mutex);
     return 1;
@@ -309,9 +317,10 @@ int pc_saveMainCloudURL(const char* new_main_url) {
 
     pthread_mutex_lock(&local_mutex);
 
-    ret = saveStrValue("pc_saveMainCloudURL", conf_fname, PROXY_MAIN_CLOUD_URL, new_main_url, main_cloud_url, sizeof(main_cloud_url));
+    strncpy(main_cloud_url, new_main_url, sizeof(main_cloud_url)-1);
+    ret = save_one_string_file(main_cloud_url_file_name, main_cloud_url, PROXY_MAIN_CLOUD_URL_FILE_NAME);
 
-    pthread_mutex_unlock(&local_mutex);
+        pthread_mutex_unlock(&local_mutex);
     return ret;
 }
 
@@ -390,10 +399,11 @@ static void initiate_defaults() {
     log_level = DEFAULT_LOG_LEVEL;
 
     auth_token[0] = '\0';
-    strncpy(auth_token_file_name, DEFAULT_AUTH_TOKEN_FILE_NAME, sizeof(auth_token_file_name));
+    strncpy(auth_token_file_name, DEFAULT_AUTH_TOKEN_FILE_NAME, sizeof(auth_token_file_name)-1);
     device_id[0] = '\0';
     cloud_url[0] = '\0';
-    strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url));
+    strncpy(main_cloud_url_file_name, DEFAULT_MAIN_CLOUD_URL_FILE_NAME, sizeof(main_cloud_url_file_name)-1);
+    strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);
     cloud_url_req_to_hrs = DEFAULT_CLOUD_URL_REQ_TO_HRS;
 
     long_get_to = DEFAULT_UPLOAD_TIMEOUT_SEC;
@@ -425,29 +435,32 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
     }
 }
 
-static void read_auth_token(const char* at_file_name, char* at, size_t size) {
-    FILE* f = fopen(at_file_name, "r");
+static int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name) {
+    FILE* f = fopen(file_name, "r");
     if(!f) {
-        fprintf(stderr, "File %s open error %d, %s. Auth token should be assigned!\n", at_file_name, errno, strerror(errno));
+        fprintf(stderr, "File %s open error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
         goto on_err;
     }
-    char* ptr = fgets(at, size, f);
+    char* ptr = fgets(value, size, f);
     if(!ptr) {
-        fprintf(stderr, "File %s read error %d, %s. Auth token should be assigned!\n", at_file_name, errno, strerror(errno));
+        fprintf(stderr, "File %s read error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
         goto on_err;
     }
     fclose(f);
-    return;
+    return 1;
 on_err:
-    auth_token[0] = '\0';
+    value[0] = '\0';
     if(f) fclose(f);
-    return;
+    return 0;
 }
 
-static int save_auth_token(const char* at_file_name, const char* new_at) {
-    FILE* f = fopen(at_file_name, "w");
-    if(!f) return 0;
-    fprintf(f, "%s", new_at);
+static int save_one_string_file(const char* file_name, const char* new_val, const char* value_name) {
+    FILE* f = fopen(file_name, "w");
+    if(!f) {
+        fprintf(stderr, "File %s open error %d, %s. %s can't be pesistently saved!\n", file_name, errno, strerror(errno), value_name);
+        return 0;
+    }
+    fprintf(f, "%s", new_val);
     fclose(f);
     sync();
     return 1;
