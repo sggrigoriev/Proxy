@@ -114,4 +114,5 @@ clean:
 $(TARGET): .bin  $(OBJECTS_C) $(OBJECTS_CPP)
 	@$(CPP) ${CFLAGS} -o ../bin/$(HOST)/$(TARGET)/$(shell basename $@) ../bin/$(HOST)/$(TARGET)/*.o $(LDFLAGS) $(LDEXTRA)
 	@cp $(CFGNAME) ../bin/$(HOST)/$(TARGET)/proxyJSON.conf
+	@cp cloud_url ../bin/$(HOST)/$(TARGET)/cloud_url
 	@rm ../bin/$(HOST)/$(TARGET)/*.o
