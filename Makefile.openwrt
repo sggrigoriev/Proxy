@@ -66,6 +66,7 @@ define Package/presto-proxy-sdk/install
 	$(INSTALL_DIR) $(1)/root/presto/Proxy
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/Proxy/Proxy $(1)/root/presto/Proxy
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/Proxy/proxyJSON.conf.mips $(1)/root/presto/Proxy/proxyJSON.conf
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/Proxy/cloud_url $(1)/root/presto/Proxy/cloud_url
 	$(INSTALL_DIR) $(1)/root/presto/WUD
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/WUD/WUD $(1)/root/presto/WUD
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/WUD/wud.conf.mips $(1)/root/presto/WUD/wud.conf

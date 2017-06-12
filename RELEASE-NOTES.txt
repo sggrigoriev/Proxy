@@ -16,6 +16,7 @@ VERSION 1.2.0 16-MAY-2017
 6. The gateway could be reauthorized during its work now.
 7. Some typos fixed in log records
 
+
 VERSION 1.1.8 27-APR-2017
 =================================================================================================
 1. Bug fix: WUD reconnection added for changing main URL

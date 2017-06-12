@@ -10,7 +10,6 @@
 	"AGENT_PORT":	8888,
 	"WUD_PORT":	8887,
 	"DEVICE_TYPE":	31,
-	"MAIN_CLOUD_URL":	"http://sbox.presencepro.com",
 	"CLOUD_URL_REQ_TO_HRS":	24,
 	"FW_VER_SEND_TO_HRS":	24,
 	"UPLOAD_TO_SEC":	120,
