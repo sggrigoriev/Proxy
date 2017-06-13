@@ -78,6 +78,8 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tProxy watchdog sending interval in seconds: %d", pc_getProxyWDTO());
     pc_getMainCloudURL(buf, sizeof(buf));
     pu_log(LL_INFO, "\tMain cloud URL: %s", buf);
+
     pu_log(LL_INFO, "\tRequest for update the Contact URL interval in hours: %d", pc_getCloudURLTOHrs());
     pu_log(LL_INFO, "\tFirmware version info to Cloud interval in hours: %d", pc_getFWVerSendToHrs());
+    pu_log(LL_INFO, "\tSSL request for contact URL request: %d", pc_setSSLForCloudURLRequest());
 }

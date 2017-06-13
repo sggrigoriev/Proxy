@@ -200,6 +200,7 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
     strncpy(handler->url, purl, sizeof(handler->url));
     switch(conn_type) {
         case LIB_HTTP_CONN_INIT_MAIN:                       /* Get contact url from the main url */
+        case LIB_HTTP_CONN_INIT_MAIN_NOSSL:
             strncat(handler->url, LIB_HTTP_MAIN_CONN_IFACE, sizeof(handler->url)-strlen(handler->url)-1);
             break;
         case LIB_HTTP_FILE_GET:                             /*No interface - just the link */

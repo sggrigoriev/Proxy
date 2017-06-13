@@ -437,7 +437,10 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
     char resp[LIB_HTTP_MAX_MSG_SIZE];
     lib_http_conn_t get_conn;
 
-    if(get_conn = lib_http_createConn(LIB_HTTP_CONN_INIT_MAIN, main, "", device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), get_conn < 0) {
+    lib_http_conn_type_t conn_type = (pc_setSSLForCloudURLRequest())?LIB_HTTP_CONN_INIT_MAIN:LIB_HTTP_CONN_INIT_MAIN_NOSSL;
+
+
+    if(get_conn = lib_http_createConn(conn_type, main, "", device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), get_conn < 0) {
         pu_log(LL_ERROR, "get_contact: Can't create connection descriptor for %s", main);
         lib_http_eraseConn(&get_conn);
         return 0;

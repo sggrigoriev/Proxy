@@ -63,7 +63,7 @@ Connection types:
     LIB_HTTP_CONN_GET         - connection to make GETs
     LIB_HTTP_FILE_GET         -- connection for file upload
 */
-typedef enum {LIB_HTTP_CONN_INIT_MAIN, LIB_HTTP_CONN_POST, LIB_HTTP_CONN_GET, LIB_HTTP_FILE_GET
+typedef enum {LIB_HTTP_CONN_INIT_MAIN, LIB_HTTP_CONN_INIT_MAIN_NOSSL, LIB_HTTP_CONN_POST, LIB_HTTP_CONN_GET, LIB_HTTP_FILE_GET
 } lib_http_conn_type_t;
 
 /* POST return types for upper level analysis */

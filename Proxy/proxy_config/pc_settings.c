@@ -52,7 +52,6 @@
 #define PROXY_AUTH_TOKEN_FILE_NAME  "AUTH_TOKEN_FILE_NAME"
 
 #define PROXY_MAIN_CLOUD_URL_FILE_NAME "MAIN_CLOUD_URL_FILE_NAME"
-#define PROXY_MAIN_CLOUD_URL    "MAIN_CLOUD_URL"
 
 #define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
 #define PROXY_FW_VER_SEND_TO_HRS    "FW_VER_SEND_TO_HRS"
@@ -63,6 +62,8 @@
 
 #define PROXY_WUD_PORT          "WUD_PORT"
 #define PROXY_WATCHDOG_TO_SEC   "WATCHDOG_TO_SEC"
+
+#define PROXY_SET_SSL_FOR_URL_REQUEST   "SET_SSL_FOR_URL_REQUEST"
 
 /********************************************************************
     Config values saved in memory
@@ -88,6 +89,8 @@ static unsigned int     queue_rec_amt;
 static unsigned int     agent_port;
 static unsigned int     WUD_port;
 static unsigned int     proxy_wd_to;
+
+static unsigned int     set_ssl_for_url_request;
 
 static char             fw_version[DEFAULT_FW_VERSION_SIZE];
 
@@ -184,6 +187,10 @@ unsigned int pc_getFWVerSendToHrs() {
     PC_RET(DEFAULT_FW_VER_SENDING_TO_HRS, fw_ver_sending_to_hrs);
 }
 
+int pc_setSSLForCloudURLRequest() {
+    PC_RET(DEFAULT_SET_SSL_FOR_URL_REQUEST, set_ssl_for_url_request);
+}
+
 /***********************************************************************
     Thread-protected functions
 */
@@ -230,6 +237,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           fprintf(stderr, "Default value will be used instead\n");
     if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   fprintf(stderr, "Default value will be used instead\n");
     if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             fprintf(stderr, "Default value will be used instead\n");
 
     cJSON_Delete(cfg);
 
