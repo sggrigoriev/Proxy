@@ -149,7 +149,8 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
      if(log_lvl < lvl){ pthread_mutex_unlock(&lock); return; }   /*Suppress the message*/
         char head[31];
         getData(head, sizeof(head));
-        snprintf(buf, sizeof(buf)-1, "%s %s ", head, getLogLevel(lvl));
+
+        snprintf(buf, sizeof(buf)-1, "%s %lu %s ", head, pthread_self(), getLogLevel(lvl));
 
         size_t offset = strlen(buf);
 

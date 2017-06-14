@@ -6,6 +6,8 @@ VERSION 1.2.1 11-JUN-2017
 4. The name of the file with the FW upgrade now is configured in wud.conf file. New setting "FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz" appeared.
 5. All informal diagnostics logged by Proxy and WUD were changed for bored, sorry, professional variants.
 6. EM-134 done. "SET_SSL_FOR_URL_REQUEST" setting added to the ProxyJSON.conf. If the setting has value 0 the contact URL request from the nain cloud URL does not contain the "ssl=true" parameter. If the setting value is 1 or the value is absent the "ssl=true" exsists in the request. Made for debugging purposes. The setting should not be presented in business configuration!
+7. EM-135 fixed.
+8. EM-136 done. Log record now has the following format: YY-MM-DD HH:MM:SS.MMM <thread ID> <log level> <message>.  The thread ID was added for filtering purposes
 
 VERSION 1.2.0 16-MAY-2017
 =================================================================================================

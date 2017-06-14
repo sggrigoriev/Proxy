@@ -293,6 +293,7 @@ int ph_read(char* in_buf, size_t size) {
             break;
         case LIB_HTTP_IO_OK:
             ret = 1;
+            break;
         default:
             ret = -1;
             pu_log(LL_ERROR,"ph_read: Unsupported RC from lib_http_get %d", rc);
