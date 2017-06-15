@@ -1,13 +1,25 @@
 VERSION 1.2.1 11-JUN-2017
 =================================================================================================
-1. EM-102 fixed. The GW analysing all incoming messages for status value and makes reconnect in case of "UNAUTHORIZED" and "UNKNOWN" values
-2. EM-116 fixed. New define variable PROXY_ETHERNET_INTERFACE added to all branches of CMakeLists file. The interface used has to be set to this varaible to inform the cloud about local IP Address. The information is sent from GW to the Cloud every time after the reconnect procedure. If the interface defined is nod found during the run-time or not defined at all the Proxy will log the warning and will not send the ipAddress to the Cloud.
-3. The MAIN CLOUD URL value is kept in separate file. New setting appeared in proxyJSON.conf file: "MAIN_CLOUD_URL_FILE_NAME": "./cloud_url". The file pointed has to contain just one string with mail cloud url value.
-4. The name of the file with the FW upgrade now is configured in wud.conf file. New setting "FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz" appeared.
+1. EM-102 fixed.
+   The GW analysing all incoming messages for status value and makes reconnect in case of "UNAUTHORIZED" and "UNKNOWN" values
+2. EM-116 fixed. New define variable PROXY_ETHERNET_INTERFACE added to all branches of CMakeLists file.
+   The interface used has to be set to this varaible to inform the cloud about local IP Address.
+   The information is sent from GW to the Cloud every time after the reconnect procedure.
+   If the interface defined is nod found during the run-time or not defined at all the Proxy will log
+   the warning and will not send the ipAddress to the Cloud.
+3. The MAIN CLOUD URL value is kept in separate file.
+   New setting appeared in proxyJSON.conf file: "MAIN_CLOUD_URL_FILE_NAME": "./cloud_url".
+   The file pointed has to contain just one string with mail cloud url value.
+4. The name of the file with the FW upgrade now is configured in wud.conf file.
+   New setting "FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz" appeared.
 5. All informal diagnostics logged by Proxy and WUD were changed for bored, sorry, professional variants.
-6. EM-134 done. "SET_SSL_FOR_URL_REQUEST" setting added to the ProxyJSON.conf. If the setting has value 0 the contact URL request from the nain cloud URL does not contain the "ssl=true" parameter. If the setting value is 1 or the value is absent the "ssl=true" exsists in the request. Made for debugging purposes. The setting should not be presented in business configuration!
+6. EM-134 done. "SET_SSL_FOR_URL_REQUEST" setting added to the ProxyJSON.conf.
+   If the setting has value 0 the contact URL request from the nain cloud URL does not contain the "ssl=true" parameter.
+   If the setting value is 1 or the value is absent the "ssl=true" exists in the request. Made for debugging purposes.
+   The setting should not be presented in business configuration!
 7. EM-135 fixed.
-8. EM-136 done. Log record now has the following format: YY-MM-DD HH:MM:SS.MMM <thread ID> <log level> <message>.  The thread ID was added for filtering purposes
+8. EM-136 done. Log record now has the following format: YY-MM-DD HH:MM:SS.MMM <thread ID> <log level> <message>.
+   The thread ID was added for filtering purposes
 
 VERSION 1.2.0 16-MAY-2017
 =================================================================================================
