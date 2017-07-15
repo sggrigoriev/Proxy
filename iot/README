@@ -1,4 +1,0 @@
-This directory contains modules responsible for forming and managing persistent
-connections to a cloud server to send measurement information anytime while
-receiving commands instantaneously.
-

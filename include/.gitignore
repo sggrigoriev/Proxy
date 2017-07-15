@@ -1,2 +1,0 @@
-# Ignore library header files that were dynamically copied here at compile time
-lib*.h
