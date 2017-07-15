@@ -1,4 +1,4 @@
-Presto SDC in C (valid for release 1.1.4)
+Presto Proxy C SDK
 ======================================================
 
 This software SDK works in conjunection with People Power Presto to cloud-enable IoT devices and protocols.
