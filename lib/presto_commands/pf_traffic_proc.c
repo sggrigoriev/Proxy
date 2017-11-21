@@ -26,7 +26,6 @@
 #include "lib_http.h"
 
 #include "pf_traffic_proc.h"
-#include "pu_logger.h"
 
 /************************************************************************************************
 
@@ -51,26 +50,6 @@ static unsigned long inc_seq_number() {
  *  {JSON} -> {head_list, JSON}
  */
 size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id) {
-    unsigned long number = inc_seq_number();
-    char buf[LIB_HTTP_MAX_MSG_SIZE*2];
-
-    memset(buf,0,sizeof(buf));
-    pu_log(LL_DEBUG,"%s: ===== 1 got message: '%s'",__FUNCTION__,msg);
-    char *p = strchr(msg,'{');
-    if (p) { /* message contains something starting with '{' */
-        p++;
-        sprintf(buf, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%lu\", %s\0", device_id, number, p);
-    }
-    else  /* empty message */
-        sprintf(msg, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%lu\"}\0", device_id, number);
-
-    strcpy(msg, buf);
-    msg[msg_size-1] = '\0';
-    pu_log(LL_ERROR,"%s:===== 5 resulting message: '%s'",__FUNCTION__,msg);
-    return strlen(msg);
-}
-
-size_t depr_pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id) {
     unsigned long number = inc_seq_number();
 
     pu_log(LL_DEBUG,"%s: ===== 1 got message: '%s'",__FUNCTION__,msg);

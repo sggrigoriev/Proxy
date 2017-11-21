@@ -98,7 +98,6 @@ static void* write_proc(void* params) {
         switch (ev = pu_wait_for_queues(events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
             case PS_ToServerQueue: {
                 size_t len = sizeof(msg);
-                memset(msg,0,sizeof(msg));
                 while (pu_queue_pop(to_cloud, msg, &len)) {
  /* Sending with retries loop */
                     int out = 0;
