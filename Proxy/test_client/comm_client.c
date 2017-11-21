@@ -38,11 +38,14 @@
     ]
 }
 */
-#define SEND_TO_SEC 30
+#define SEND_TO_SEC 1
 static lib_timer_clock_t send_clock = {0};
 static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
+
+static int tmp = 0;
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
+/*
 "{"
     "\"measures\": "
     "["
@@ -62,12 +65,28 @@ const char* write_source() {
         "}"
     "]"
 "}"
+*/
+               "{\n"
+                       "\"measures\": [{\n"
+                       "\t\"deviceId\": \"00155F00F861DCD8-00010014-0569\",\n"
+                           "\t\"paramsMap\": {\n"
+                       "\t\t\"batteryVoltage\": \"29\",\n"
+                               "\t\t\"zb_0001_0021\": \"0\",\n"
+                               "\t\t\"zb_0001_003E\": \"0\",\n"
+                               "\t\t\"timestamp\": \"15112679723314326\"\n"
+                   "\t\t}\n"
+               "\t}]\n"
+               "}"
 );
     char* ret = NULL;
-
-    if(lib_timer_alarm(send_clock)) {
+    if(tmp++ > 5) {
+        if (lib_timer_alarm(send_clock)) {
+            ret = wr_src;
+            lib_timer_init(&send_clock, SEND_TO_SEC);
+        }
+    }
+    else {
         ret = wr_src;
-        lib_timer_init(&send_clock, SEND_TO_SEC);
     }
     return ret;
 }
@@ -105,8 +124,11 @@ static void* wud_proc(void* socket) {
     while(!rw_stop) {
         /* Get smth to write */
         const char* info = wud_source(); /* Return NULL if no need to send WD alert or WD alert */
-        sleep(1);
-        if(!info) continue;
+
+        if(!info) {
+            sleep(1);
+            continue;
+        }
 /* Start write operation */
         ssize_t ret;
         while(ret = lib_tcp_write(wud_socket, info, strlen(info)+1, 1), !ret&&!rw_stop);  /* run until the timeout */
@@ -181,7 +203,7 @@ static void* write_proc(void* socket) {
     while(!rw_stop) {
         /* Get smth to write */
          const char* info = write_source(); /* should be wait for info from queue(s) */
-        sleep(1);
+
         if(!info) continue;
 
         /* Prepare write operation */

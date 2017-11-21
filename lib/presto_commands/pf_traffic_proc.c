@@ -23,6 +23,7 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "pu_logger.h"
 #include "lib_http.h"
 
 #include "pf_traffic_proc.h"
@@ -52,9 +53,7 @@ static unsigned long inc_seq_number() {
 size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id) {
     unsigned long number = inc_seq_number();
 
-    pu_log(LL_DEBUG,"%s: ===== 1 got message: '%s'",__FUNCTION__,msg);
     if(!strlen(msg)) {
-        pu_log(LL_ERROR,"%s: =====  2 ZERO_LENGTH message.",__FUNCTION__);
         snprintf(msg, msg_size-1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%lu\"}", device_id, number);
     }
     else {
@@ -64,17 +63,14 @@ size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id) {
         while((msg[i++] != '{') && (i < strlen(msg)));
 
         if(i >= strlen(msg)) {
-            pu_log(LL_DEBUG,"%s: ===== 3 i=%d",__FUNCTION__,i);
             snprintf(buf, sizeof(buf) - 1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%lu\"}", device_id, number);
         }
         else {
-            pu_log(LL_DEBUG,"%s: ===== 4 i=%d  ",__FUNCTION__,i);
             snprintf(buf, sizeof(buf)-1, "{\"proxyId\": \"%s\", \"sequenceNumber\": \"%lu\", %s", device_id, number, msg+1);
         }
 
         strncpy(msg, buf, msg_size-1);
         msg[msg_size-1] = '\0';
     }
-    pu_log(LL_ERROR,"%s:===== 5 resulting message: %'s'",__FUNCTION__,msg);
     return strlen(msg);
 }

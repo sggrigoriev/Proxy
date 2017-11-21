@@ -360,7 +360,9 @@ static void process_proxy_commands(char* msg) {
                 char for_wud[LIB_HTTP_MAX_MSG_SIZE];
                 msg_obj_t* cmd_array = pr_make_cmd_array(cmd_arr_elem);
                 pr_obj2char(cmd_array, for_wud, sizeof(for_wud));
+#ifndef PROXY_SEPARATE_RUN
                 pu_queue_push(to_wud, for_wud, strlen(for_wud) + 1);
+#endif
                 pr_erase_msg(cmd_array);
                 break;
             }
@@ -417,7 +419,9 @@ static void report_cloud_conn_status(int online) {
         pc_getFWVersion(fw_version, sizeof(fw_version));
 
         pr_make_conn_info_cmd(buf, sizeof(buf), conn_string, deviceID, auth_token, fw_version);
+#ifndef PROXY_SEPARATE_RUN
         pu_queue_push(to_wud, buf, strlen(buf)+1);
+#endif
 /* 3. Send the local IP-address to the cloud. */
 #ifdef PROXY_ETHERNET_INTERFACE
         strncpy(interface, PROXY_ETHERNET_INTERFACE, sizeof(interface)-1);

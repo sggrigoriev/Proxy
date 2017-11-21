@@ -99,7 +99,7 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size)
     ret->start_no = 0;
     pthread_mutex_unlock(&own_mutex);
     return ret;
-on_err:
+on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf */
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
@@ -235,6 +235,14 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
 
         return ret;
     }
+
+    char *s;
+    s = malloc(conn->in_buf.len+1);
+    memcpy(s, conn->in_buf.buf, conn->in_buf.len);
+    s[conn->in_buf.len] = 0;
+    pu_log(LL_DEBUG, "lib_tcp_read: len = %d, msg = %s", conn->in_buf.len, conn->in_buf.buf);
+    free(s);
+
 /*Put incoming message into assembling buffer */
     pthread_mutex_lock(&own_mutex);
         int ret = tcp_get(&conn->in_buf, &conn->ass_buf);
@@ -267,12 +275,16 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
                     pu_log(LL_ERROR, "lib_tcp_assemble: too long incoming message tail found. Ignored");
                 }
                 conn->ass_buf.status = LIB_TCP_BUF_READY;   /* Reset the status */
+                pu_log(LL_DEBUG, "lib_tcp_assemble: Before: conn->ass_buf.idx = %d, conn->ass_buf = %s", conn->ass_buf.idx, conn->ass_buf);
                 memmove(conn->ass_buf.buf, conn->ass_buf.buf+i+1, conn->ass_buf.idx-(i+1));
                 conn->ass_buf.idx = conn->ass_buf.idx-(i+1);
+                conn->ass_buf.buf[conn->ass_buf.idx] = 0;
+                pu_log(LL_DEBUG, "lib_tcp_assemble: After: conn->ass_buf.idx = %d, conn->ass_buf = %s", conn->ass_buf.idx, conn->ass_buf);
                 break;
             }
         }
     pthread_mutex_unlock(&own_mutex);
+    pu_log(LL_DEBUG, "lib_tcp_assemble: Return %s", ret);
     return ret;
 }
 
@@ -391,8 +403,14 @@ static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
         ab->status = LIB_TCP_BUF_REJECT;
         return 0;
     }
+
+    ab->buf[ab->idx] = 0;
+    pu_log(LL_DEBUG, "tcp_get: Before: ab->idx = %d, ab->buf = %s",  ab->idx, ab->buf);
     memcpy(ab->buf+ab->idx, in->buf, in->len);
     ab->idx += in->len;
+
+    ab->buf[ab->idx] = 0;
+    pu_log(LL_DEBUG, "tcp_get: After: ab->idx = %d, ab->buf = %s",  ab->idx, ab->buf);
     return 1;
 }
 
