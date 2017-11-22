@@ -38,11 +38,13 @@
     ]
 }
 */
-#define SEND_TO_SEC 1
+#define SEND_TO_SEC 30
+#define FIRST_FAST_MESSAGES 5
+
 static lib_timer_clock_t send_clock = {0};
 static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
 
-static int tmp = 0;
+static int ffm_counter = 0;
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
 /*
@@ -79,7 +81,7 @@ const char* write_source() {
                "}"
 );
     char* ret = NULL;
-    if(tmp++ > 5) {
+    if(ffm_counter++ > FIRST_FAST_MESSAGES) {
         if (lib_timer_alarm(send_clock)) {
             ret = wr_src;
             lib_timer_init(&send_clock, SEND_TO_SEC);
@@ -126,7 +128,7 @@ static void* wud_proc(void* socket) {
         const char* info = wud_source(); /* Return NULL if no need to send WD alert or WD alert */
 
         if(!info) {
-            sleep(1);
+            sleep(1);       /* To prevent dead loop on time of new message waiting */
             continue;
         }
 /* Start write operation */
@@ -204,7 +206,10 @@ static void* write_proc(void* socket) {
         /* Get smth to write */
          const char* info = write_source(); /* should be wait for info from queue(s) */
 
-        if(!info) continue;
+        if(!info) {
+            sleep(1);   /* To prevent dead loop on time of new message waiting */
+            continue;
+        }
 
         /* Prepare write operation */
         ssize_t ret;

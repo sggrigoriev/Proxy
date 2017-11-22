@@ -15,7 +15,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *
-
  Created by gsg on 19/12/16.
 */
 
@@ -99,7 +98,7 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size)
     ret->start_no = 0;
     pthread_mutex_unlock(&own_mutex);
     return ret;
-on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf */
+    on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf */
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
@@ -109,13 +108,13 @@ lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
     pthread_mutex_lock(&own_mutex);
     unsigned int i;
     for(i = 0; i < all_conns->sa_max_size; i++) {
-            if(all_conns->rd_conn_array[i].socket < 0) {
-                all_conns->rd_conn_array[i].socket = rd_socket;
-                all_conns->sa_size++;
-                pthread_mutex_unlock(&own_mutex);
-                return all_conns;
-            }
+        if(all_conns->rd_conn_array[i].socket < 0) {
+            all_conns->rd_conn_array[i].socket = rd_socket;
+            all_conns->sa_size++;
+            pthread_mutex_unlock(&own_mutex);
+            return all_conns;
         }
+    }
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
@@ -128,16 +127,16 @@ void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
     if(!all_conns) return;
     pthread_mutex_lock(&own_mutex);
     unsigned int i;
-        for(i = 0; i < all_conns->sa_max_size; i++) {
-            if(all_conns->rd_conn_array[i].socket >= 0) {
-                shutdown(all_conns->rd_conn_array[i].socket, SHUT_RDWR);
-                close(all_conns->rd_conn_array[i].socket);
-                free(all_conns->rd_conn_array[i].in_buf.buf);
-                free(all_conns->rd_conn_array[i].ass_buf.buf);
-            }
+    for(i = 0; i < all_conns->sa_max_size; i++) {
+        if(all_conns->rd_conn_array[i].socket >= 0) {
+            shutdown(all_conns->rd_conn_array[i].socket, SHUT_RDWR);
+            close(all_conns->rd_conn_array[i].socket);
+            free(all_conns->rd_conn_array[i].in_buf.buf);
+            free(all_conns->rd_conn_array[i].ass_buf.buf);
         }
-        free(all_conns->rd_conn_array);
-        free(all_conns);
+    }
+    free(all_conns->rd_conn_array);
+    free(all_conns);
     pthread_mutex_unlock(&own_mutex);
 }
 
@@ -148,30 +147,30 @@ int lib_tcp_get_server_socket(int port) {
     /*Create server socket */
     int server_socket;
 
-        if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) return -1;
+    if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) return -1;
     /*Set socket options */
-        int32_t on = 1;
+    int32_t on = 1;
     /*use the socket even if the address is busy (by previously killed process for ex) */
-        if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
     /*Make address */
-        struct sockaddr_in addr_struct;
-        memset(&addr_struct, 0, sizeof(addr_struct));
-        addr_struct.sin_family = AF_INET;
-        addr_struct.sin_addr.s_addr = INADDR_ANY;
-        addr_struct.sin_port = htons(port);
+    struct sockaddr_in addr_struct;
+    memset(&addr_struct, 0, sizeof(addr_struct));
+    addr_struct.sin_family = AF_INET;
+    addr_struct.sin_addr.s_addr = INADDR_ANY;
+    addr_struct.sin_port = htons(port);
 
     /*bind socket on repeated mode */
-        int rpt = LIB_TCP_BINGING_ATTEMPTS;
-        while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
-            sleep(1);
-            if (!rpt--) return -1;
-        }
+    int rpt = LIB_TCP_BINGING_ATTEMPTS;
+    while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
+        sleep(1);
+        if (!rpt--) return -1;
+    }
     return server_socket;
 }
 
 /*return connected socket for R/W operations, 0 if timeout and negative if error */
 int lib_tcp_listen(int server_socket, int to_sec) {
-    /*Make communication sockets 
+    /*Make communication sockets
     listen for incoming connection
     */
     if (listen(server_socket, 1) < 0) {
@@ -211,7 +210,7 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     fd_set readset;
 
     pthread_mutex_lock(&own_mutex);
-        int max_fd = make_fdset(all_conns, &readset);
+    int max_fd = make_fdset(all_conns, &readset);
     pthread_mutex_unlock(&own_mutex);
 
     if(max_fd < 0) return NULL;
@@ -220,7 +219,7 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     if(result == 0) return LIB_TCP_READ_TIMEOUT;   /*timeout */
 
     pthread_mutex_lock(&own_mutex);
-        lib_tcp_rd_t* conn = get_ready_conn(all_conns, &readset);
+    lib_tcp_rd_t* conn = get_ready_conn(all_conns, &readset);
     pthread_mutex_unlock(&own_mutex);
 
     if(!conn) return LIB_TCP_READ_NO_READY_CONNS; /*no ready sockets error - they sould be! */
@@ -230,22 +229,15 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
         lib_tcp_rd_t* ret = (!conn->in_buf.len)?LIB_TCP_READ_EOF:NULL;
 
         pthread_mutex_lock(&own_mutex);
-            remove_conn(all_conns, conn);
+        remove_conn(all_conns, conn);
         pthread_mutex_unlock(&own_mutex);
 
         return ret;
     }
 
-    char *s;
-    s = malloc(conn->in_buf.len+1);
-    memcpy(s, conn->in_buf.buf, conn->in_buf.len);
-    s[conn->in_buf.len] = 0;
-    pu_log(LL_DEBUG, "lib_tcp_read: len = %d, msg = %s", conn->in_buf.len, conn->in_buf.buf);
-    free(s);
-
 /*Put incoming message into assembling buffer */
     pthread_mutex_lock(&own_mutex);
-        int ret = tcp_get(&conn->in_buf, &conn->ass_buf);
+    int ret = tcp_get(&conn->in_buf, &conn->ass_buf);
     pthread_mutex_unlock(&own_mutex);
 
     if(!ret) return LIB_TCP_READ_MSG_TOO_LONG;  /*too long record */
@@ -261,30 +253,27 @@ const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size) {
     const char* ret = NULL;
 
     pthread_mutex_lock(&own_mutex);
-        for(i = 0; i < conn->ass_buf.idx; i++) {
-            if(conn->ass_buf.buf[i] == '\0') {  /* Message tail found */
-                if(conn->ass_buf.status != LIB_TCP_BUF_REJECT) {    /* Message will be passed */
-                    if ((i + 1) <= out_size) {     /*The message fits into out buffer */
-                        memcpy(out, conn->ass_buf.buf, i + 1);
-                        ret = out;
-                    } else {
-                        pu_log(LL_ERROR, "lib_tcp_assemble: incoming message exceeds max bufer size: %d vs %d. Ignored.", i+1, out_size);
-                    }
+    for(i = 0; i < conn->ass_buf.idx; i++) {
+        if(conn->ass_buf.buf[i] == '\0') {  /* Message tail found */
+            if(conn->ass_buf.status != LIB_TCP_BUF_REJECT) {    /* Message will be passed */
+                if ((i + 1) <= out_size) {     /*The message fits into out buffer */
+                    memcpy(out, conn->ass_buf.buf, i + 1);
+                    ret = out;
+                } else {
+                    pu_log(LL_ERROR, "lib_tcp_assemble: incoming message exceeds max bufer size: %d vs %d. Ignored.", i+1, out_size);
                 }
-                else {                      /* Reject status - ignore the message */
-                    pu_log(LL_ERROR, "lib_tcp_assemble: too long incoming message tail found. Ignored");
-                }
-                conn->ass_buf.status = LIB_TCP_BUF_READY;   /* Reset the status */
-                pu_log(LL_DEBUG, "lib_tcp_assemble: Before: conn->ass_buf.idx = %d, conn->ass_buf = %s", conn->ass_buf.idx, conn->ass_buf);
-                memmove(conn->ass_buf.buf, conn->ass_buf.buf+i+1, conn->ass_buf.idx-(i+1));
-                conn->ass_buf.idx = conn->ass_buf.idx-(i+1);
-                conn->ass_buf.buf[conn->ass_buf.idx] = 0;
-                pu_log(LL_DEBUG, "lib_tcp_assemble: After: conn->ass_buf.idx = %d, conn->ass_buf = %s", conn->ass_buf.idx, conn->ass_buf);
-                break;
             }
+            else {                      /* Reject status - ignore the message */
+                pu_log(LL_ERROR, "lib_tcp_assemble: too long incoming message tail found. Ignored");
+            }
+            conn->ass_buf.status = LIB_TCP_BUF_READY;   /* Reset the status */
+
+            memmove(conn->ass_buf.buf, conn->ass_buf.buf+i+1, conn->ass_buf.idx-(i+1));
+            conn->ass_buf.idx = conn->ass_buf.idx-(i+1);
+            break;
         }
+    }
     pthread_mutex_unlock(&own_mutex);
-    pu_log(LL_DEBUG, "lib_tcp_assemble: Return %s", ret);
     return ret;
 }
 
@@ -404,13 +393,9 @@ static int tcp_get(lib_tcp_in_t* in, lib_tcp_assembling_buf_t* ab) {
         return 0;
     }
 
-    ab->buf[ab->idx] = 0;
-    pu_log(LL_DEBUG, "tcp_get: Before: ab->idx = %d, ab->buf = %s",  ab->idx, ab->buf);
     memcpy(ab->buf+ab->idx, in->buf, in->len);
     ab->idx += in->len;
 
-    ab->buf[ab->idx] = 0;
-    pu_log(LL_DEBUG, "tcp_get: After: ab->idx = %d, ab->buf = %s",  ab->idx, ab->buf);
     return 1;
 }
 
@@ -436,4 +421,3 @@ static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds) {
     all_conns->start_no = inc_start_no(all_conns->start_no, all_conns->sa_max_size);
     return ret;
 }
-
