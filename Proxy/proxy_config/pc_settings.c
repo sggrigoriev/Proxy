@@ -122,6 +122,7 @@ static int read_one_string_file(const char* file_name, char* value, size_t size,
 static int save_one_string_file(const char* file_name, const char* new_val, const char* value_name);
 
 /***************************************************************************************/
+#define PCS_ERR fprintf(stderr, "PROXY: Default value will be used instead %d\n", __LINE__)
 #define PC_RET(a,b) return (!initiated)?a:b
 
 /* Set of "get" functions to make an access to settings for Presto modules */
@@ -211,33 +212,36 @@ int pc_load_config(const char* cfg_file_name) {
         return 0;
     }
 /* Now load data */
-    if(!getStrValue(cfg, PROXY_LOG_NAME, log_name, sizeof(log_name)))                           fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_LOG_REC_AMT, &log_rec_amt))                                     fprintf(stderr, "Default value will be used instead\n");
+    if(!getStrValue(cfg, PROXY_LOG_NAME, log_name, sizeof(log_name)))                           PCS_ERR;
+    if(!getUintValue(cfg, PROXY_LOG_REC_AMT, &log_rec_amt))                                     PCS_ERR;
     getLLTValue(cfg, PROXY_LOG_LEVEL, &log_level);
 
-    if(getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                         fprintf(stderr, "DeviceID get from config file\n");
+    if(!getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                        fprintf(stderr, "DeviceID will be generated\n");
 
-    if(getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name))) fprintf(stderr, "Default value will be used instead\n");
-    read_one_string_file(auth_token_file_name, auth_token, sizeof(auth_token), PROXY_AUTH_TOKEN_FILE_NAME);
+    if(!getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name)))
+        fprintf(stderr, "%s setting is not found. Auth token has to be provided by the cloud\n", PROXY_AUTH_TOKEN_FILE_NAME);
+    else
+        read_one_string_file(auth_token_file_name, auth_token, sizeof(auth_token), PROXY_AUTH_TOKEN_FILE_NAME);
 
-    if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     fprintf(stderr, "Default value will be used instead\n");
 
-    if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL_FILE_NAME, main_cloud_url_file_name, sizeof(main_cloud_url_file_name))) fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     PCS_ERR;
+
+    if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL_FILE_NAME, main_cloud_url_file_name, sizeof(main_cloud_url_file_name))) PCS_ERR;
     if(!read_one_string_file(main_cloud_url_file_name, main_cloud_url, sizeof(main_cloud_url), PROXY_MAIN_CLOUD_URL_FILE_NAME)) {
-        fprintf(stderr, "Main Cloud URL got default value %s\n", DEFAULT_MAIN_CLOUD_URL);
+        PCS_ERR;
         strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);  /* Set default value */
     }
 
-    if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_FW_VER_SEND_TO_HRS, &fw_ver_sending_to_hrs))                    fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   PCS_ERR;
+    if(!getUintValue(cfg, PROXY_FW_VER_SEND_TO_HRS, &fw_ver_sending_to_hrs))                    PCS_ERR;
 
-    if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           fprintf(stderr, "Default value will be used instead\n");
-    if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 fprintf(stderr, "Default value will be used instead\n");
-    if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             fprintf(stderr, "Default value will be used instead\n");
+    if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   PCS_ERR;
+    if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                PCS_ERR;
+    if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       PCS_ERR;
+    if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           PCS_ERR;
+    if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   PCS_ERR;
+    if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 PCS_ERR;
+    if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             PCS_ERR;
 
     cJSON_Delete(cfg);
 
@@ -429,7 +433,7 @@ static void initiate_defaults() {
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {
     char buf[10];
     if(!getStrValue(cfg, field_name, buf, sizeof(buf))) {
-        fprintf(stderr, "Default will be used instead.\n");
+        PCS_ERR;
     }
     else {
         if(!strcmp(buf, PROXY_LL_DEBUG))  *llt_setting = LL_DEBUG;

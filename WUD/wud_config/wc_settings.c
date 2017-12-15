@@ -247,7 +247,7 @@ unsigned int wc_getWUDDelay() {
     Thread-protected functions
 */
 
-#define WC_ERR()    fprintf(stderr, "Default value will be used instead\n")
+#define WC_ERR()    fprintf(stderr, "WUD: Default value will be used instead\n")
 
 int wc_load_config(const char* cfg_file_name) {
     cJSON* cfg = NULL;

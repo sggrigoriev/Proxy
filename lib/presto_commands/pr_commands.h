@@ -200,7 +200,7 @@ Return commant type
 */
 pr_cmd_item_t pr_get_cmd_item(msg_obj_t* cmd_item);
 
-/*This function slits the commands array into Proxy-related and Agent-related sub-arrays. For now these commands sets are not intersects which is great
+/*This function splits the commands array into Proxy-related and Agent-related sub-arrays. For now these commands sets are not intersects which is great
   msg             - original message as JSON object
   device_id       - gateway device id - one of ways how to understand the command belongs to Proxy, not ot the end-device
   msg4proxy       - buffer for commands to Proxy converted to the JSON string. Could be "" if no commands for Proxy
@@ -350,9 +350,11 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, 
  * @param size      - buffer size
  * @param device_id - Proxy device ID
  * @param connect   - 0 Proxy of line, 1 - Proxy online
+ * @param auth_token- Proxy authentication token
+ * @param conn_string- Proxy Main URL
  * @return          - the buffer with the command
  */
-const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect);
+const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect, const char* auth_token, const char* conn_string);
 
 /*Recognise the alert type by alert item
   alert_item  - alert item as JSON object

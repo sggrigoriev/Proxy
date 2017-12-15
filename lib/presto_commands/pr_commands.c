@@ -451,13 +451,15 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const
     return buf;
 }
 
-/* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>"}}]}*/
-const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect) {
+/* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>", "deviceAuthToken":"<auth_token>","connString":"<mainURL>}}]}*/
+const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect, const char* auth_token, const char* conn_string) {
     char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
     char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
     char* conn_yes = "connected";
     char* conn_no = "disconnected";
-    char* conn_msg_3 = "\"}}]}";
+    char* conn_msg_3 = "\", \"deviceAuthToken\":\"";
+    char* conn_msg_4 = "\", \"connString\":\"";
+    char* conn_msg_5 = "\"}}]}";
 
     strncpy(buf, conn_msg_1, size-1);
     strncat(buf, device_id, size-strlen(buf)-1);
@@ -467,6 +469,10 @@ const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* devi
     else
         strncat(buf, conn_no, size-strlen(buf)-1);
     strncat(buf, conn_msg_3, size-strlen(buf)-1);
+    strncat(buf, auth_token, size-strlen(buf)-1);
+    strncat(buf, conn_msg_4, size-strlen(buf)-1);
+    strncat(buf, conn_string, size-strlen(buf)-1);
+    strncat(buf, conn_msg_5, size-strlen(buf)-1);
 
     return buf;
 }

@@ -26,6 +26,7 @@
 #define PRESTO_PU_QUEUE_H
 
 #include <pthread.h>
+#include <stdint.h>
 
 /* Special predefined event to pass timeout signal to threads connected to the queue */
 #define PQ_TIMEOUT 0
@@ -34,7 +35,7 @@
 /*****************************************************************************************************
  Common part, concerning all queues
 */
-typedef unsigned char pu_queue_event_t;
+typedef uint16_t pu_queue_event_t;
 
 /* Special predefined event to pass STOP signal to threads connected to the queue */
 #define PQ_STOP (sizeof(pu_queue_event_t)*8-1)

@@ -400,22 +400,24 @@ static void process_proxy_commands(char* msg) {
 static void report_cloud_conn_status(int online) {
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char deviceID[LIB_HTTP_DEVICE_ID_SIZE] = {0};
-/* 1. Send the alert to the Agent */
+    char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE] = {0};
+    char conn_string[LIB_HTTP_MAX_URL_SIZE] = {0};
 
+/* 1. Send the alert to the Agent */
     pc_getProxyDeviceID(deviceID, sizeof(deviceID));
-    pr_conn_state_notf_to_agent(buf, sizeof(buf), deviceID, online);
+    pc_getAuthToken(auth_token, sizeof(auth_token));
+    pc_getMainCloudURL(conn_string, sizeof(conn_string));
+
+    pr_conn_state_notf_to_agent(buf, sizeof(buf), deviceID, online, auth_token, conn_string);
     pu_queue_push(to_agent, buf, strlen(buf)+1);
 
 /* 2. if the status == online - send the connection info to the WUD */
     if(online) {
-        char conn_string[LIB_HTTP_MAX_URL_SIZE] = {0};
-        char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE] = {0};
         char fw_version[LIB_HTTP_FW_VERSION_SIZE] = {0};
         char local_ip_address[LIB_HTTP_MAX_IPADDRES_SIZE] = {0};
         char interface[LIB_HTTP_MAX_IP_INTERFACE_SIZE] = {0};
 
         pc_getCloudURL(conn_string, sizeof(conn_string));
-        pc_getAuthToken(auth_token, sizeof(auth_token));
         pc_getFWVersion(fw_version, sizeof(fw_version));
 
         pr_make_conn_info_cmd(buf, sizeof(buf), conn_string, deviceID, auth_token, fw_version);
