@@ -189,6 +189,7 @@ void  pr_obj2char(msg_obj_t* obj_msg, char* text_msg, size_t size) {
     if(!obj_msg) text_msg[0] = '\0';
     char* str = cJSON_PrintUnformatted(obj_msg);
     strncpy(text_msg, str, size-1);
+    text_msg[size-1] = '\0';
     free(str);
 }
 
@@ -430,6 +431,7 @@ static pr_alert_item_t processWUDping(msg_obj_t* alert_item) {
     if(!wp) return ret;
     ret.alert_wd.alert_type = PR_ALERT_WATCHDOG;
     strncpy(ret.alert_wd.component, wp->valuestring, sizeof(ret.alert_wd.component)-1);
+    ret.alert_wd.component[sizeof(ret.alert_wd.component)-1] = '\0';
     return ret;
 }
 
@@ -461,7 +463,7 @@ const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* devi
     char* conn_msg_4 = "\", \"connString\":\"";
     char* conn_msg_5 = "\"}}]}";
 
-    strncpy(buf, conn_msg_1, size-1);
+    strncpy(buf, conn_msg_1, size-1); buf[size-1] = '\0';
     strncat(buf, device_id, size-strlen(buf)-1);
     strncat(buf, conn_msg_2, size-strlen(buf)-1);
     if(connect)
@@ -474,6 +476,7 @@ const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* devi
     strncat(buf, conn_string, size-strlen(buf)-1);
     strncat(buf, conn_msg_5, size-strlen(buf)-1);
 
+    buf[size-1] = '\0';
     return buf;
 }
 
@@ -499,7 +502,9 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
         case PR_ALERT_MONITOR:
             ret.alert_monitor.alert_type = PR_ALERT_MONITOR;
             strncpy(ret.alert_monitor.component, "All", sizeof(ret.alert_monitor.component)-1);
+            ret.alert_monitor.component[sizeof(ret.alert_monitor.component)-1] = '\0';
             strncpy(ret.alert_monitor.reason, diagnostics->valuestring, sizeof(ret.alert_monitor.reason)-1);
+            ret.alert_monitor.reason[sizeof(ret.alert_monitor.reason)-1] = '\0';
             break;
         default:
             ret.alert_type = PR_ALERT_UNDEFINED;
@@ -540,23 +545,29 @@ static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
             ret.fwu_start.command_type = PR_CMD_FWU_START;
         }
         else if(!strcmp(name, cmd_file_server_url)) {
-            strncpy(ret.fwu_start.file_server_url, value, sizeof(ret.fwu_start.file_server_url));
+            strncpy(ret.fwu_start.file_server_url, value, sizeof(ret.fwu_start.file_server_url)-1);
+            ret.fwu_start.file_server_url[sizeof(ret.fwu_start.file_server_url)-1] = '\0';
         }
         else if(!strcmp(name, cmd_fw_update_check_sum)) {
-            strncpy(ret.fwu_start.check_sum, value, sizeof(ret.fwu_start.check_sum));
+            strncpy(ret.fwu_start.check_sum, value, sizeof(ret.fwu_start.check_sum)-1);
+            ret.fwu_start.check_sum[sizeof(ret.fwu_start.check_sum)-1] = '\0';
         }
         else if(!strcmp(name, cmd_conn_string)) {
             ret.cloud_conn.command_type = PR_CMD_CLOUD_CONN;
-            strncpy(ret.cloud_conn.conn_string, value, sizeof(ret.cloud_conn.conn_string));
+            strncpy(ret.cloud_conn.conn_string, value, sizeof(ret.cloud_conn.conn_string)-1);
+            ret.cloud_conn.conn_string[sizeof(ret.cloud_conn.conn_string)-1] = '\0';
         }
         else if(!strcmp(name, cmd_device_id)) {
-            strncpy(ret.cloud_conn.device_id, value, sizeof(ret.cloud_conn.device_id));
+            strncpy(ret.cloud_conn.device_id, value, sizeof(ret.cloud_conn.device_id)-1);
+            ret.cloud_conn.device_id[sizeof(ret.cloud_conn.device_id)-1] = '\0';
         }
         else if(!strcmp(name, cmd_auth_token)) {
-            strncpy(ret.cloud_conn.auth_token, value, sizeof(ret.cloud_conn.auth_token));
+            strncpy(ret.cloud_conn.auth_token, value, sizeof(ret.cloud_conn.auth_token)-1);
+            ret.cloud_conn.auth_token[sizeof(ret.cloud_conn.auth_token)-1] = '\0';
         }
         else if(!strcmp(name, cmd_firmware)) {
-            strncpy(ret.cloud_conn.fw_version, value, sizeof(ret.cloud_conn.fw_version));
+            strncpy(ret.cloud_conn.fw_version, value, sizeof(ret.cloud_conn.fw_version)-1);
+            ret.cloud_conn.fw_version[sizeof(ret.cloud_conn.fw_version)-1] = '\0';
         }
         else if(!strcmp(name, cmd_reboot) && !strcmp(value, "1")) {
             ret.command_type = PR_CMD_REBOOT;

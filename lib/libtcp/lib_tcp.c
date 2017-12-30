@@ -360,6 +360,7 @@ const char* lib_tcp_local_ip(const char* interface, char* ip_address, size_t siz
             struct sockaddr_in *pAddr = (struct sockaddr_in *)tmp->ifa_addr;
             if(!strcmp(tmp->ifa_name, interface)) { /* Found the interface! */
                 strncpy(ip_address, inet_ntoa(pAddr->sin_addr), size-1);
+                ip_address[size-1] = '\0';
                 break;
             }
         }

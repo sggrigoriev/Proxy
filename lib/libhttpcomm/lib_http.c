@@ -385,6 +385,7 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
             handler->slist = curl_slist_append(handler->slist, buf);
         }
     }
+    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, 60L), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_HTTPHEADER, handler->slist), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_READFUNCTION, read_callback), curlResult != CURLE_OK) goto out;
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_READDATA, &outBoundCommInfo), curlResult != CURLE_OK) goto out;
@@ -424,8 +425,8 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
     /* string with 1 character in it ... */
     if (strlen(handler->rx_buf) > 0) {
         /* put the result into the main buffer and return */
-        pu_log(LL_DEBUG, "lib_http_post: received msg length %d", strlen(handler->rx_buf));
         strncpy(reply, handler->rx_buf, reply_size-1);
+        pu_log(LL_DEBUG, "lib_http_post: received msg length %d: %s", strlen(handler->rx_buf), handler->rx_buf);
     }
     else {
         pu_log(LL_DEBUG, "lib_http_post: received time-out message from the server");
@@ -440,7 +441,7 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
             handler->slist = NULL;
         }
 
-        if (curlErrno == EAGAIN) ret = LIB_HTTP_IO_RETRY;   /* timeout case */
+        if ((curlErrno == EAGAIN) || (curlErrno == ETIMEDOUT)) ret = LIB_HTTP_IO_RETRY;   /* timeout case */
         else if (!curlErrno) ret = LIB_HTTP_IO_OK; /* Got smth to read */
         else ret = LIB_HTTP_IO_ERROR;
         return calc_io_result(reply, ret);  /* Make final analysis based on "status" field in the reply */

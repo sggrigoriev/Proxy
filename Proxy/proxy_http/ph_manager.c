@@ -405,12 +405,12 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
     while(!out) {
         ret = lib_http_post(post_conn, msg, reply, reply_size, auth_token);
         switch (ret) {
-            case LIB_HTTP_IO_ERROR:
             case LIB_HTTP_IO_UNKNOWN:
             case LIB_HTTP_IO_UNAUTH:
                 out = 1;
                 break;
             case LIB_HTTP_IO_RETRY:
+            case LIB_HTTP_IO_ERROR:
                 pu_log(LL_WARNING, "_post: Connectivity problems, retry");
                 if (retries-- == 0) {
                     out = 1;
@@ -460,6 +460,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
     }
     strncpy(conn, resp, conn_size-1);
     lib_http_eraseConn(&get_conn);
+    pu_log(LL_DEBUG, "get_contact: Contact URL is %s", conn);
     return 1;
 }
 
@@ -522,7 +523,12 @@ static int get_new_token(lib_http_conn_t post_d, const char* device_id, char* ne
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
     pf_add_proxy_head(buf, sizeof(buf), device_id);
+    int i = 0;
+again:
     switch(_post(post_d, buf, reply, sizeof(reply), "")) {
+         case LIB_HTTP_IO_RETRY:
+             pu_log(LL_WARNING, "get_new_token: Retry. Attampt #%d", i++);
+             goto again;
          case LIB_HTTP_IO_UNAUTH: {     /* cloud could return the token - lets check it! */
             cJSON *obj = cJSON_Parse(reply);
             if(!obj) {
@@ -551,7 +557,15 @@ static int test_auth_token(lib_http_conn_t post_d, const char* device_id, const 
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
     pf_add_proxy_head(buf, sizeof(buf), device_id);
-    return io_result_2_bool(_post(post_d, buf, reply, sizeof(reply), old_token));
+    lib_http_io_result_t rc;
+    int i= 0;
+    do {
+        if(i) pu_log(LL_WARNING, "%s: Retry: Attempt #%d", __FUNCTION__, i);
+        rc = _post(post_d, buf, reply, sizeof(reply), old_token);
+        i++;
+    } while ((rc != LIB_HTTP_IO_OK) && (rc != LIB_HTTP_IO_UNAUTH) && ((rc != LIB_HTTP_IO_UNKNOWN)));
+
+    return io_result_2_bool(rc);
  }
 /*******************************
  * Sync functions
@@ -572,14 +586,12 @@ static void start_io() {     /* wait until !block; inc io; was_reconnect = 1 */
     io++;
     was_reconnect = 0;
     pthread_mutex_unlock(&cond_mutex);
-    pu_log(LL_DEBUG, "start_io()");
 }
 static void stop_io() {      /* dec io */
     pthread_mutex_lock(&cond_mutex);
     io--;
     pthread_cond_broadcast(&cond);
     pthread_mutex_unlock(&cond_mutex);
-    pu_log(LL_DEBUG, "stop_io()");
  }
 /**************************************************
  * Block http IO in all threads
@@ -604,7 +616,6 @@ static int block_io() {
     }
     was_reconnect = 1;
     pthread_mutex_unlock(&cond_mutex);
-    pu_log(LL_DEBUG, "block_io()");
     return 0;
 }
 static void unblock_io() {   /* block = 0; */
@@ -612,5 +623,4 @@ static void unblock_io() {   /* block = 0; */
     block = 0;
     pthread_cond_broadcast(&cond);
     pthread_mutex_unlock(&cond_mutex);
-    pu_log(LL_DEBUG, "unblock_io()");
 }

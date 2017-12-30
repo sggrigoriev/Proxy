@@ -219,9 +219,11 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                        fprintf(stderr, "DeviceID will be generated\n");
 
     if(!getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name)))
-        fprintf(stderr, "%s setting is not found. Auth token has to be provided by the cloud\n", PROXY_AUTH_TOKEN_FILE_NAME);
-    else
-        read_one_string_file(auth_token_file_name, auth_token, sizeof(auth_token), PROXY_AUTH_TOKEN_FILE_NAME);
+        fprintf(stderr, "%s setting is not found. Default name will be used instead\n", PROXY_AUTH_TOKEN_FILE_NAME);
+
+    if(!read_one_string_file(auth_token_file_name, auth_token, sizeof(auth_token), PROXY_AUTH_TOKEN_FILE_NAME)) {
+        fprintf(stderr, "Auth Token will be set by the cloud\n");
+    }
 
 
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     PCS_ERR;

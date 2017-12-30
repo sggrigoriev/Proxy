@@ -77,6 +77,7 @@ const char* pr_ptr_list2string(char* buf, size_t size, char* const* list) {
     assert(list);
 
     strncpy(buf, "{", size-1);
+    buf[size-1] = '\0';
     unsigned int i;
     for(i = 0; i < pr_get_get_ptr_list_len(list); i++) {
         strncat(buf, "<", size-strlen(buf)-1);
