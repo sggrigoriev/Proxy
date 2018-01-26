@@ -393,7 +393,7 @@ static void initiate_defaults() {
     strcpy(conf_fname, WD_DEFAULT_CFG_FILE_NAME);
 
     curlopt_ca_path[0] = '\0';
-    curlopt_ssl_verify_peer = 0;
+    curlopt_ssl_verify_peer = 1;
 }
 
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {

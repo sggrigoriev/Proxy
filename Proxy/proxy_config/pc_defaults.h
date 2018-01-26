@@ -98,7 +98,7 @@
 #define DEFAULT_FW_VERSION_SIZE             LIB_HTTP_FW_VERSION_SIZE        /* Max size of version */
 #define DEFAULT_FW_VERSION_NUM              "undefined firmware version"    /* Default version if the file is not found */
 
-#define DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER    0
+#define DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER    1
 
 #ifndef PROXY_DEVICE_ID_PREFIX
     #define PROXY_DEVICE_ID_PREFIX             "aioxGW-"                       /* DeviceID preffix. Could be changed for different platforms */

@@ -78,7 +78,7 @@ typedef int lib_http_conn_t;
  * @param max_conns_amount  - max amount of simultaneous hppt(s) connections
  * @return  - if OK, 0 if not
  */
-int lib_http_init(unsigned int max_conns_amount);
+int lib_http_init(unsigned int max_conns_amount, int sslverify, const char* capath);
 
 /***************************************************
  * Clean-up connection pool; close curl library

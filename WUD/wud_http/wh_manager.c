@@ -65,7 +65,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
  * Public functions implementation
  */
 void wh_mgr_init(){
-    if(!lib_http_init(CONNECTIONS_TOTAL)) {
+    if(!lib_http_init(CONNECTIONS_TOTAL, wc_getCurloptSSLVerifyPeer(), wc_getCurloptCAPath())) {
         lib_http_close();
         wa_reboot();
     }
