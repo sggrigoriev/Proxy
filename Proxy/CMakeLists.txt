@@ -89,6 +89,42 @@ elseif (PRESTO_PLATFORM STREQUAL "quark")
 				pthread
 				curl
 				)
+
+elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
+
+	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
+
+	set(CMAKE_SYSTEM_NAME Linux)
+
+	add_definitions(-DPROXY_ETHERNET_INTERFACE="eth0")
+
+
+	set(TOOLCHAIN_PATH $ENV{TOOLCHAIN})
+	set(SYSROOT_PATH $ENV{SYSROOT})
+	set(PP_SDK_PATH $ENV{SDK_PATH})
+	set(PROXY_LIBS_PATH ${PP_SDK_PATH}/lib)
+	set(COMPILER_PREFIX arm-hisiv500-linux-uclibcgnueabi-)
+	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
+	set(CMAKE_SYSROOT ${TOOLCHAIN_PATH}/target/usr)
+	set(CMAKE_FORCE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc GNU)
+	set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+	set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+	set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+	set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${SYSROOT_PATH}/usr/include/gstreamer-1.0 -I${SYSROOT_PATH}/usr/include/glib-2.0 -I${SYSROOT_PATH}/usr/include -D_BSD_SOURCE -L${SYSROOT_PATH}/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
+
+	set(REQUIRED_LIBRARIES
+			curl
+			m
+			pthread
+			nopoll
+			ssl
+			crypto)
+	message(STATUS "Compiling for hiSilicon CPU (${CMAKE_SYSROOT})")
+
 else()
 	message(STATUS "Please set PLATFORM to[cross|ubuntu|openwrt|quark]")
 	return()
@@ -157,6 +193,23 @@ if (PRESTO_PLATFORM STREQUAL "openwrt")
     INSTALL(TARGETS Proxy DESTINATION /build )
     INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
 	INSTALL(FILES cloud_url DESTINATION /build )
+elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
+	add_executable(Proxy ${SOURCE_FILES})
+	target_link_libraries(Proxy ${REQUIRED_LIBRARIES}
+
+			${SYSROOT_PATH}/usr/lib/libz.a
+			${SYSROOT_PATH}/usr/lib/libgettextlib.a
+
+			${SYSROOT_PATH}/usr/lib/libintl.a
+			${SYSROOT_PATH}/usr/lib/libffi.a
+			${SYSROOT_PATH}/usr/lib/libcurl.a
+			${SYSROOT_PATH}/usr/lib/libdl.so.0
+
+			)
+	INSTALL(TARGETS Proxy DESTINATION /build )
+	INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
+	INSTALL(FILES cloud_url DESTINATION /build )
+
 else()
     add_executable(Proxy ${SOURCE_FILES})
     add_executable(comm_client ${SOURCE_FILES_TEST_CLIENT})
