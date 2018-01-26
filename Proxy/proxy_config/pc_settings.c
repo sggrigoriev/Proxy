@@ -64,6 +64,9 @@
 #define PROXY_WATCHDOG_TO_SEC   "WATCHDOG_TO_SEC"
 
 #define PROXY_SET_SSL_FOR_URL_REQUEST   "SET_SSL_FOR_URL_REQUEST"
+#define PROXY_CURLOPT_CAPATH    "CURLOPT_CAPATH"
+#define PROXY_CURLOPT_SSL_VERIFYPEER    "CURLOPT_SSL_VERIFYPEER"
+
 
 /********************************************************************
     Config values saved in memory
@@ -91,6 +94,8 @@ static unsigned int     WUD_port;
 static unsigned int     proxy_wd_to;
 
 static unsigned int     set_ssl_for_url_request;
+static int              curlopt_ssl_verify_peer;
+static char             curlopt_ca_path[PROXY_MAX_PATH];
 
 static char             fw_version[DEFAULT_FW_VERSION_SIZE];
 
@@ -192,6 +197,14 @@ int pc_setSSLForCloudURLRequest() {
     PC_RET(DEFAULT_SET_SSL_FOR_URL_REQUEST, set_ssl_for_url_request);
 }
 
+int pc_getCurloptSSPVerifyPeer() {
+    return curlopt_ssl_verify_peer;
+}
+const char* pc_getCurloptCAPath() {
+    return curlopt_ca_path;
+}
+
+
 /***********************************************************************
     Thread-protected functions
 */
@@ -244,6 +257,8 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   PCS_ERR;
     if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 PCS_ERR;
     if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             PCS_ERR;
+    if(!getUintValue(cfg, PROXY_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))              PCS_ERR;
+    if(!getStrValue(cfg, PROXY_CURLOPT_CAPATH, curlopt_ca_path, sizeof(curlopt_ca_path)))       PCS_ERR;
 
     cJSON_Delete(cfg);
 
@@ -424,6 +439,9 @@ static void initiate_defaults() {
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;
     agent_port = DEFAULT_AGENT_PORT;
     strncpy(fw_version, DEFAULT_FW_VERSION_NUM, DEFAULT_FW_VERSION_SIZE-1);
+
+    curlopt_ssl_verify_peer = DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER;
+    curlopt_ca_path[0] = '\0';
 }
 
 /*

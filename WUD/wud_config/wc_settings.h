@@ -59,6 +59,9 @@ unsigned int wc_getProxyWDTimeoutSec();     /* Return the timeout in seconds to 
 unsigned int wc_getWUDMonitoringTO();       /* Return the WUD monitoring process period in seconds */
 unsigned int wc_getWUDDelay();              /* Return the pause in seconds before the WUD start */
 
+const char* wc_getCurloptCAPath();
+int wc_getCurloptSSLVerifyPeer();
+
 /* Thread-protected functions */
 /******************************************************************
  * Load WUD configuration file; Save values in memory.

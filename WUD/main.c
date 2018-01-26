@@ -141,6 +141,8 @@ static void print_WUD_start_params() {
     pu_log(LL_INFO, "\tWUD communication port: %d", wc_getWUDPort());
     pu_log(LL_INFO, "\tWUD delay before startup in seconds:%d", wc_getWUDDelay());
     pu_log(LL_INFO, "\tWUD delay on Agent&Proxy graceful shutdoun: %d", wc_getChildrenShutdownTO());
+    pu_log(LL_INFO, "\tCurlopt SSL Verify Peer: %d", wc_getCurloptSSLVerifyPeer());
+    pu_log(LL_INFO, "\tCurlopt CA Path: %s", wc_getCurloptCAPath());
 
     pu_log(LL_INFO, "Agent settings:");
     pu_log(LL_INFO, "\tAgent name: %s", wc_getAgentProcessName());

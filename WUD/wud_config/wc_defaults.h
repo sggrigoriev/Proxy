@@ -75,5 +75,6 @@
 #define WUD_DEFAULT_SERVER_WRITE_TO_SEC       1                         /* Timeout for WUD POSTs in seconds. 0 means no timeout. */
 #define WUD_DEFAILT_DELAY_BEFORE_START_SEC    1                         /* WUD delay on startup in seconds. Configurable */
 
+#define WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER    0
 
 #endif /* PRESTO_WC_DEFAULTS_H */

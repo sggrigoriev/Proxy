@@ -83,4 +83,7 @@ int pc_existsProxyDeviceID();                /* Return 1 if defice id exists and
 /* Used in Contact URL request */
 int pc_setSSLForCloudURLRequest();          /* Return 1 if "SET_SSL_FOR_URL_REQUEST" set to 1 or not found. 0 otherwize */
 
+int pc_getCurloptSSPVerifyPeer();
+const char* pc_getCurloptCAPath();
+
 #endif /*PRESTO_PC_SETTINGS_H*/
