@@ -84,5 +84,5 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tSSL request for contact URL request: %d", pc_setSSLForCloudURLRequest());
 
     pu_log(LL_INFO, "\tCurlopt SSP Verify Peer: %d", pc_getCurloptSSPVerifyPeer());
-    pu_log(LL_INFO, "\tCurlopt CA Path: %s", pc_getCurloptCAPath());
+    pu_log(LL_INFO, "\tCurlopt CA Info: %s", pc_getCurloptCAInfo());
 }

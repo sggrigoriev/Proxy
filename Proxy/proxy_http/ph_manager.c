@@ -169,7 +169,7 @@ static int test_auth_token(lib_http_conn_t post_t, const char* device_id, const 
  * Public functions - they are thread-protected: no concurrent POST, GET or immediate response!
  */
 void ph_mgr_init() {
-    if(!lib_http_init(CONNECTIONS_TOTAL, pc_getCurloptSSPVerifyPeer(), pc_getCurloptCAPath())) {
+    if(!lib_http_init(CONNECTIONS_TOTAL, pc_getCurloptSSPVerifyPeer(), pc_getCurloptCAInfo())) {
         lib_http_close();
         pf_reboot();
     }

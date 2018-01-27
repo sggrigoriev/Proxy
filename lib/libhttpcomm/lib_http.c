@@ -69,7 +69,7 @@ typedef struct {
 static http_handler_t** CONN_ARRAY;             /* Connections pool pointer */
 static unsigned int CONN_ARRAY_SIZE = 0;        /* Connections pool size */
 static long ssl_verify_peer = 1;
-static char ca_path[LIB_HTTP_MAX_URL_SIZE] = {0};
+static char ca_info[LIB_HTTP_MAX_URL_SIZE] = {0};
 
 /******************************************
     Static functions declaration
@@ -150,11 +150,11 @@ static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream);
     Public functions implementation
 */
 
-int lib_http_init(unsigned int max_conns_amount, int sslverify, const char* capath) {
+int lib_http_init(unsigned int max_conns_amount, int sslverify, const char* cainfo) {
     assert(max_conns_amount);
 
     ssl_verify_peer = sslverify;
-    strncpy(ca_path, capath, sizeof(ca_path));
+    strncpy(ca_info, cainfo, sizeof(ca_info));
 
 
     if((CONN_ARRAY != NULL) || (CONN_ARRAY_SIZE > 0)) {
@@ -233,10 +233,10 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
         pu_log(LL_ERROR, "lib_http_createConn: cURL handler creation failed.");
         goto out;
     }
-/* CA_PATH & SSL_VERIFYER */
+/* CA_INFO & SSL_VERIFYER */
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_SSL_VERIFYPEER, ssl_verify_peer), curlResult != CURLE_OK) goto out;
-    if(strlen(ca_path)) {
-        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_CAPATH, ca_path), curlResult != CURLE_OK) goto out;
+    if(strlen(ca_info)) {
+        if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_CAINFO, ca_info), curlResult != CURLE_OK) goto out;
     }
 /* slist creation for LIB_HTTP_CONN_GET only: slist for POST should be created for each POST call: it depends on posting message size */
     if((conn_type == LIB_HTTP_CONN_GET) || (conn_type == LIB_HTTP_FILE_GET)) {

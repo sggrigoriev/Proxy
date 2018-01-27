@@ -68,7 +68,7 @@
 #define WUD_MONITORING_TO_SEC       "WUD_MONITORING_TO_SEC"
 #define WUD_DELAY_BEFORE_START_SEC  "WUD_DELAY_BEFORE_START_SEC"
 
-#define WUD_CURLOPT_CAPATH          "CURLOPT_CAPATH"
+#define WUD_CURLOPT_CAINFO          "CURLOPT_CAINFO"
 #define WUD_CURLOPT_SSL_VERIFYPEER  "CURLOPT_SSL_VERIFYPEER"
 
 /****************************************************************************************
@@ -104,7 +104,7 @@ static unsigned int wud_monitoring_timeout_sec;
 static unsigned int wud_delay_before_start_sec;
 
 static int          curlopt_ssl_verify_peer;
-static char         curlopt_ca_path[WC_MAX_PATH];
+static char         curlopt_ca_info[WC_MAX_PATH];
 
 static char conf_fname[WC_MAX_PATH];
 
@@ -249,8 +249,8 @@ unsigned int wc_getWUDDelay() {
     WC_RET(WUD_DEFAILT_DELAY_BEFORE_START_SEC, wud_delay_before_start_sec);
 }
 
-const char* wc_getCurloptCAPath() {
-    return curlopt_ca_path;
+const char* wc_getCurloptCAInfo() {
+    return curlopt_ca_info;
 }
 int wc_getCurloptSSLVerifyPeer() {
     return curlopt_ssl_verify_peer;
@@ -300,7 +300,7 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_MONITORING_TO_SEC, &wud_monitoring_timeout_sec))                                      WC_ERR();
     if(!getUintValue(cfg, WUD_DELAY_BEFORE_START_SEC, &wud_delay_before_start_sec))                                 WC_ERR();
     if(!getUintValue(cfg, WUD_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))                    WC_ERR();
-    if(!getStrValue(cfg, WUD_CURLOPT_CAPATH, curlopt_ca_path, sizeof(curlopt_ca_path)))                             WC_ERR();
+    if(!getStrValue(cfg, WUD_CURLOPT_CAINFO, curlopt_ca_info, sizeof(curlopt_ca_info)))                             WC_ERR();
 
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
     getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
@@ -392,8 +392,8 @@ static void initiate_defaults() {
 
     strcpy(conf_fname, WD_DEFAULT_CFG_FILE_NAME);
 
-    curlopt_ca_path[0] = '\0';
-    curlopt_ssl_verify_peer = 1;
+    curlopt_ca_info[0] = '\0';
+    curlopt_ssl_verify_peer = WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER;
 }
 
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {
