@@ -97,7 +97,7 @@ elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 	set(CMAKE_SYSTEM_NAME Linux)
 
 	add_definitions(-DPROXY_ETHERNET_INTERFACE="eth0")
-
+	#add_definitions( -DLIBHTTP_CURL_DEBUG)
 
 	set(TOOLCHAIN_PATH $ENV{TOOLCHAIN})
 	set(SYSROOT_PATH $ENV{SYSROOT})
