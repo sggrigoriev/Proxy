@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
                                         0
                                     );
 
-#ifdef WUD_ON_HOST      /* The agent runs by itself on real gateway. */
+#ifndef WUD_NOT_STARTS_AGENT      /* The agent runs by itself on real gateway. */
   if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         wa_reboot();
