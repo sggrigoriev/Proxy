@@ -25,9 +25,14 @@
 #ifndef PRESTO_PU_LOGGER_H
 #define PRESTO_PU_LOGGER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <unistd.h>
 
-typedef enum {LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
+typedef enum {LL_TRACE = 4, LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
 
 /* Initiate logging utility. If there are some problems with file_name file opening, the logger will use stdout stream instead
  *  file_name   - log file name with path. Use NULL to have stdout
@@ -51,6 +56,10 @@ void pu_set_log_level(log_level_t ll);
  *  fmt     - formatted message
 */
 void pu_log(log_level_t lvl, const char* fmt, ...);
+
+#ifdef __cplusplus
+};
+#endif
 
 
 #endif /*PRESTO_PU_LOGGER_H */
