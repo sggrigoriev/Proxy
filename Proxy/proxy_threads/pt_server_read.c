@@ -52,67 +52,11 @@ static pu_queue_t* to_main;     /* Transport to main proxy thread */
 /*****************************************************************************************
  * Local functions
  */
-/* Thread function */
-static void* read_proc(void* params);
-
-/* Get the message from the cloud
+/*
+ * Get the message from the cloud
  *  buf     - buffer for message received
  *  size    - buffer size
  */
-static void read_from_cloud(char* buf, size_t size);
-
-/*****************************************************
- * Send immediate answers to the commands sent from he cloud (if any)
- * @param buf - message from the cloud
- */
-static void send_answers_if_command(char* buf);
-
-/************************************************************************************************
- * Public functions impementation
- */
-int start_server_read() {
-    if(pthread_attr_init(&attr)) return 0;
-    if(pthread_create(&id, &attr, &read_proc, NULL)) return 0;
-    return 1;
-}
-
-void stop_server_read() {
-    void *ret;
-
-    set_stop_server_read();
-    pthread_join(id, &ret);
-    pthread_attr_destroy(&attr);
-}
-
-void set_stop_server_read() {
-    stop = 1;
-}
-
-static void* read_proc(void* params) {
-
-    to_main = pt_get_gueue(PS_FromServerQueue);
-
-    stop = 0;
-
-    char buf[LIB_HTTP_MAX_MSG_SIZE];
-
-/* Main read loop */
-    while(!stop) {
-        read_from_cloud(buf, sizeof(buf));
-        pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
-
-        send_answers_if_command(buf);
-
-        pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
-    }
-    pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
-    pthread_exit(NULL);
-}
-
-/************************************************************************************************
- * Local functions implementation
- */
-
 static void read_from_cloud(char* buf, size_t size) {
     int out = 0;
     while(!out && !stop) {
@@ -138,28 +82,44 @@ static void read_from_cloud(char* buf, size_t size) {
         }
     }
 }
+/*
+ * Thread function
+*/
+static void* read_proc(void* params) {
 
-static void send_answers_if_command(char* buf) {
-    char answers[LIB_HTTP_MAX_MSG_SIZE]={0};
-    char resp_to_resp[LIB_HTTP_MAX_MSG_SIZE]={0};
-    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+    to_main = pt_get_gueue(PS_FromServerQueue);
 
-    pc_getProxyDeviceID(device_id, sizeof(device_id));
+    stop = 0;
 
-    msg_obj_t* msg = pr_parse_msg(buf);
-    if(!msg) {
-        pu_log(LL_ERROR, "%s: Incoming message %s ignored", PT_THREAD_NAME, buf);
+    char buf[LIB_HTTP_MAX_MSG_SIZE];
+
+/* Main read loop */
+    while(!stop) {
+        read_from_cloud(buf, sizeof(buf));
+        pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
+        pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
     }
-    else if(pr_get_message_type(msg) == PR_COMMANDS_MSG) { /* smth to answer */
-/* Sending answers to the cloud */
-       pf_answer_to_command(msg, answers, sizeof(answers));
-        if(strlen(answers)) {
-            pf_add_proxy_head(answers, sizeof(answers), device_id);
-            if (!ph_respond(answers, resp_to_resp, sizeof(resp_to_resp))) {
-                pu_log(LL_ERROR, "%s: Error responding. Reconnect", PT_THREAD_NAME);
-                pf_reconnect(to_main);
-            }
-        }
-        pr_erase_msg(msg);
-    }
+    pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
+    pthread_exit(NULL);
+}
+
+/************************************************************************************************
+ * Public functions impementation
+ */
+int start_server_read() {
+    if(pthread_attr_init(&attr)) return 0;
+    if(pthread_create(&id, &attr, &read_proc, NULL)) return 0;
+    return 1;
+}
+
+void stop_server_read() {
+    void *ret;
+
+    set_stop_server_read();
+    pthread_join(id, &ret);
+    pthread_attr_destroy(&attr);
+}
+
+void set_stop_server_read() {
+    stop = 1;
 }

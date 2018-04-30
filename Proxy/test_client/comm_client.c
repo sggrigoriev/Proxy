@@ -92,7 +92,7 @@ const char* write_source() {
     }
     return ret;
 }
-#ifndef PROXY_SEPARATE_RUN
+
 static lib_timer_clock_t wd_clock = {0};
 static char wd_alert[100];
 
@@ -109,11 +109,10 @@ static const char* wud_source() {
     make_wd();
     return wd_alert;
 }
-#endif
+
 static volatile int finish = 0;
 static volatile int rw_stop = 0;
 /*******************************************************************************/
-#ifndef PROXY_SEPARATE_RUN
 static pthread_t wudThreadId;
 static pthread_attr_t wudThreadAttr;
 
@@ -145,7 +144,6 @@ static void* wud_proc(void* socket) {
     pu_log(LL_INFO, "wud thread is finished");
     pthread_exit(NULL);
 }
-#endif
 /************************************************************/
 static char out_buf[500];
 
@@ -238,8 +236,6 @@ static void* main_client_proc(void* dummy) {
     while(!finish) {
         rw_stop = 0;
 
-#ifndef PROXY_SEPARATE_RUN
-
         int wud = -1;
         pu_log(LL_INFO, "pc_getAgentPort() = %d, pc_getWUDPort() = %d", pc_getAgentPort(), pc_getWUDPort());
         lib_timer_init(&wd_clock, pc_getProxyWDTO());
@@ -255,7 +251,6 @@ static void* main_client_proc(void* dummy) {
             break;
         }
         pu_log(LL_INFO, "Client: watchdog started. Port = %d, Socket = %d", pc_getWUDPort(), wud);
-#endif
 
         int read_socket = -1;
         int write_socket = -1;
@@ -284,17 +279,12 @@ static void* main_client_proc(void* dummy) {
 
         pthread_join(readThreadId, &ret);
         pthread_join(writeThreadId, &ret);
-
-#ifndef PROXY_SEPARATE_RUN
         pthread_join(wudThreadId, &ret);
-#endif
 
         pthread_attr_destroy(&readThreadAttr);
         pthread_attr_destroy(&writeThreadAttr);
-
-#ifndef PROXY_SEPARATE_RUN
         pthread_attr_destroy(&wudThreadAttr);
-#endif
+
         pu_log(LL_WARNING, "Client read/write/watchdog threads restart");
     }
     pthread_exit(NULL);

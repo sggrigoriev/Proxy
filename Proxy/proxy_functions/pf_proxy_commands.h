@@ -29,9 +29,6 @@
 #include "pu_queue.h"
 #include "pr_commands.h"
 
-/* Make answer from the message and put into buf. Returns buf addess */
-/* TODO! Move to pr_commands */
-const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size);
 
 /*********************************************************************
  * Make reconnect and send notification to the main proxy thread before  and after the reconnection

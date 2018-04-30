@@ -4,10 +4,6 @@ project(Proxy C)
 #set (CMAKE_C_STANDARD 90)
 message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 
-#ifdef PROXY_SEPARATE_RUN - the proxy can read parameters from command line first
-#else - the proxy reads all configuration from default configuration file only
-
-#add_definitions( -DPROXY_SEPARATE_RUN )
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 

@@ -82,20 +82,6 @@ static char* getData(char* buf, unsigned max_size) {
     return buf;
 }
 
-/*
- Convert the log level to its name
-      lvl - log level type
-    Return the log level name as a string
-*/
-static const char* getLogLevel(log_level_t lvl) {
-    switch(lvl) {
-        case LL_DEBUG:      return "DEBUG  ";
-        case LL_INFO:       return "INFO   ";
-        case LL_WARNING:    return "WARNING";
-        case LL_ERROR:      return "ERROR  ";
-        default:            return "UNDEF  ";
-    }
-}
 /************************************************
  * Oepn log file. If error - set stdout as a stream
  * @return  - pointer to file descriptor
@@ -170,4 +156,21 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
         rec_amt++;
 
     pthread_mutex_unlock(&lock);
+}
+
+/*
+ Convert the log level to its name
+      lvl - log level type
+    Return the log level name as a string
+*/
+const char* getLogLevel(log_level_t lvl) {
+    switch(lvl) {
+        case LL_DEBUG:      return "DEBUG  ";
+        case LL_INFO:       return "INFO   ";
+        case LL_WARNING:    return "WARNING";
+        case LL_ERROR:      return "ERROR  ";
+        case LL_TRACE_1:    return "TRACE_1";
+        case LL_TRACE_2:    return "TRACE_2";
+        default:            return "UNDEF  ";
+    }
 }

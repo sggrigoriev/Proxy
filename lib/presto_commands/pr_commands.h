@@ -79,7 +79,7 @@ typedef enum {PR_COMMANDS_MSG, PR_ALERTS_MSG, PR_OTHER_MSG, PR_MSG_TYPE_SIZE
 /* Proxy-WUD commands+Cloud-Proxy commands (PR_COMMANDS_MSG subtypes)
 PR_CMD_UNDEFINED      - for unrecognized commands
 PR_CMD_FWU_START      - start firmware upgrade    (cloud -> Proxy)
-PR_CMD_FWU_CANCEL     - cancel firmware upgrade   (Proxy -> WUD)
+PR_CMD_FWU_CANCEL     - cancel firmware upgrade   (cloud -> Proxy)
 PR_CMD_RESTART_CHILD  - restart one child         (Watchdog->WUD)
 PR_CMD_CLOUD_CONN     - cloud connections parameters (Proxy -> WUD; Proxy IO threads tp Proxy main)
 PR_CMD_CLOUD_OFF      - cloud connection off signal (Proxy IO threads to Proxy main)
@@ -92,6 +92,12 @@ typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_REST
     PR_CMD_UPDATE_MAIN_URL, PR_CMD_REBOOT,
     PR_CMD_SIZE
 } pr_cmd_t;
+static const pr_cmd_t cloud_commands[] = {  /* Here is the list of commands sent by cloud. This is needed to separate internal ones from cloud */
+        PR_CMD_FWU_START,
+        PR_CMD_FWU_CANCEL,
+        PR_CMD_UPDATE_MAIN_URL,
+        PR_CMD_UNDEFINED
+};
 /* Proxy-Cloud "reboot" parameter values
  * PR_NO_REBOOT         - send on recurrig basis with fw version
  * PR_BEFORE_REBOOT     - send right before the reboot requested
@@ -361,5 +367,18 @@ const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* devi
 Return alert type
 */
 pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item);
+
+/******************************************************************************************************
+ * {"agent_request": "connect"}
+ * Return 1 if the obj contains this message
+ */
+int pr_agent_connected(msg_obj_t* obj);
+
+/******************************************************************************************************
+ * Return 1 if the cmd is from cloud. Based on cloud_commands[] array
+ * @param cmd
+ * @return 1 if from cloud 0 id not
+ */
+int pr_is_cloud_command(pr_cmd_t cmd);
 
 #endif /*PRESTO_PR_COMMANDS_H */

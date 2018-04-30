@@ -18,8 +18,6 @@
 /*
     Created by gsg on 12/12/16.
 */
-#ifndef PROXY_SEPARATE_RUN
-
 #include <pthread.h>
 #include <string.h>
 #include <errno.h>
@@ -135,6 +133,6 @@ static void* wud_write(void* params) {
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);
 }
-#endif
+
 
 

@@ -19,8 +19,6 @@
     Created by gsg on 12/12/16.
     Write to WUD Proxy watchdogs, connection info, upgrade command...
 */
-#ifndef PROXY_SEPARATE_RUN
-
 #ifndef PRESTO_PT_WUD_WRITE_H
 #define PRESTO_PT_WUD_WRITE_H
 
@@ -34,5 +32,3 @@ void stop_wud_write();
 void set_stop_wud_write();
 
 #endif /* PRESTO_PT_WUD_WRITE_H */
-
-#endif /* PROXY_SEPARATE_RUN */

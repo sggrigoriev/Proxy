@@ -70,6 +70,10 @@ static const char* cmd_cloud_off = "cloudOff";
 
 static const char* cmd_reboot = "reboot";
 
+/* Agent commands/requests */
+static const char* AGENT_REQUEST = "agent_request";
+static const char* AGENT_CONNECT = "connect";
+
 /*Using for PROC_NAMES changes protecion only */
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -396,6 +400,30 @@ const char* pr_make_reboot_alert4cloud(char* buf, size_t size, const char* devic
     return buf;
 }
 
+/******************************************************************************************************
+ * {"agent_request": "connect"}
+ * Return 1 if the obj contains this message
+ */
+int pr_agent_connected(msg_obj_t* obj) {
+    if(!obj) return 0;
+    cJSON* field;
+    if(field = cJSON_GetObjectItem(obj, AGENT_REQUEST), !field) return 0;
+    if(!strcmp(AGENT_CONNECT, field->valuestring)) return 1;
+    return 0;
+}
+/******************************************************************************************************
+ * Return 1 if the cmd is from cloud. Based on cloud_commands[] array
+ * @param cmd
+ * @return 1 if from cloud 0 id not
+ */
+int pr_is_cloud_command(pr_cmd_t cmd) {
+    int i = 0;
+    while(cloud_commands[i] != PR_CMD_UNDEFINED) {
+        if(cloud_commands[i] == cmd) return 1;
+        i++;
+    }
+    return 0;
+}
 /*
     PR_ALERT_FWU_FAILED = 1, PR_ALERT_FWU_READY_4_INSTALL = 2, PR_ALERT_MONITOR = 3,
 {"alerts":[

@@ -48,35 +48,9 @@ static pu_queue_t* to_main;         /* send on/off-line notifications */
 /*******************************************************************************
  * Local functions
 */
-/* Thread function */
-static void* write_proc(void* params);
-
 /*
- * Public functions implementation
- */
-
-int start_server_write() {
-
-    if(pthread_attr_init(&attr)) return 0;
-    if(pthread_create(&id, &attr, &write_proc, NULL)) return 0;
-    return 1;
-}
-
-void stop_server_write() {
-    void *ret;
-
-    set_stop_server_write();
-    pthread_join(id, &ret);
-    pthread_attr_destroy(&attr);
-}
-
-void set_stop_server_write() {
-    stop = 1;
-}
-
-/********************************************************************************
- * Local functions implementation
- */
+ * Thread function
+*/
 static void* write_proc(void* params) {
     pu_queue_event_t events;
 
@@ -87,11 +61,6 @@ static void* write_proc(void* params) {
 
     events = pu_add_queue_event(pu_create_event_set(), PS_ToServerQueue);
 
-    char devid[LIB_HTTP_DEVICE_ID_SIZE];
-    char fwver[DEFAULT_FW_VERSION_SIZE];
-    pc_getProxyDeviceID(devid, sizeof(devid));
-    pc_getFWVersion(fwver, sizeof(fwver));
-
 /* Main write loop */
     while(!stop) {
         pu_queue_event_t ev;
@@ -99,10 +68,8 @@ static void* write_proc(void* params) {
             case PS_ToServerQueue: {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
- /* Sending with retries loop */
+                    /* Sending with retries loop */
                     int out = 0;
-    /* Adding the head to message */
-                    pf_add_proxy_head(msg, sizeof(msg), devid);
 
                     while(!stop && !out) {
                         char resp[PROXY_MAX_MSG_LEN];
@@ -137,4 +104,27 @@ static void* write_proc(void* params) {
         }
     }
     pthread_exit(NULL);
+}
+
+/********************************************************************************
+ * Public functions implementation
+ */
+
+int start_server_write() {
+
+    if(pthread_attr_init(&attr)) return 0;
+    if(pthread_create(&id, &attr, &write_proc, NULL)) return 0;
+    return 1;
+}
+
+void stop_server_write() {
+    void *ret;
+
+    set_stop_server_write();
+    pthread_join(id, &ret);
+    pthread_attr_destroy(&attr);
+}
+
+void set_stop_server_write() {
+    stop = 1;
 }

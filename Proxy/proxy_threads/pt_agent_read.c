@@ -40,31 +40,16 @@ static pthread_attr_t attr;
 
 static char out_buf[LIB_HTTP_MAX_MSG_SIZE] = {0};   /* buffer to receive the data */
 
-int read_socket;                            /* socket to read from  */
-static pu_queue_t* to_server;                 /* main queue pointer - local transport */
+int read_socket;                                    /* socket to read from  */
+static pu_queue_t* to_proxy;                       /* main queue pointer - local transport */
 
-/* Thread function. Reads info, assemple it to the buffer and forward to the main thread by queue */
-static void* agent_read(void* params);
-
-int start_agent_read(int socket) {
-    read_socket = socket;
-    if(pthread_attr_init(&attr)) return 0;
-    if(pthread_create(&id, &attr, &agent_read, &read_socket)) return 0;
-    return 1;
-}
-
-void stop_agent_read() {
-    void *ret;
-
-    pthread_join(id, &ret);
-    pthread_attr_destroy(&attr);
-
-    set_stop_agent_children();
-}
-
+/*
+ * Thread function. Reads info, assemble it to the buffer
+ * and forward to the main thread by queue
+ */
 static void* agent_read(void* params) {
 
-    to_server = pt_get_gueue(PS_ToServerQueue);
+    to_proxy = pt_get_gueue(PS_FromAgentQueue);
 
     lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, PROXY_MAX_MSG_LEN-LIB_HTTP_HEADER_SIZE);
     if(!all_conns) {
@@ -103,7 +88,7 @@ static void* agent_read(void* params) {
             break;
         }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
-            pu_queue_push(to_server, out_buf, strlen(out_buf) + 1);
+            pu_queue_push(to_proxy, out_buf, strlen(out_buf) + 1);
 
             pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
         }
@@ -113,4 +98,25 @@ static void* agent_read(void* params) {
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);
 }
+
+/***********************************************************
+ * Global functions
+ */
+int start_agent_read(int socket) {
+    read_socket = socket;
+    if(pthread_attr_init(&attr)) return 0;
+    if(pthread_create(&id, &attr, &agent_read, &read_socket)) return 0;
+    return 1;
+}
+
+void stop_agent_read() {
+    void *ret;
+
+    pthread_join(id, &ret);
+    pthread_attr_destroy(&attr);
+
+    set_stop_agent_children();
+}
+
+
 

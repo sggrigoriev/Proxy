@@ -89,22 +89,15 @@ void wt_set_stop_server_write() {
             case WT_to_Cloud: {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: Got from from main by server_write_thread: %s", PT_THREAD_NAME, msg);
+                    pu_log(LL_DEBUG, "%s: Got from from Proxy: %s", PT_THREAD_NAME, msg);
 /* Sending with reconnects loop */
                     int out = 0;
-                    /* Add head to the message */
-                    char devid[LIB_HTTP_DEVICE_ID_SIZE];
-                    wc_getDeviceID(devid, sizeof(devid));
-                    pf_add_proxy_head(msg, sizeof(msg), devid);
-
                     while (!stop && !out) {
                         char resp[LIB_HTTP_MAX_MSG_SIZE];
 
                         if (!wh_write(msg, resp, sizeof(resp))) {
                             pu_log(LL_ERROR, "%s: Error sending. Reconnect", PT_THREAD_NAME);
-                            char conn_str[LIB_HTTP_MAX_URL_SIZE];
-                            wc_getURL(conn_str, sizeof(conn_str));
-                            wh_reconnect(conn_str, devid);
+                            wh_reconnect();
                             out = 0;
                         }
                         else {

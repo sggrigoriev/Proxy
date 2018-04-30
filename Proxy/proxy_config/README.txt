@@ -7,7 +7,6 @@ Presto/proxy_config
 Presto/proxy_config_cli
 
 Parse command string and updates Proxy settings by values from command string
-NB! To use it put -DPROXY_SEPARATE_RUN into makefile parameters
 
 all global objects got preffix pc_
 

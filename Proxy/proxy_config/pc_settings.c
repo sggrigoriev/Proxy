@@ -39,6 +39,8 @@
 #define PROXY_LOG_REC_AMT       "LOG_REC_AMT"
 
 #define PROXY_LOG_LEVEL         "LOG_LEVEL"
+    #define PROXY_LL_TRACE_2        "TRACE_2"
+    #define PROXY_LL_TRACE_1        "TRACE_1"
     #define PROXY_LL_DEBUG          "DEBUG"
     #define PROXY_LL_WARNING        "WARNING"
     #define PROXY_LL_INFO           "INFO"
@@ -461,6 +463,8 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
         else if(!strcmp(buf, PROXY_LL_WARNING)) *llt_setting = LL_WARNING;
         else if(!strcmp(buf, PROXY_LL_INFO)) *llt_setting = LL_INFO;
         else if(!strcmp(buf, PROXY_LL_ERROR)) *llt_setting = LL_ERROR;
+        else if(!strcmp(buf, PROXY_LL_TRACE_1)) *llt_setting = LL_TRACE_1;
+        else if(!strcmp(buf, PROXY_LL_TRACE_2)) *llt_setting = LL_TRACE_2;
         else
             fprintf(stderr, "Setting %s = %s. Posssible values are %s, %s, %s or %s. Default will be used instead\n",
                    field_name, buf, PROXY_LL_DEBUG, PROXY_LL_INFO,  PROXY_LL_WARNING, PROXY_LL_ERROR

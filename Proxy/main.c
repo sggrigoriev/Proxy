@@ -71,7 +71,7 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "Proxy start parameters:");
     pu_log(LL_INFO, "\tLog file name: %s", pc_getLogFileName());
     pu_log(LL_INFO, "\t\tRecords amount in log file: %d", pc_getLogRecordsAmt());
-    pu_log(LL_INFO, "\t\tLog level: %d", pc_getLogVevel());
+    pu_log(LL_INFO, "\t\tLog level: %s - %d", getLogLevel(pc_getLogVevel()), pc_getLogVevel());
     pu_log(LL_INFO, "\tProxy-Agent communication port: %d", pc_getAgentPort());
     pu_log(LL_INFO, "\tProxy-WUD communication port: %d", pc_getWUDPort());
     pu_log(LL_INFO, "\tProxy name: %s", pc_getProxyName());

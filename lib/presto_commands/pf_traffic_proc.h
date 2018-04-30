@@ -26,6 +26,19 @@ Add the head to the message sent to the cloud:
 #define PRESTO_PF_TRAFFIC_PROC_H
 
 #include <stdlib.h>
+#include <cJSON.h>
+
+/*
+    https://iotdevices.docs.apiary.io/#introduction/hardware-to-cloud-result-codes
+*/
+typedef enum {PF_RC_ACK = 0, PF_RC_OK = 1, PF_RC_UNSUPPORTED = 5, PF_RC_EXEC_ERR = 7, PF_RC_FMT_ERR = 8} t_pf_rc;
+
+/*
+ * Make answer from the message and put into buf. Returns buf addess
+*/
+
+const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc);
+
 
 /*Add head required by cloud protocol The sequential number will be assigned inside
   msg         - the message in JSON format to be sent

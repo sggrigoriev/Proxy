@@ -27,19 +27,11 @@
 #include "pu_queue.h"
 
 #define PS_MIN_QUEUE PS_FromAgentQueue  /* The event with min number. Needed because of default STOP event */
-
-#ifndef PROXY_SEPARATE_RUN              /* define set in Proxy CMakeLists. Needed to run Proxy w/o WUD in debugging purposes */
-    #define PS_MAX_QUEUE PS_ToWUDQueue  /* The event with max number */
-#else
-    #define PS_MAX_QUEUE PS_ToServerQueue
-#endif
+#define PS_MAX_QUEUE PS_ToWUDQueue  /* The event with max number */
 
 /* Full Proxy queues events list */
 typedef enum {PS_Timeout = PQ_TIMEOUT,
-    PS_FromAgentQueue = 1, PS_ToAgentQueue = 2, PS_FromServerQueue = 3, PS_ToServerQueue = 4,
-#ifndef PROXY_SEPARATE_RUN
-    PS_ToWUDQueue = 5,
-#endif
+    PS_FromAgentQueue = 1, PS_ToAgentQueue = 2, PS_FromServerQueue = 3, PS_ToServerQueue = 4, PS_ToWUDQueue = 5,
     PS_STOP = PQ_STOP} queue_events_t;
 
 /* Init Proxy queues service */

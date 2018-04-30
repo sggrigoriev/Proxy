@@ -37,6 +37,8 @@
 #define WUD_LOG_REC_AMT       "LOG_REC_AMT"
 
 #define WUD_LOG_LEVEL         "LOG_LEVEL"
+    #define WUD_LL_TRACE_2        "TRACE_2"
+    #define WUD_LL_TRACE_1        "TRACE_1"
     #define WUD_LL_DEBUG          "DEBUG"
     #define WUD_LL_WARNING        "WARNING"
     #define WUD_LL_INFO           "INFO"
@@ -406,6 +408,8 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
         else if(!strcmp(buf, WUD_LL_WARNING)) *llt_setting = LL_WARNING;
         else if(!strcmp(buf, WUD_LL_INFO)) *llt_setting = LL_INFO;
         else if(!strcmp(buf, WUD_LL_ERROR)) *llt_setting = LL_ERROR;
+        else if(!strcmp(buf, WUD_LL_TRACE_1)) *llt_setting = LL_TRACE_1;
+        else if(!strcmp(buf, WUD_LL_TRACE_2)) *llt_setting = LL_TRACE_2;
         else
             fprintf(stderr, "Setting %s = %s. Posssible values are %s, %s, %s or %s. Default will be used instead\n",
                     field_name, buf, WUD_LL_DEBUG, WUD_LL_INFO,  WUD_LL_WARNING, WUD_LL_ERROR

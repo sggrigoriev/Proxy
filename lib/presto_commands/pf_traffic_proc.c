@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "pu_logger.h"
 #include "lib_http.h"
@@ -73,4 +74,46 @@ size_t pf_add_proxy_head(char* msg, size_t msg_size, const char* device_id) {
         msg[msg_size-1] = '\0';
     }
     return strlen(msg);
+}
+
+static const char* CLOUD_COMMANDS = "commands";
+static const char* CMD_RESP_HD = "responses";
+static const char* CMD_CMD_ID = "commandId";
+static const char* CMD_RC = "result";
+
+/* Make answer from the message and put into buf. Returns buf addess */
+const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc) {
+/* json_answer: "{"responses": [{"commandId": <command_id> "result": <RC>}]}"; */
+    assert(root); assert(buf); assert(buf_size);
+    cJSON* arr = cJSON_GetObjectItem(root, CLOUD_COMMANDS);
+    buf[0] = '\0';
+    if(!arr) {
+        return buf;
+    }
+    cJSON* resp_obj = cJSON_CreateObject();
+    cJSON* resp_arr = cJSON_CreateArray();
+    cJSON_AddItemToObject(resp_obj, CMD_RESP_HD, resp_arr);
+
+    unsigned int i;
+    for(i = 0; i < cJSON_GetArraySize(arr); i++) {
+        cJSON* arr_item = cJSON_GetArrayItem(arr, i);
+        cJSON* cmd_id = cJSON_GetObjectItem(arr_item, CMD_CMD_ID);
+        if(!cmd_id) {
+            pu_log(LL_ERROR, "%s item is not found in %d command item", CMD_CMD_ID, i);
+            return buf;
+        }
+        cJSON* el = cJSON_CreateObject();
+
+        cJSON_AddItemReferenceToObject(el, CMD_CMD_ID, cmd_id);
+        cJSON_AddItemToObject(el, CMD_RC, cJSON_CreateNumber(0));
+        cJSON_AddItemToArray(resp_arr, el);
+    }
+
+    char* res = cJSON_PrintUnformatted(resp_obj); /* Encoding responses array into string */
+
+    strncpy(buf, res, buf_size-1);
+    free(res);
+    cJSON_Delete(resp_obj);
+
+    return buf;
 }
