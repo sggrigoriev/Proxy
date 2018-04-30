@@ -117,6 +117,7 @@ void pt_main_thread() { /* Starts the main thread. */
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
                     pu_log(LL_DEBUG, "%s: got message from the Agent %s", PT_THREAD_NAME, mt_msg);
                     process_agent_message(mt_msg);
+                    len = sizeof(mt_msg);
                 }
                 break;
             case PS_STOP:
