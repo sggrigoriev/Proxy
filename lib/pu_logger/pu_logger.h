@@ -25,6 +25,9 @@
 #ifndef PRESTO_PU_LOGGER_H
 #define PRESTO_PU_LOGGER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <unistd.h>
 
 typedef enum {LL_TRACE_2 = 5, LL_TRACE_1 = 4, LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
@@ -56,5 +59,8 @@ void pu_log(log_level_t lvl, const char* fmt, ...);
  */
 const char* getLogLevel(log_level_t lvl);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*PRESTO_PU_LOGGER_H */
