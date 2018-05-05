@@ -100,7 +100,7 @@ static void* read_proc(void* params) {
         pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
 /* Delay for some milliseconds to get time to Agent for response */
         {
-            struct timespec t = {0, REGET_DELAY}, rem;
+            struct timespec t = {0, REGET_DELAY},rem;
             nanosleep(&t, &rem);
         }
     }
