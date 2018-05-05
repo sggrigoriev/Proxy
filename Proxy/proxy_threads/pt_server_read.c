@@ -98,6 +98,11 @@ static void* read_proc(void* params) {
         read_from_cloud(buf, sizeof(buf));
         pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
         pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
+/* Delay for some milliseconds to get time to Agent for response */
+        {
+            struct timespec t = {0, REGET_DELAY}, rem;
+            nanosleep(&t, &rem);
+        }
     }
     pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
     pthread_exit(NULL);

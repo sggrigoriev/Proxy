@@ -7,6 +7,9 @@ message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
+#Set delay before establishing new long GET in milliseconds
+add_definitions( -DREGET_DELAY=100)
+
 #Shouild be switched off! Just for internal use
 #add_definitions( -DPROXY_AUTH_GET_EMUL)
 #set(CMAKE_C_COMPILER /home/gsg/openwrt/staging_dir/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-uclibc-gcc)
