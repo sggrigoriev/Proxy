@@ -7,8 +7,13 @@ message(STATUS "Proxy: platform is set to ${PRESTO_PLATFORM}")
 #Eneble CURL debug option for POST operations
 #add_definitions( -DLIBHTTP_CURL_DEBUG)
 
-#Set delay before establishing new long GET in milliseconds
-add_definitions( -DREGET_DELAY=100)
+#Set delay before establishing new long GET in nanosecs
+add_definitions( -DREGET_DELAY=1300000000)
+
+add_definitions(-DDEFAULT_AGENT_THREAD_TO_SEC=1) 
+add_definitions(-DDEFAULT_MAIN_THREAD_TO_SEC=0)
+add_definitions(-DDEFAULT_SERVER_ODWRITE_THREAD_TO_SEC=0)
+add_definitions(-DDEFAULT_WUD_WRITE_THREAD_TO_SEC=0)
 
 #Shouild be switched off! Just for internal use
 #add_definitions( -DPROXY_AUTH_GET_EMUL)

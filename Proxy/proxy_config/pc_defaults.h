@@ -82,10 +82,21 @@
 #define DEFAULT_TCP_ASSEMBLING_BUF_SIZE 24576                   /* Assembling bufer size for incoming messages in TCP */
 #define DEFAULT_QUEUE_RECORDS_AMT       1024                    /* MAx elements in queue. Same for all Proxy queues. Configured */
 
+#ifndef DEFAULT_MAIN_THREAD_TO_SEC
 #define DEFAULT_MAIN_THREAD_TO_SEC          0                   /* Timeout for incoming events in main thread. Zero means no timeout */
+#endif
+
+#ifndef DEFAULT_SERVER_WRITE_THREAD_TO_SEC
 #define DEFAULT_SERVER_WRITE_THREAD_TO_SEC  0                   /* Timeout for incoming events in server write thread. Zero means no timeout */
+#endif
+
+#ifndef DEFAULT_AGENT_THREAD_TO_SEC
 #define DEFAULT_AGENT_THREAD_TO_SEC         1                   /* Timeout for incoming events in agent read/write threas. Zero means no timeout */
+#endif
+
+#ifndef DEFAULT_WUD_WRITE_THREAD_TO_SEC
 #define DEFAULT_WUD_WRITE_THREAD_TO_SEC     0                   /* Timeout for incoming events in WUD write thread. Zero means no timeout */
+#endif
 
 #define DEFAULT_WUD_PORT                    8887                /* Port to communicate with WUD. Configured */
 
