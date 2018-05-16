@@ -553,7 +553,6 @@ again:
             return 0;
     }
 }
-
 static int test_auth_token(lib_http_conn_t post_d, const char* device_id, const char* old_token) {
     char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
