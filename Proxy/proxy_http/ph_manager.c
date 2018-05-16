@@ -549,7 +549,7 @@ again:
             return 1;
         }
         default:
-            pu_log(LL_ERROR, "get_new_token: auth token request failed: %s", reply);
+            pu_log(LL_ERROR, " get_new_token: auth token request failed: %s", reply);
             return 0;
     }
 }
