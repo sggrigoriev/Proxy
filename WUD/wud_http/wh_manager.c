@@ -130,7 +130,7 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
                 ret = 1;
                 goto on_finish;
             case 0:             /* timeout... try it again and again, until the attempts_amount separates us */
-                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                sleep(DEFAULT_S_TO);
                 fclose(rx_fd);
                 rx_fd = NULL;
                 lib_http_eraseConn(&conn);
@@ -171,7 +171,7 @@ static int get_post_connection(lib_http_conn_t* conn) {
         if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *conn < 0) {
             pu_log(LL_ERROR, "get_post_connection: Can't create POST connection descriptor for %s", contact_url);
             lib_http_eraseConn(conn);
-            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            sleep(DEFAULT_S_TO);
             continue;
         }
         err = 0;    /* Bon vouage! */
@@ -195,7 +195,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
                     out = 1;
                 }
                 else {
-                    sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                    sleep(DEFAULT_S_TO);
                 }
                 break;
             case LIB_HTTP_IO_OK:

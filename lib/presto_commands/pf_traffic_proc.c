@@ -105,7 +105,7 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_r
         cJSON* el = cJSON_CreateObject();
 
         cJSON_AddItemReferenceToObject(el, CMD_CMD_ID, cmd_id);
-        cJSON_AddItemToObject(el, CMD_RC, cJSON_CreateNumber(0));
+        cJSON_AddItemToObject(el, CMD_RC, cJSON_CreateNumber(rc));
         cJSON_AddItemToArray(resp_arr, el);
     }
 

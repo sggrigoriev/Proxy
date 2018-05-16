@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <sys/time.h>
+#include <lib_timer.h>
 
 #include "pu_logger.h"
 #include "lib_http.h"
@@ -253,7 +254,7 @@ void ph_update_contact_url() {
     while(err) {
 /* 1. Get contact url from main url */
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {   /* Lets try again and again */
-            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            sleep(DEFAULT_S_TO);
             continue;
         }
 /* 2. Open connections */
@@ -262,7 +263,7 @@ void ph_update_contact_url() {
             pc_getCloudURL(contact_url, sizeof(contact_url));
 /* If error again - start from step 1 */
             if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
-                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                sleep(DEFAULT_S_TO);
                 continue;
             }
             pu_log(LL_ERROR, "ph_update_contact_url: get back to the prevoius contact url %s", contact_url);
@@ -342,17 +343,17 @@ static void connect() {
         erase_connections(&post_conn, &get_conn, &immediate_post);
 /* 1. Get contact url */
         if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {       /* Lets try it again and again */
-            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            sleep(DEFAULT_S_TO);
             continue;
         }
 /* 2. Make test empty post: if answer OK - use existing one. If answer is not OK - ask for new token */
         if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) {
-            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            sleep(DEFAULT_S_TO);
             continue;
         }
 /* 3. open connections */
         if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
-            sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+            sleep(DEFAULT_S_TO);
             continue;
         }
         pu_log(LL_INFO, "Proxy reconnected with the main url = %s; contact url = %s", main_url, contact_url);
@@ -402,6 +403,7 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
     lib_http_io_result_t ret = LIB_HTTP_IO_ERROR;
     int retries = LIB_HTTP_MAX_POST_RETRIES;
     if(post_conn < 0) return ret;
+
     while(!out) {
         ret = lib_http_post(post_conn, msg, reply, reply_size, auth_token);
         switch (ret) {
@@ -416,7 +418,7 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
                     out = 1;
                 }
                 else {
-                    sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                    sleep(DEFAULT_S_TO);
                 }
                 break;
             case LIB_HTTP_IO_OK:

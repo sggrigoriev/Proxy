@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <pf_traffic_proc.h>
+#include <lib_timer.h>
 
 #include "pt_queues.h"
 #include "pu_logger.h"
@@ -49,6 +50,31 @@ static volatile int stop;       /* Thread stop flag */
 
 static pu_queue_t* to_main;     /* Transport to main proxy thread */
 
+static void send_answers_if_command(char* buf) {
+    char answers[LIB_HTTP_MAX_MSG_SIZE]={0};
+    char resp_to_resp[LIB_HTTP_MAX_MSG_SIZE]={0};
+    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+
+    pc_getProxyDeviceID(device_id, sizeof(device_id));
+
+    msg_obj_t* msg = pr_parse_msg(buf);
+    if(!msg) {
+        pu_log(LL_ERROR, "%s: Incoming message %s ignored", PT_THREAD_NAME, buf);
+    }
+    else if(pr_get_message_type(msg) == PR_COMMANDS_MSG) { /* smth to answer */
+/* Sending answers to the cloud */
+        pf_answer_to_command(msg, answers, sizeof(answers), PF_RC_ACK);
+        if(strlen(answers)) {
+            pf_add_proxy_head(answers, sizeof(answers), device_id);
+            if (!ph_respond(answers, resp_to_resp, sizeof(resp_to_resp))) {
+                pu_log(LL_ERROR, "%s: Error responding. Reconnect", PT_THREAD_NAME);
+                pf_reconnect(to_main);
+            }
+        }
+        pr_erase_msg(msg);
+    }
+}
+
 /*****************************************************************************************
  * Local functions
  */
@@ -59,19 +85,17 @@ static pu_queue_t* to_main;     /* Transport to main proxy thread */
  */
 static void read_from_cloud(char* buf, size_t size) {
     int out = 0;
+    int to_counter = 0;
     while(!out && !stop) {
         switch(ph_read(buf, size)) {
             case -1:        /*error*/
                 pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
                 pf_reconnect(to_main);    /* loop again the succ inside */
+                to_counter = 0;
                 out = 0;
                 break;
             case 0:     /* timeout - read again */
-#ifdef PROXY_AUTH_GET_EMUL
-                strcpy(buf, emu);
-                    out = 1;
-#endif
-                sleep(LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC);
+                lib_timer_sleep(to_counter++, DEFAULT_TO_RPT_TIMES, DEFAUT_U_TO, DEFAULT_S_TO);
                 break;
             case 1:     /* got smth */
                 out = 1;
@@ -82,6 +106,7 @@ static void read_from_cloud(char* buf, size_t size) {
         }
     }
 }
+
 /*
  * Thread function
 */
@@ -97,12 +122,10 @@ static void* read_proc(void* params) {
     while(!stop) {
         read_from_cloud(buf, sizeof(buf));
         pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
+
+        send_answers_if_command(buf);   /* Send result 0 for all commands came from the cloud immediately */
+
         pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
-/* Delay for some milliseconds to get time to Agent for response */
-        {
-            struct timespec t = {0, REGET_DELAY},rem;
-            nanosleep(&t, &rem);
-        }
     }
     pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
     pthread_exit(NULL);

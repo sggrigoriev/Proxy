@@ -86,7 +86,7 @@ static void* wd_proc(void* params) {
                 wa_alarm_update((pr_child_t)i);   /* Just to check alarms are working correctly */
             }
         }
-        sleep(1);
+        sleep(DEFAULT_S_TO);
     }
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);

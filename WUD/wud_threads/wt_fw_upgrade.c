@@ -154,7 +154,7 @@ static void* read_proc(void* params) {
     notify(FWU_NOTIFY_OK);
 
 /* Wait until WUD command */
-    while(!fwu_stop) sleep(1);
+    while(!fwu_stop) sleep(DEFAULT_S_TO);
 on_exit:
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
     pthread_exit(NULL);

@@ -28,7 +28,16 @@
 /*Get the gateway uptime from sysinfo or system time if again, the GW OS has some POSIX incompatibilities :-(
 //Return abs Unix time in seconds
 */
-static time_t get_uptime();
+static time_t get_uptime() {
+    struct sysinfo info;
+
+    if(sysinfo(&info) != 0) {
+        pu_log(LL_ERROR, "get_uptime: sysinfo call does not work: %d, %s. System time is using instead", errno, strerror(errno));
+        return time(NULL);
+    }
+
+    return (time_t)info.uptime;
+}
 
 /*//////////////////////////////////////////////////////////////////
 //Public funcions (description in *.h)
@@ -48,13 +57,13 @@ int lib_timer_alarm(lib_timer_clock_t dat) {
     return dat.action_time < get_uptime();
 }
 
-static time_t get_uptime() {
-    struct sysinfo info;
-
-    if(sysinfo(&info) != 0) {
-        pu_log(LL_ERROR, "get_uptime: sysinfo call does not work: %d, %s. System time is using instead", errno, strerror(errno));
-        return time(NULL);
+void lib_timer_sleep(int to_counter, int max_to_amount, long u_to, unsigned int s_to) {
+    if(to_counter < max_to_amount) {
+        struct timespec t = {0, u_to},rem;
+        nanosleep(&t, &rem);
     }
-
-    return (time_t)info.uptime;
+    else {
+        sleep(s_to);
+    }
 }
+

@@ -3,6 +3,10 @@
 project(WUD C)
 #set (CMAKE_C_STANDARD 90)
 
+add_definitions(-DDEFAUT_U_TO=200)
+add_definitions(-DDEFAULT_TO_RPT_TIMES=5)
+add_definitions(-DDEFAULT_S_TO=1)
+
 if (PRESTO_PLATFORM STREQUAL "cross")
 
 	# MLevitin additions

@@ -50,8 +50,6 @@ NB-2! no thread protection
 #define LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC    30
 /* Maximum time for an HTTP transfer */
 #define LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC   60
-/* Delay if connection lost before the re-establishment */
-#define LIB_HTTP_DEFAULT_CONN_REESTABLISHMENT_DELAY_SEC 1
 
 #define LIB_HTTP_MAIN_CONN_IFACE    "/cloud/json/settingsServer?type=deviceio&deviceId="
 #define LIB_HTTP_ROUTINE_CONN_IFACE "/deviceio/mljson?id="

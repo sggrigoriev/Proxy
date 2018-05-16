@@ -82,15 +82,12 @@ static volatile int main_finish;        /* stop flag for main thread */
  * Public function implementation
  */
 void pt_main_thread() { /* Starts the main thread. */
-
     main_finish = 0;
 
     if(!main_thread_startup()) {
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
-    unsigned int events_timeout = 0; /* Wait until the end of univerce */
-    events_timeout = 1;
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   /* Initiating the timer for watchdog sendings */
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
     lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
@@ -103,7 +100,7 @@ void pt_main_thread() { /* Starts the main thread. */
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
 
-        switch (ev=pu_wait_for_queues(events, events_timeout)) {
+        switch (ev=pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case PS_Timeout:
                 break;
             case PS_FromServerQueue:
@@ -337,7 +334,6 @@ static void process_proxy_commands(char* msg) {
     for(i = 0; i < size; i++) {
         msg_obj_t* cmd_arr_elem = pr_get_arr_item(cmd_array, i);    /* Get Ith command */
         pr_cmd_item_t cmd_item = pr_get_cmd_item(cmd_arr_elem);     /* Get params of Ith command */
-        if(pr_is_cloud_command(cmd_item.command_type)) send_rc_to_cloud(cmd_arr_elem, PF_RC_ACK);  /* Send ACK to cloud */
 
         switch (cmd_item.command_type) {
             case PR_CMD_FWU_START: {

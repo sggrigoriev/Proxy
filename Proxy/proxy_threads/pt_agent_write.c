@@ -48,23 +48,6 @@ static int write_socket;                /* writable socket */
 static pu_queue_t* from_main;           /* queue - the source of info to be written into the socket */
 
 /* Thread function: get info from main thread, write it into the socket */
-static void* agent_write(void* params);
-
-int start_agent_write(int socket) {
-    write_socket = socket;
-    if(pthread_attr_init(&attr)) return 0;
-    if(pthread_create(&id, &attr, &agent_write, NULL)) return 0;
-    return 1;
-}
-
-void stop_agent_write() {
-    void *ret;
-    pthread_join(id, &ret);
-    pthread_attr_destroy(&attr);
-
-    set_stop_agent_children();
-}
-
 static void* agent_write(void* params) {
     from_main = pt_get_gueue(PS_ToAgentQueue);
 
@@ -76,11 +59,11 @@ static void* agent_write(void* params) {
     while(!is_childs_stop()) {
         pu_queue_event_t ev;
 
-        switch(ev=pu_wait_for_queues(events, DEFAULT_AGENT_THREAD_TO_SEC)) {
+        switch(ev=pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case PS_ToAgentQueue: {
                 size_t len = sizeof(out_buf);
                 while (pu_queue_pop(from_main, out_buf, &len)) {
-    /* Prepare write operation */
+                    /* Prepare write operation */
                     ssize_t ret;
                     while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!is_childs_stop());  /* run until the timeout */
                     if(is_childs_stop()) break; /* goto reconnect */
@@ -111,4 +94,21 @@ static void* agent_write(void* params) {
     lib_tcp_client_close(write_socket);
     pthread_exit(NULL);
 }
+
+int start_agent_write(int socket) {
+    write_socket = socket;
+    if(pthread_attr_init(&attr)) return 0;
+    if(pthread_create(&id, &attr, &agent_write, NULL)) return 0;
+    return 1;
+}
+
+void stop_agent_write() {
+    void *ret;
+    pthread_join(id, &ret);
+    pthread_attr_destroy(&attr);
+
+    set_stop_agent_children();
+}
+
+
 

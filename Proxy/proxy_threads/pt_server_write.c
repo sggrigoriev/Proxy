@@ -64,7 +64,7 @@ static void* write_proc(void* params) {
 /* Main write loop */
     while(!stop) {
         pu_queue_event_t ev;
-        switch (ev = pu_wait_for_queues(events, DEFAULT_SERVER_WRITE_THREAD_TO_SEC)) {
+        switch (ev = pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case PS_ToServerQueue: {
                 size_t len = sizeof(msg);
                 while (pu_queue_pop(to_cloud, msg, &len)) {
@@ -92,7 +92,6 @@ static void* write_proc(void* params) {
                 break;
             }
             case PS_Timeout:
-                pu_log(LL_WARNING, "%s: timeout on waiting to server queue", PT_THREAD_NAME);
                 break;
             case PS_STOP:
                 stop = 1;

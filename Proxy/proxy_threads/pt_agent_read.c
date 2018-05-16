@@ -64,7 +64,7 @@ static void* agent_read(void* params) {
     }
 
     while(!is_childs_stop()) {
-        lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1); /* connection removed inside */
+        lib_tcp_rd_t *conn = lib_tcp_read(all_conns, DEFAULT_S_TO); /* connection removed inside */
         if (!conn) {
             pu_log(LL_ERROR, "%s. Read op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
             set_stop_agent_children();

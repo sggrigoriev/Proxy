@@ -88,7 +88,7 @@ static void* wud_write(void* params) {
 
         while(write_socket = lib_tcp_get_client_socket(pc_getWUDPort(), 1), write_socket <= 0) {
             pu_log(LL_ERROR, "%s: connection error %d %s", PT_THREAD_NAME, errno, strerror(errno));
-            sleep(1);
+            sleep(DEFAULT_S_TO);
             continue;
         }
         pu_log(LL_DEBUG, "%s: Connected. Port = %d, socket = %d", PT_THREAD_NAME, pc_getWUDPort(), write_socket);
@@ -96,12 +96,12 @@ static void* wud_write(void* params) {
         int reconnect = 0;
         while (!stop) {
             pu_queue_event_t ev;
-            switch (ev = pu_wait_for_queues(events, DEFAULT_WUD_WRITE_THREAD_TO_SEC)) {
+            switch (ev = pu_wait_for_queues(events, DEFAULT_S_TO)) {
                 case PS_ToWUDQueue: {
                     size_t len = sizeof(out_buf);
                     while (pu_queue_pop(to_wud, out_buf, &len)) {
                         ssize_t ret;
-                        while(ret = lib_tcp_write(write_socket, out_buf, len, 1), !ret&&!stop);  /* run until the timeout */
+                        while(ret = lib_tcp_write(write_socket, out_buf, len, DEFAULT_S_TO), !ret&&!stop);  /* run until the timeout */
                         if(stop) break; /* goto reconnect */
                         if(ret < 0) {   /* op start failed */
                             pu_log(LL_ERROR, "%s. Write op finish failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));

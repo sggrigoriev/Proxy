@@ -49,4 +49,13 @@ void lib_timer_update(lib_timer_clock_t* dat);
 */
 int lib_timer_alarm(lib_timer_clock_t dat);
 
+/*
+ * Calls nanosleep(u_to) if to_counter < max_to_amount or sleep(s_to) otherwise
+ * to_counter - times TO repeats
+ * max_to_amount - threshold to switch on long pause to prevent cycling
+ * u_to - timeout in nanoseconds (200 for ex)
+ * s_to - timeout in seconds (1 for ex)
+ */
+void lib_timer_sleep(int to_counter, int max_to_amount, long u_to, unsigned int s_to);
+
 #endif /*LIB_TIMER_H*/
