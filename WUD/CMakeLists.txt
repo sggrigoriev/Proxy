@@ -41,6 +41,7 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 			curl
 			)
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
+	add_definitions(-D WUD_NOT_STARTS_AGENT)
 	configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	message(STATUS "Compiling for the OpenWRT")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -O2 -std=c89 -D_BSD_SOURCE -pthread -s")
