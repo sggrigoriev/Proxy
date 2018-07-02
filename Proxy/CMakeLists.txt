@@ -137,8 +137,8 @@ include_directories(
         proxy_threads
         proxy_config
         proxy_config/proxy_config_cli
-        proxy_eui64
 		proxy_http
+        ../lib/proxy_eui64
 		../lib/libtimer
         ../lib/presto_commands
         ../lib/libtcp
@@ -156,8 +156,8 @@ file(GLOB SOURCE_FILES
         proxy_threads/*.c
         proxy_config/pc_settings.c
         proxy_config/proxy_config_cli/*.c
-        proxy_eui64/eui64.c
 		proxy_http/*.c
+        ../lib/proxy_eui64/eui64.c
 		../lib/libtimer/*.c
         ../lib/presto_commands/*.c
         ../lib/libtcp/*.c
@@ -174,8 +174,8 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
         proxy_functions/*.c
 #        proxy_threads/*.c
         proxy_config/pc_settings.c
-        proxy_eui64/eui64.c
 		proxy_http/*.c
+		../lib/proxy_eui64/eui64.c
         ../lib/presto_commands/*.c
         ../lib/libtcp/*.c
         ../lib/pu_logger/*.c

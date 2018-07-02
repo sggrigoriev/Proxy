@@ -117,16 +117,6 @@ static http_handler_t* check_conn(lib_http_conn_t conn);
 static lib_http_io_result_t calc_io_result(char* result, int rc);
 
 /******************************************
- * Called when a message HAS TO BE SENT to the server.
- * @param ptr   - where data has to be written
- * @param size  - size*nmemb == maximum number of bytes that can be written each time
- * @param nmemb - size*nmemb == maximum number of bytes that can be written each time
- * @param userp - ptr to message to write -> inputted by CURLOPT_READDATA call below
- * @return  - number of bytes that were written
- */
-static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
-
-/******************************************
  * Called when a message HAS TO BE RECEIVED from the server
  * @param ptr   - where the received message resides
  * @param size  - size*nmemb == number of bytes to read
@@ -690,7 +680,7 @@ static long file_writer(void *buffer, size_t size, size_t nmemb, void *stream) {
  *
  * @return  number of bytes that were written
  **/
-static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
+size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
     HttpIoInfo_t *dataToWrite = (HttpIoInfo_t *) userp;
     size_t dataWritten = 0;
     if (dataToWrite == NULL || dataToWrite->buffer == NULL) {

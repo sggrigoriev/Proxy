@@ -1,3 +1,12 @@
+VERSION 1.2.2 02-JUL-2018
+=================================================================================================
+1. Folder proxy_eui64 moved to lib
+2. Logging has two additional debug levels: LL_TRACE_2 and LL_TRACE_1
+3. New settings on ProxyJSON.conf
+3.1.  "DEVICE_ID":			"IPCam-9876080027F78CD0" -- It makes possible to set the specific DeviceID w/o its generation
+3.2.  "CURLOPT_CAINFO":               "" -- path to Certificate Authority (CA) bundle
+3.3.  "CURLOPT_SSL_VERIFYPEER":       1  -- verify the peer's SSL certificate.
+
 VERSION 1.2.1 11-JUN-2017
 =================================================================================================
 1. EM-102 fixed.

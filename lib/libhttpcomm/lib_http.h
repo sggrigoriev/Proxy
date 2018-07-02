@@ -129,4 +129,18 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
  */
 int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file);
 
+/**
+ * @brief   Called when a message has to be sent to the server. this is a standard streamer
+ *              if the size of the data to write is larger than size*nmemb, this function
+ *              will be called several times by libcurl.
+ *
+ * @param   ptr: where data has to be written
+ * @param   size: size*nmemb == maximum number of bytes that can be written each time
+ * @param   nmemb: size*nmemb == maximum number of bytes that can be written each time
+ * @param   userp: ptr to message to write -> inputted by CURLOPT_READDATA call below
+ *
+ * @return  number of bytes that were written
+ **/
+size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
+
 #endif /* PRESTO_LIB_HTTP_H */

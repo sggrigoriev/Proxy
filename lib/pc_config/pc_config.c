@@ -19,6 +19,7 @@
  Created by gsg on 28/11/16.
 
 */
+
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -257,4 +258,36 @@ int saveUintValue(const char* func_name, const char* conf_fname, const char* fie
 
     json_uint_update(field_name, new_value, cfg);
     return saveToFile(conf_fname, cfg);
+}
+
+/************************************************************************************/
+int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name) {
+    FILE* f = fopen(file_name, "r");
+    if(!f) {
+        fprintf(stderr, "File %s open error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
+        goto on_err;
+    }
+    char* ptr = fgets(value, size, f);
+    if(!ptr) {
+        fprintf(stderr, "File %s read error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
+        goto on_err;
+    }
+    fclose(f);
+    return 1;
+    on_err:
+    value[0] = '\0';
+    if(f) fclose(f);
+    return 0;
+
+}
+int save_one_string_file(const char* file_name, const char* new_val, const char* value_name) {
+    FILE* f = fopen(file_name, "w");
+    if(!f) {
+        fprintf(stderr, "File %s open error %d, %s. %s can't be pesistently saved!\n", file_name, errno, strerror(errno), value_name);
+        return 0;
+    }
+    fprintf(f, "%s", new_val);
+    fclose(f);
+    sync();
+    return 1;
 }

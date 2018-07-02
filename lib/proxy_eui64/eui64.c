@@ -38,7 +38,7 @@
 
 #include <unistd.h>
 
-#include "pc_settings.h"
+#include "pu_logger.h"
 #include "ioterror.h"
 #include "eui64.h"
 #include <stddef.h>

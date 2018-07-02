@@ -121,13 +121,6 @@ static void initiate_defaults();
 /* Copy default value in case of absence of the field in the object */
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting);
 
-/* Reads string value from the file. If no file or no data inside - set it as an empty string */
-/* no thread protection! */
-static int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name);
-
-/* Return 0 if error */
-static int save_one_string_file(const char* file_name, const char* new_val, const char* value_name);
-
 /***************************************************************************************/
 #define PCS_ERR fprintf(stderr, "PROXY: Default value will be used instead %d\n", __LINE__)
 #define PC_RET(a,b) return (!initiated)?a:b
@@ -470,35 +463,4 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
                    field_name, buf, PROXY_LL_DEBUG, PROXY_LL_INFO,  PROXY_LL_WARNING, PROXY_LL_ERROR
             );
     }
-}
-
-static int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name) {
-    FILE* f = fopen(file_name, "r");
-    if(!f) {
-        fprintf(stderr, "File %s open error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
-        goto on_err;
-    }
-    char* ptr = fgets(value, size, f);
-    if(!ptr) {
-        fprintf(stderr, "File %s read error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
-        goto on_err;
-    }
-    fclose(f);
-    return 1;
-on_err:
-    value[0] = '\0';
-    if(f) fclose(f);
-    return 0;
-}
-
-static int save_one_string_file(const char* file_name, const char* new_val, const char* value_name) {
-    FILE* f = fopen(file_name, "w");
-    if(!f) {
-        fprintf(stderr, "File %s open error %d, %s. %s can't be pesistently saved!\n", file_name, errno, strerror(errno), value_name);
-        return 0;
-    }
-    fprintf(f, "%s", new_val);
-    fclose(f);
-    sync();
-    return 1;
 }

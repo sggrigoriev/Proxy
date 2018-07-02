@@ -99,5 +99,10 @@ old_value     - poiner to the setting in memory
 */
 int saveUintValue(const char* func_name, const char* conf_fname, const char* field_name,  unsigned int new_value, unsigned int* old_value);
 
+/************************************************************************************/
+int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name);
+int save_one_string_file(const char* file_name, const char* new_val, const char* value_name);
+
+
 
 #endif /*PRESTO_PC_CONFIG_H */
