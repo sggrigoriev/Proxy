@@ -36,6 +36,14 @@
 static void _proxycli_printUsage();
 static void _proxycli_printVersion();
 
+static void print_device_id() {
+    char eui_string[PROXY_DEVICE_ID_SIZE];
+    if(!eui64_toString(eui_string, sizeof(eui_string))) {
+        printf("Unable to generate the Gateway DeviceID");
+    }
+    printf("%s%s", PROXY_DEVICE_ID_PREFIX, eui_string);
+}
+
 /***************** Public Functions ****************
 
  Parse the command line arguments, to be retrieved by getter functions when
@@ -56,7 +64,7 @@ int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse a
   memset(activation_key, 0, sizeof(activation_key));
   agent_port = 0;
 
-  while ((c = getopt(argc, argv, "b:p:c:n:a:v")) != -1) {
+  while ((c = getopt(argc, argv, "b:p:c:n:a:v:d")) != -1) {
     switch (c) {
       case 'b':
         strncpy(url, optarg, sizeof(url)-1);
@@ -73,6 +81,11 @@ int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse a
     case 'v':
       _proxycli_printVersion();
       return 0;
+    case 'd':
+        pu_set_log_level(LL_ERROR);
+        print_device_id();
+        return 0;
+        break;
     case '?':
       _proxycli_printUsage();
       return 0;
@@ -113,6 +126,7 @@ static void _proxycli_printUsage() {
     "\t[-c filename] : The name of the configuration file for the proxy\n"
     "\t[-a key] : Activate this proxy using the given activation key and exit\n"
     "\t[-v] : Print version information\n"
+    "\t[-d] : Print deviceID\n"
     "\t[-?] : Print this menu\n"
     "\n";
 

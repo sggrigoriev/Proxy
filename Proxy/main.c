@@ -39,12 +39,12 @@ static void print_Proxy_start_params();
 /* Main function */
 int main(int argc, char* argv[]) {
 
-    printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
-    
+
     if(argc > 1) {
-        if(!pc_cli_process_params(argc, argv)) exit(0); /* Run with input parameters (inherited from old Presto) */
+        if(!pc_cli_process_params(argc, argv)) exit(0); /* Run with input parameters (inherited from old Presto) and deviceID generator*/
     }
     else {
+        printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
     }
     pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */

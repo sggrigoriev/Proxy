@@ -109,19 +109,19 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
     struct ifreq ifr2;
 
     /* for aiox mt7688 */
-    printf("%s:search list = ", __FUNCTION__);
+    pu_log(LL_DEBUG, "%s:search list = ", __FUNCTION__);
     for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
-        printf("%s, ", ifName[j]);
-    printf("\n");
+        pu_log(LL_DEBUG, "%s, ", ifName[j]);
+
     buf2[0] = 0;
     ifr = &ifr2;
     for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
     {
         ifr->ifr_addr.sa_family = AF_INET;
         strncpy(ifr->ifr_name, ifName[j], IFNAMSIZ - 1);
-        printf("%s:1,%s==========\n", __FUNCTION__, ifr->ifr_name);
+        pu_log(LL_DEBUG, "%s:1,%s==========\n", __FUNCTION__, ifr->ifr_name);
         if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0)
-        {printf("%s:2,hit==========\n", __FUNCTION__);
+        {pu_log(LL_DEBUG, "%s:2,hit==========\n", __FUNCTION__);
             strcpy(buf2, ifr->ifr_name);
             ok = 1;
             goto lhit;
@@ -130,17 +130,17 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
     if (!ok)
     {
         /* for intel platform, ubuntu, rpi */
-        printf("%s:3,fail to search, so search active interface except loopback interface==========\n", __FUNCTION__);
+        pu_log(LL_DEBUG, "%s:3,fail to search, so search active interface except loopback interface==========\n", __FUNCTION__);
         ifc.ifc_len = sizeof(buf);
         ifc.ifc_buf = buf;
         ioctl(sock, SIOCGIFCONF, &ifc);
         for (ifr = ifc.ifc_req, i = 0; i < ifc.ifc_len / sizeof(struct ifreq); i++, ifr++)
-        {printf("%s:4,%s==========\n", __FUNCTION__, ifr->ifr_name);
+        {pu_log(LL_DEBUG, "%s:4,%s==========\n", __FUNCTION__, ifr->ifr_name);
             if ((strncmp(ifr->ifr_name, "lo", strlen("lo"))) &&
                 (ioctl(sock, SIOCGIFFLAGS, ifr) == 0) &&
                 (!(ifr->ifr_flags & IFF_LOOPBACK)) &&
                 (ioctl(sock, SIOCGIFHWADDR, ifr) == 0))
-            {printf("%s:5,hit==========\n", __FUNCTION__);
+            {pu_log(LL_DEBUG, "%s:5,hit==========\n", __FUNCTION__);
                 strcpy(buf2, ifr->ifr_name);
                 ok = 1;
                 goto lhit;
