@@ -103,7 +103,9 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
       }
   }
 */
-    char *ifName[] = {"br-lan", "eth0", "eth1"};    /* for aiox mt7688 */
+/*    char *ifName[] = {"br-lan", "eth0", "eth1","ra0"}; */    /* for aiox mt7688 */
+    char *ifName[] = {PROXY_ETHERNET_INTERFACE};
+
     char buf2[64];
     int j;
     struct ifreq ifr2;
@@ -111,7 +113,7 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
     /* for aiox mt7688 */
     pu_log(LL_DEBUG, "%s:search list = ", __FUNCTION__);
     for (j = 0; j < sizeof(ifName)/sizeof(ifName[0]); j++)
-        pu_log(LL_DEBUG, "%s, ", ifName[j]);
+        pu_log(LL_DEBUG, "%s, ", ifName[j]),
 
     buf2[0] = 0;
     ifr = &ifr2;
@@ -121,7 +123,8 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
         strncpy(ifr->ifr_name, ifName[j], IFNAMSIZ - 1);
         pu_log(LL_DEBUG, "%s:1,%s==========\n", __FUNCTION__, ifr->ifr_name);
         if (ioctl(sock, SIOCGIFHWADDR, ifr) == 0)
-        {pu_log(LL_DEBUG, "%s:2,hit==========\n", __FUNCTION__);
+        {
+            pu_log(LL_DEBUG, "%s:2,hit==========\n", __FUNCTION__);
             strcpy(buf2, ifr->ifr_name);
             ok = 1;
             goto lhit;
@@ -135,12 +138,14 @@ error_t eui64_toBytes(uint8_t *dest, size_t destLen) {
         ifc.ifc_buf = buf;
         ioctl(sock, SIOCGIFCONF, &ifc);
         for (ifr = ifc.ifc_req, i = 0; i < ifc.ifc_len / sizeof(struct ifreq); i++, ifr++)
-        {pu_log(LL_DEBUG, "%s:4,%s==========\n", __FUNCTION__, ifr->ifr_name);
+        {
+            pu_log(LL_DEBUG, "%s:4,%s==========\n", __FUNCTION__, ifr->ifr_name);
             if ((strncmp(ifr->ifr_name, "lo", strlen("lo"))) &&
                 (ioctl(sock, SIOCGIFFLAGS, ifr) == 0) &&
                 (!(ifr->ifr_flags & IFF_LOOPBACK)) &&
                 (ioctl(sock, SIOCGIFHWADDR, ifr) == 0))
-            {pu_log(LL_DEBUG, "%s:5,hit==========\n", __FUNCTION__);
+            {
+                pu_log(LL_DEBUG, "%s:5,hit==========\n", __FUNCTION__);
                 strcpy(buf2, ifr->ifr_name);
                 ok = 1;
                 goto lhit;
