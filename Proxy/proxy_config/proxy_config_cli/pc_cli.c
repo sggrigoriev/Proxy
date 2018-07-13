@@ -62,7 +62,7 @@ int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse a
 
   int c;
 
-  while ((c = getopt(argc, argv, "d:v")) != -1) {
+  while ((c = getopt(argc, argv, "vd")) != -1) {
     switch (c) {
     case 'v':
       _proxycli_printVersion();
