@@ -33,7 +33,7 @@ void wa_reboot() {
     pu_log(LL_INFO, "wa_reboot: EXIT on host case");
     exit(1);
 #else
-    pu_log(LL_INFO, "wa_reboot: true rebood for true gateway");
+    pu_log(LL_INFO, "wa_reboot: true reboot for true gateway");
     sync();
 	reboot(RB_POWER_OFF);
 #endif

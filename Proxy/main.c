@@ -39,14 +39,16 @@ static void print_Proxy_start_params();
 /* Main function */
 int main(int argc, char* argv[]) {
 
-
     if(argc > 1) {
-        if(!pc_cli_process_params(argc, argv)) exit(0); /* Run with input parameters (inherited from old Presto) and deviceID generator*/
-    }
-    else {
-        printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
+        pu_set_log_level(LL_SILENT);
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
+        pc_cli_process_params(argc, argv);
+        exit(0);
     }
+
+    printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
+
+    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
     pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
@@ -85,4 +87,8 @@ static void print_Proxy_start_params() {
 
     pu_log(LL_INFO, "\tCurlopt SSP Verify Peer: %d", pc_getCurloptSSPVerifyPeer());
     pu_log(LL_INFO, "\tCurlopt CA Info: %s", pc_getCurloptCAInfo());
+
+    pu_log(LL_INFO, "\tProxy device ID preffix: %s", pc_getProxyDeviceIDPrefix());
+    pu_log(LL_INFO, "\tReboot if Cloud rejects Proxy: %d", pc_rebootIfCloudRejects());
+
 }

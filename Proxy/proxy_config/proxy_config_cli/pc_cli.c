@@ -37,11 +37,18 @@ static void _proxycli_printUsage();
 static void _proxycli_printVersion();
 
 static void print_device_id() {
-    char eui_string[PROXY_DEVICE_ID_SIZE];
-    if(!eui64_toString(eui_string, sizeof(eui_string))) {
-        printf("Unable to generate the Gateway DeviceID");
+    if(!pc_existsProxyDeviceID()) {
+        char eui_string[PROXY_DEVICE_ID_SIZE];
+        if (!eui64_toString(eui_string, sizeof(eui_string))) {
+            printf("Unable to generate the Gateway DeviceID");
+        }
+        printf("%s%s", pc_getProxyDeviceIDPrefix(), eui_string);
     }
-    printf("%s%s", PROXY_DEVICE_ID_PREFIX, eui_string);
+    else {
+        char deviceID[LIB_HTTP_DEVICE_ID_SIZE] = {0};
+        pc_getProxyDeviceID(deviceID, sizeof(deviceID));
+        printf("%s", deviceID);
+    }
 }
 
 /***************** Public Functions ****************
@@ -54,36 +61,14 @@ Return 0 if error. Parse and update config data + loaded params
 int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse and update config data + loaded params*/
 
   int c;
-  char cfg_fname[PROXY_MAX_PATH];
-  char url[PROXY_MAX_PATH];
-  int agent_port;
-  char activation_key[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
 
-  memset(url, 0, sizeof(url));
-  memset(cfg_fname, 0, sizeof(cfg_fname));
-  memset(activation_key, 0, sizeof(activation_key));
-  agent_port = 0;
-
-  while ((c = getopt(argc, argv, "b:p:c:n:a:v:d")) != -1) {
+  while ((c = getopt(argc, argv, "v:d:?")) != -1) {
     switch (c) {
-      case 'b':
-        strncpy(url, optarg, sizeof(url)-1);
-       break;
-    case 'c':
-        strncpy(cfg_fname, optarg, sizeof(cfg_fname)-1);
-        break;
-    case 'n':
-      agent_port = atoi(optarg);
-      break;
-    case 'a':
-      strncpy(activation_key, optarg, sizeof(activation_key)-1);
-      break;
     case 'v':
       _proxycli_printVersion();
       return 0;
     case 'd':
-        pu_set_log_level(LL_ERROR);
-        print_device_id();
+         print_device_id();
         return 0;
         break;
     case '?':
@@ -95,22 +80,6 @@ int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse a
       return 0;
     }
   }
-  if(strlen(cfg_fname) && pc_saveCfgFileName(cfg_fname)) {
-    printf("[cli] New configuration file: %s\n", cfg_fname);
-     pc_load_config(cfg_fname);
-  }
-  else {
-    pc_load_config(DEFAULT_CFG_FILE_NAME);
-  }
-  if(strlen(url) && pc_saveMainCloudURL(url)) {
-    printf("[cli] New main cloud URL: %s\n", url);
-  }
-  if(strlen(activation_key) && pc_saveAuthToken(activation_key)) {
-    printf("[cli] New activation key: %s\n", activation_key);
-  }
-  if(agent_port && pc_saveAgentPort(agent_port)) {
-    printf("[cli] New port for Agent connection: %d\n", agent_port);
-  }
   return 1;
 }
 
@@ -120,11 +89,7 @@ int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse a
  */
 static void _proxycli_printUsage() {
   char *usage = ""
-    "Usage: ./proxyserver (options)\n"
-    "\t[-b applicationUrl] : applicationUrl\n"
-    "\t[-n port] : Define the port to open the proxy on\n"
-    "\t[-c filename] : The name of the configuration file for the proxy\n"
-    "\t[-a key] : Activate this proxy using the given activation key and exit\n"
+    "Usage: ./Proxy (options)\n"
     "\t[-v] : Print version information\n"
     "\t[-d] : Print deviceID\n"
     "\t[-?] : Print this menu\n"

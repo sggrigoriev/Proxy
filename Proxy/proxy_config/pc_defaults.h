@@ -95,8 +95,7 @@
 
 #define DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER    1
 
-#ifndef PROXY_DEVICE_ID_PREFIX
-    #define PROXY_DEVICE_ID_PREFIX             "aioxGW-"                       /* DeviceID preffix. Could be changed for different platforms */
-#endif
+#define DEFAULT_PROXY_DEVICE_ID_PREFIX          "aioxGW-"
+#define DEFAULT_REBOOT_IF_CLOUD_REJECTS         0
 
 #endif /*PRESTO_PC_DEFAULTS_H */

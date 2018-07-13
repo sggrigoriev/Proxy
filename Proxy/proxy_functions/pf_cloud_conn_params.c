@@ -45,7 +45,7 @@ int pf_get_cloud_conn_params() {  /* return 0 if proxy was not activated */
             pu_log(LL_ERROR, "pf_get_cloud_conn_params: Unable to get the Gateway DeviceID. Activaiton failed");
             return 0;
         }
-        snprintf(device_id, PROXY_DEVICE_ID_SIZE-1, "%s%s", PROXY_DEVICE_ID_PREFIX, eui_string);
+        snprintf(device_id, PROXY_DEVICE_ID_SIZE-1, "%s%s", pc_getProxyDeviceIDPrefix(), eui_string);
         if(!pc_saveProxyDeviceID(device_id)) {
             pu_log(LL_WARNING, "pf_get_cloud_conn_params: Unable to store Device ID into configuration file");
         }

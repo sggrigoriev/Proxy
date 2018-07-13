@@ -41,7 +41,9 @@ void ph_mgr_destroy();
 3. Save existing main&contact URLs and auth token for further notification
 4. Reopen connections
 5. save new main & new contact & auth token
-if error - close evrything and make the step "initiation connections"; return 0
+if error - close everything and make the step "initiation connections"; return 0
+if reboot requested return -1
+if OK return 1
 */
 int ph_update_main_url(const char* new_main);
 
@@ -52,6 +54,7 @@ int ph_update_main_url(const char* new_main);
 3. if error start from 1
 4. save new contact url
  Returns 1 if it was true reconnect and returns 0 if it was secondary call
+ Returns -1 if reboot required
 */
 int ph_reconnect();
 
@@ -62,8 +65,10 @@ int ph_reconnect();
 If error - open connections with previous contact url
 If error again - start from step 1
 3. Save new contact url
+ Return 1 if OK
+ Return -1 if reboot required
 */
-void ph_update_contact_url();
+int ph_update_contact_url();
 
 /* Communication functions */
 

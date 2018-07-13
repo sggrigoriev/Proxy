@@ -86,4 +86,7 @@ int pc_setSSLForCloudURLRequest();          /* Return 1 if "SET_SSL_FOR_URL_REQU
 int pc_getCurloptSSPVerifyPeer();
 const char* pc_getCurloptCAInfo();
 
+const char* pc_getProxyDeviceIDPrefix();
+int pc_rebootIfCloudRejects();
+
 #endif /*PRESTO_PC_SETTINGS_H*/

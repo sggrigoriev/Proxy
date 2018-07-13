@@ -30,7 +30,7 @@ extern "C" {
 #endif
 #include <unistd.h>
 
-typedef enum {LL_TRACE_2 = 5, LL_TRACE_1 = 4, LL_DEBUG = 3, LL_INFO = 2, LL_WARNING = 1, LL_ERROR = 0} log_level_t;
+typedef enum {LL_TRACE_2 = 6, LL_TRACE_1 = 5, LL_DEBUG = 4, LL_INFO = 3, LL_WARNING = 2, LL_ERROR = 1, LL_SILENT = 0} log_level_t;
 
 /* Initiate logging utility. If there are some problems with file_name file opening, the logger will use stdout stream instead
  *  file_name   - log file name with path. Use NULL to have stdout

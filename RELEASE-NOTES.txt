@@ -1,3 +1,14 @@
+VERSION 1.2.3 13-JUL-2018
+=================================================================================================
+1. ProxyJSON.conf changes
+1.1. 	"DEVICE_ID_PREFIX" field added - DeviceID generation is using this prefix. Example: "DEVICE_ID_PREFIX":	"IPCam-"
+1.2.    "REBOOT_IF_CLOUD_REJECTS" field added. Possible values 1 and 0. Invented to have different reactions for M3 and IP Cam
+         in case is UNKNOWN or UNAUTHORIZED device. For M3 it sould ne set to 0, for IPCamera - set to 1.
+2. Proxy run parameters changed:
+1.1 -d Proxy prints DeviceID generated and stops. NB! If ProxyJSON.conf contains "DEVICE_ID" field, its value will be printed out.
+1.2 -v Proxy prints its version and stops.
+1.3 -? Proxy prints the possible parameters list ans stops
+3. Define responsible for Cam's prefix removed from Proxy MakeLists.txt
 VERSION 1.2.2 02-JUL-2018
 =================================================================================================
 1. Folder proxy_eui64 moved to lib

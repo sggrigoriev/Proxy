@@ -55,6 +55,7 @@ static void process_agent_message(char* msg);               /* Parse & split Age
 static void process_proxy_commands(char* msg);              /* Process Proxy commands - commsnd(s) string as input */
 static void report_cloud_conn_status(int online);           /* send off/on line status notification to the Agent, sent conn info to the WUD if online */
 static void send_wd();                                      /* Send Watchdog to thw WUD */
+static void send_reboot();                                  /* Send reboot request to WUD */
 /***********************************************************************************************
  * Main Proxy thread data
  */
@@ -136,11 +137,14 @@ void pt_main_thread() { /* Starts the main thread. */
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
             proxy_is_online = 0;
             report_cloud_conn_status(proxy_is_online);
-            ph_update_contact_url();
-            proxy_is_online = 1;
-            report_cloud_conn_status(proxy_is_online);
+            if((ph_update_contact_url() == -1) && (pc_rebootIfCloudRejects()))
+                send_reboot();
+            else {
+                proxy_is_online = 1;
+                report_cloud_conn_status(proxy_is_online);
 
-            lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);
+                lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs() * 3600);
+            }
         }
 /* 3. Regular sending the fw version to the cloud */
         if(lib_timer_alarm(gw_fw_version_sending_clock) && !lock_gw_fw_version_sending) {
@@ -351,9 +355,15 @@ static void process_proxy_commands(char* msg) {
             case PR_CMD_UPDATE_MAIN_URL:
                 proxy_is_online = 0;
                 report_cloud_conn_status(proxy_is_online);
-                 if(!ph_update_main_url(cmd_item.update_main_url.main_url)) {
-                    pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
-                     send_rc_to_cloud(cmd_arr_elem, PF_RC_EXEC_ERR);
+                switch(ph_update_main_url(cmd_item.update_main_url.main_url)) {
+                    case 1:
+                        break;
+                    case -1:
+                        if(pc_rebootIfCloudRejects()) send_reboot();
+                    default: /* -1, 0 */
+                        pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
+                        send_rc_to_cloud(cmd_arr_elem, PF_RC_EXEC_ERR);
+                        break;
                 }
                 proxy_is_online = 1;
                 report_cloud_conn_status(proxy_is_online);
@@ -438,4 +448,15 @@ static void report_cloud_conn_status(int online) {
             pu_log(LL_WARNING, "report_cloud_conn_status: No info about local IP Address. Check PROXY_ETHERNET_INTERFACE define in Make file!");
         }
     }
+}
+
+static void send_reboot() {
+    char buf[LIB_HTTP_MAX_MSG_SIZE] = {0};
+    char deviceID[LIB_HTTP_DEVICE_ID_SIZE] = {0};
+
+    pc_getProxyDeviceID(deviceID, sizeof(deviceID));
+    pu_log(LL_INFO, "%s: cloud rejects the Proxy connection - reboot");
+    pr_make_reboot_command(buf, sizeof(buf), deviceID);
+    to_wud = pt_get_gueue(PS_ToWUDQueue);
+    pu_queue_push(to_wud, buf, strlen(buf) + 1);
 }

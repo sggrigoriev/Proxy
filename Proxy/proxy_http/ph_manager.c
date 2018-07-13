@@ -24,6 +24,8 @@
 #include <assert.h>
 #include <sys/time.h>
 #include <lib_timer.h>
+#include <pu_queue.h>
+#include <proxy_threads/pt_queues.h>
 
 #include "pu_logger.h"
 #include "lib_http.h"
@@ -69,21 +71,21 @@ static void unblock_io();   /* block = 0; */
 /***************************************************
  * (re)establishes all connections to the cloud
  * NB! No thread protection nor IO synchrinization!
+ * 1 if OK, -1 if reboot
  */
-static void connect();
+static int connect();
 /*******************************************************************
  * Open POST connection for prev contact URL
  * Send the notification to the cloud with prev main URL
  * NB-1! Uses saved main URL, auth_token and cloud URL
  * NB-2!     pf_add_proxy_head(msg, sizeof(msg), deviceID, 11011); will be called here!
- * @param old_main      - previous main URL
  * @param old_contact   - previous contacy URL
- * @param auth_token    - GW auth token for the previous cloud
+ * @param old_token     - GW auth token for the previous cloud
  * @param device_id     - GW device ID
  * @param new_main      - new main URL
  * @return              - 0 if bad 1 if OK
  */
-static int cloud_notify(const char* old_contact, const char* auth_token, const char* device_id, const char* new_main);
+static int cloud_notify(const char* old_contact, const char* old_token, const char* device_id, const char* new_main);
 
 /****************************************************************************
     Local functions
@@ -124,10 +126,10 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         device_id   - gateway device id
         post        - post connection descriptor
         get         - get connection descriptor
-        quick_post  - post connection for immediate answer
-    Return 1 if OK, 0 if error
+        post1  - post connection for immediate answer
+    Return 1 if OK, 0 if error, -1 if reboot
 */
-static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* quick_post);
+static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* post1);
 
 /* Eraze all dedicated connections
  *      post        - post connection descriptor
@@ -145,7 +147,7 @@ Case4: Nde modem, empty token-> OK; new token
         device_id   - gateway device id
         auth_token  - buffer for received gateway authentication token
         size        - buffer size
-    Return 1 if OK, 0 if not
+    Return 1 if OK, 0 if not, -1 reboot required
 */
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size);
 
@@ -154,7 +156,7 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
  *      device_id   - gateway device id
  *      new_token   - buffer for new token received
  *      size        - buffer size
- *  Return 1 if OK, 0 if error
+ *  Return 1 if OK, 0 if error, -1 if reboot required
  */
 static int get_new_token(lib_http_conn_t post_t, const char* device_id, char* new_token, size_t size);
 
@@ -162,9 +164,9 @@ static int get_new_token(lib_http_conn_t post_t, const char* device_id, char* ne
  *      post_t      - post connection handler
  *      device_id   - gateway device id
  *      old_token   - existing token (red fron the disk)
- *  Return PH_TEST_AT_ERR if error, PH_TEST_AT_OK if token accepted, PH_TEST_AT_WRONG if token does not accepted by the cloud
+ *  Return 1 if token accepted, 0 if not, -1 if reboot requires
  */
-static int test_auth_token(lib_http_conn_t post_t, const char* device_id, const char* old_token);
+static int test_auth_token(lib_http_conn_t post_d, const char* device_id, const char* old_token);
 
 /*************************************************************************************************************
  * Public functions - they are thread-protected: no concurrent POST, GET or immediate response!
@@ -200,11 +202,12 @@ int ph_update_main_url(const char* new_main) {
     pc_getProxyDeviceID(device_id, sizeof(device_id));
 
 /* Get new contact URL from new main URL - here it is just for test: does cloud works. In connect function the contact will be requested again */
-    if(!get_contact(new_main, device_id, contact_url, sizeof(contact_url))) {
+    int rc;
+    if(rc = get_contact(new_main, device_id, contact_url, sizeof(contact_url)), rc != 1) {
         /* New cloud doesn't work - go back to the previous one */
         unblock_io();
         pthread_mutex_unlock(&reconnect_mutex);
-        return 0;
+        return rc;
     }
 /* Save new main URL */
     pc_saveMainCloudURL(new_main);
@@ -213,12 +216,12 @@ int ph_update_main_url(const char* new_main) {
     erase_connections(&post_conn, &get_conn, &immediate_post);
 /* Notify previous cloud about change */
     cloud_notify(old_contact, auth_token, device_id, new_main);
-/* Reconnection now*/
-    connect();
+/* Reconnetion now*/
+    rc = connect();
 
     unblock_io();
     pthread_mutex_unlock(&reconnect_mutex);
-    return 1;
+    return rc;
 }
 
 int ph_reconnect() {
@@ -228,14 +231,14 @@ int ph_reconnect() {
         return 0;
     }
 
-    connect();
+    int rc = connect();
 
     unblock_io();
     pthread_mutex_unlock(&reconnect_mutex);
-    return 1;
+    return rc;
 }
 
-void ph_update_contact_url() {
+int ph_update_contact_url() {
     char main_url[LIB_HTTP_MAX_URL_SIZE];
     char contact_url[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
@@ -253,10 +256,16 @@ void ph_update_contact_url() {
     int err = 1;
     while(err) {
 /* 1. Get contact url from main url */
-        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {   /* Lets try again and again */
-            sleep(DEFAULT_S_TO);
-            continue;
+        switch(get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {
+            case -1:    /* Reboot required */
+                return -1;
+            case 0: /* Lets try again and again - connectivity error */
+                sleep(DEFAULT_S_TO);
+                continue;
+            default:    /* got it! */
+                break;
         }
+
 /* 2. Open connections */
 /* If error - open connections with previous contact url */
         if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
@@ -277,6 +286,7 @@ void ph_update_contact_url() {
     }
     unblock_io();
     pthread_mutex_unlock(&reconnect_mutex);
+    return 1;
 }
 
 int ph_read(char* in_buf, size_t size) {
@@ -326,8 +336,10 @@ int ph_respond(char* buf, char* resp, size_t resp_size) {
 
 /*****************************************************************************************************************
     Local functions implementation
+    1 if OK,
+    -1 if reboot
 */
-static void connect() {
+static int connect() {
     char main_url[LIB_HTTP_MAX_URL_SIZE];
     char contact_url[LIB_HTTP_MAX_URL_SIZE];
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
@@ -342,14 +354,25 @@ static void connect() {
 /* 0. Close permanent connections */
         erase_connections(&post_conn, &get_conn, &immediate_post);
 /* 1. Get contact url */
-        if(!get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {       /* Lets try it again and again */
-            sleep(DEFAULT_S_TO);
-            continue;
+        switch(get_contact(main_url, device_id, contact_url, sizeof(contact_url))) {
+            case 1:
+                break;
+            case -1:
+                if(pc_rebootIfCloudRejects()) return -1;
+            default:
+                /* Lets try it again and again */
+                sleep(DEFAULT_S_TO);
+                continue;
         }
 /* 2. Make test empty post: if answer OK - use existing one. If answer is not OK - ask for new token */
-        if(!get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) {
-            sleep(DEFAULT_S_TO);
-            continue;
+        switch(get_auth_token(contact_url, device_id, auth_token, sizeof(auth_token))) {
+            case 1:
+                break;
+            case -1:
+                if(pc_rebootIfCloudRejects()) return -1;
+            default:
+                sleep(DEFAULT_S_TO);
+                continue;
         }
 /* 3. open connections */
         if(!get_connections(contact_url, auth_token, device_id, &post_conn, &get_conn, &immediate_post)) {
@@ -362,7 +385,7 @@ static void connect() {
         pc_saveCloudURL(contact_url);
         pc_saveAuthToken(auth_token);
     }
-
+    return 1;
 }
 
 static int cloud_notify(const char* old_contact, const char* old_token, const char* device_id, const char* new_main) {
@@ -435,7 +458,11 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
 static int io_result_2_bool(lib_http_io_result_t result) {
     return (result == LIB_HTTP_IO_OK);
 }
-
+/*
+ * 1 - OK
+ * 0 - error
+ * -1 - reboot requested
+ */
 static int get_contact(const char* main, const char* device_id, char* conn, size_t conn_size) {
     char resp[LIB_HTTP_MAX_MSG_SIZE];
     lib_http_conn_t get_conn;
@@ -449,21 +476,36 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         return 0;
     }
     lib_http_io_result_t rc = lib_http_get(get_conn, resp, sizeof(resp), 1);
-    if(rc != LIB_HTTP_IO_OK) {
-        pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s. RC = %d. Responce = %s", main, rc, resp);
-        lib_http_eraseConn(&get_conn);
-        return 0;
-    }
-    if(!strlen(resp)) {
-        pu_log(LL_ERROR, "get_contact: No data returned by %s", main);
-        lib_http_eraseConn(&get_conn);
-        return 0;
 
+    int ret = 0;
+    switch(rc) {
+        case LIB_HTTP_IO_OK:
+            if(!strlen(resp)) {
+                pu_log(LL_ERROR, "get_contact: No data returned by %s", main);
+            }
+            else {
+                strncpy(conn, resp, conn_size - 1);
+                pu_log(LL_DEBUG, "get_contact: Contact URL is %s", conn);
+                ret =  1;
+            }
+            break;
+        case LIB_HTTP_IO_UNKNOWN:
+        case LIB_HTTP_IO_UNAUTH:
+            if(pc_rebootIfCloudRejects()) {
+                pu_log(LL_INFO, "%s: Cloud rejects connection - reboot.", __FUNCTION__);
+                ret = -1;
+            }
+            else {
+                pu_log(LL_INFO, "%s: Cloud rejects connection - try it again", __FUNCTION__);
+                ret = 0;
+            }
+            break;
+        default: /* ERROR & RETRY */
+            pu_log(LL_ERROR, "get_contact: Can't get the connection url from %s. RC = %d. Responce = %s", main, rc, resp);
+            break;
     }
-    strncpy(conn, resp, conn_size-1);
     lib_http_eraseConn(&get_conn);
-    pu_log(LL_DEBUG, "get_contact: Contact URL is %s", conn);
-    return 1;
+    return ret;
 }
 
 static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* post1) {
@@ -491,7 +533,11 @@ static void erase_connections(lib_http_conn_t* post, lib_http_conn_t* get, lib_h
     lib_http_eraseConn(get);
     lib_http_eraseConn(quick_post);
 }
-
+/*
+ * 1 - OK,
+ * 0 - Error connestion
+ * -1 - Reboot required
+ */
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size) {
     lib_http_conn_t post_d;
 
@@ -500,20 +546,42 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
         return 0;
     }
     if(strlen(auth_token)) {    /* We got auth_token in config */
-        if (test_auth_token(post_d, device_id, auth_token)) {    /* existing token works */
-            lib_http_eraseConn(&post_d);
-            return 1;
+         switch(test_auth_token(post_d, device_id, auth_token)) {
+            case 1:             /* existing token works */
+                lib_http_eraseConn(&post_d);
+                return 1;
+            case -1:
+                if(pc_rebootIfCloudRejects()) {
+                    pu_log(LL_INFO, "%s: Cloud rejects auth token - reboot", __FUNCTION__);
+                    lib_http_eraseConn(&post_d);
+                    return -1;
+                }
+                break;
+            default:            /* conn error or token doesn't suit and no reboot needed */
+                break;
         }
         pu_log(LL_ERROR, "get_auth_token: Existing auth token doesn't suit - Re-request");
     }
  /* Request and/or re-request for new token */
-    if(get_new_token(post_d, device_id, auth_token, size)) {
-/* We have to send the empty post with the new token to cloud */
-        if(test_auth_token(post_d, device_id, auth_token)) {
-            pu_log(LL_INFO, "get_auth_token: New auth token was approved by cloud");
-            lib_http_eraseConn(&post_d);
-            return 1;
-        }
+    switch (get_new_token(post_d, device_id, auth_token, size)) {
+        case 1:
+            /* We have to send the empty post with the new token to cloud */
+            if(test_auth_token(post_d, device_id, auth_token)>0) {
+                pu_log(LL_INFO, "get_auth_token: New auth token was approved by cloud");
+                lib_http_eraseConn(&post_d);
+                return 1;
+            }
+            break;
+        case -1:
+            if(pc_rebootIfCloudRejects()) {
+                pu_log(LL_INFO, "%s: Cloud rejects auth token - reboot", __FUNCTION__);
+                lib_http_eraseConn(&post_d);
+                return -1;
+            }
+            break;
+        default:            /* conn error or token doesn't suit and no reboot needed */
+            break;
+
     }
     pu_log(LL_ERROR, "get_auth_token: New auth token was not approved by cloud");
     lib_http_eraseConn(&post_d);
@@ -535,12 +603,21 @@ again:
             cJSON *obj = cJSON_Parse(reply);
             if(!obj) {
                 pu_log(LL_ERROR, "get_new_token: Can't parse the cloud reply: %s", reply);
-                return 0;
+                if(pc_rebootIfCloudRejects()) {
+                    pu_log(LL_INFO, "%s: Cloud rejects request - reboot", __FUNCTION__);
+                    return -1;
+                }
+                else
+                    return 0;
             }
             cJSON* token = cJSON_GetObjectItem(obj, "authToken");
             if(!token) {
                 pu_log(LL_ERROR, "get_new_token: No auth token from the cloud: %s", reply);
                 cJSON_Delete(obj);
+                if(pc_rebootIfCloudRejects()) {
+                    pu_log(LL_INFO, "%s: Cloud rejects request - reboot", __FUNCTION__);
+                    return -1;
+                }
                 return 0;
             }
             strncpy(new_token, token->valuestring, size-1);
@@ -548,7 +625,13 @@ again:
             cJSON_Delete(obj);
             return 1;
         }
-        default:
+        case LIB_HTTP_IO_UNKNOWN:
+            if(pc_rebootIfCloudRejects()) {
+                pu_log(LL_INFO, "%s: Cloud rejects request - reboot", __FUNCTION__);
+                return -1;
+            }
+            return 0;
+         default:
             pu_log(LL_ERROR, " get_new_token: auth token request failed: %s", reply);
             return 0;
     }
@@ -567,6 +650,10 @@ static int test_auth_token(lib_http_conn_t post_d, const char* device_id, const 
         i++;
     } while ((rc != LIB_HTTP_IO_OK) && (rc != LIB_HTTP_IO_UNAUTH) && ((rc != LIB_HTTP_IO_UNKNOWN)));
 
+    if(((rc == LIB_HTTP_IO_UNAUTH)||(rc == LIB_HTTP_IO_UNKNOWN)) && (pc_rebootIfCloudRejects())) {
+        pu_log(LL_INFO, "%s: Cloud rejects auth token - reboot", __FUNCTION__);
+        return -1;
+    }
     return io_result_2_bool(rc);
  }
 /*******************************

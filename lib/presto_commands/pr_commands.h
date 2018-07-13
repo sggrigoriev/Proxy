@@ -381,4 +381,13 @@ int pr_agent_connected(msg_obj_t* obj);
  */
 int pr_is_cloud_command(pr_cmd_t cmd);
 
+/******************************************************************************************************
+ * Create the command string: "{ "type": <number>, "commandId": "<number>", "deviceId": "<device_id>", "parameters": [{"name": "reboot", "value": "1"}]}"
+ * @param buf           buffer for command string made
+ * @param size          buffer size
+ * @param device_id     Proxy deviceID
+ * @return              Command made
+ */
+const char* pr_make_reboot_command(char* buf, size_t size, const char* device_id);
+
 #endif /*PRESTO_PR_COMMANDS_H */

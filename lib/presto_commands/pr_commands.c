@@ -540,6 +540,11 @@ pr_alert_item_t pr_get_alert_item(msg_obj_t* alert_item) {
     }
     return ret;
 }
+/* { "type": <number>, "commandId": "<number>", "deviceId": "<device_id>", "parameters": [{"name": "reboot", "value": "1"}]} */
+const char* pr_make_reboot_command(char* buf, size_t size, const char* device_id) {
+    snprintf(buf, size-1, "{ \"type\": 1, \"commandId\": \"0\", \"deviceId\": \"%s\", \"parameters\": [{\"name\": \"reboot\", \"value\": \"1\"}]}", device_id);
+    return buf;
+}
 
 /*
 Local funcs implementation

@@ -24,7 +24,6 @@ set(GCC_STANDARD $ENV{STANDARD})
 
 if (PRESTO_PLATFORM STREQUAL "cross")
 	# MLevitin additions
-	add_definitions( -DPROXY_DEVICE_ID_PREFIX="aioxGW-" )
 	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	message(STATUS "Compiling for the MIPS")
@@ -43,7 +42,6 @@ if (PRESTO_PLATFORM STREQUAL "cross")
 			mbedtls
 		)
 elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
-	add_definitions( -DPROXY_DEVICE_ID_PREFIX="aioxGW-" )
     # To separate run on real HW and on server
 	#file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
 	#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
@@ -60,7 +58,6 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 			curl
 		)
 elseif(PRESTO_PLATFORM STREQUAL "openwrt")
-	add_definitions( -DPROXY_DEVICE_ID_PREFIX="aioxGW-" )
   	message(STATUS "Compiling for the OpenWRT")
 	add_definitions(-DPROXY_ETHERNET_INTERFACE="br-lan")
 	configure_file(proxyJSON.conf.x86 ../${PRESTO_PLATFORM}/proxyJSON.conf COPYONLY)
@@ -74,7 +71,6 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 		)
 elseif (PRESTO_PLATFORM STREQUAL "quark")
 		# MLevitin additions
-		add_definitions( -DPROXY_DEVICE_ID_PREFIX="aioxGW-" )
 		file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
 		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 		message(STATUS "Compiling Proxy  for the Quark")

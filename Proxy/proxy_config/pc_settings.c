@@ -69,6 +69,9 @@
 #define PROXY_CURLOPT_CAINFO    "CURLOPT_CAINFO"
 #define PROXY_CURLOPT_SSL_VERIFYPEER    "CURLOPT_SSL_VERIFYPEER"
 
+#define PROXY_DEVICE_ID_PREFIX          "DEVICE_ID_PREFIX"
+#define PROXY_REBOOT_IF_CLOUD_REJECTS   "REBOOT_IF_CLOUD_REJECTS"
+
 
 /********************************************************************
     Config values saved in memory
@@ -98,6 +101,9 @@ static unsigned int     proxy_wd_to;
 static unsigned int     set_ssl_for_url_request;
 static int              curlopt_ssl_verify_peer;
 static char             curlopt_ca_info[PROXY_MAX_PATH];
+
+static char             device_id_prefix[20];
+static int              reboot_if_cloud_rejects;
 
 static char             fw_version[DEFAULT_FW_VERSION_SIZE];
 
@@ -200,6 +206,13 @@ const char* pc_getCurloptCAInfo() {
     return curlopt_ca_info;
 }
 
+const char* pc_getProxyDeviceIDPrefix() {
+    PC_RET(DEFAULT_PROXY_DEVICE_ID_PREFIX, device_id_prefix);
+}
+int pc_rebootIfCloudRejects() {
+    PC_RET(DEFAULT_REBOOT_IF_CLOUD_REJECTS, reboot_if_cloud_rejects);
+}
+
 
 /***********************************************************************
     Thread-protected functions
@@ -255,6 +268,9 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             PCS_ERR;
     if(!getUintValue(cfg, PROXY_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))              PCS_ERR;
     if(!getStrValue(cfg, PROXY_CURLOPT_CAINFO, curlopt_ca_info, sizeof(curlopt_ca_info)))       PCS_ERR;
+
+    if(!getStrValue(cfg, PROXY_DEVICE_ID_PREFIX, device_id_prefix, sizeof(device_id_prefix)))       PCS_ERR;
+    if(!getUintValue(cfg, PROXY_REBOOT_IF_CLOUD_REJECTS, (unsigned int *)(&reboot_if_cloud_rejects)))                 PCS_ERR;
 
     cJSON_Delete(cfg);
 
@@ -438,6 +454,9 @@ static void initiate_defaults() {
 
     curlopt_ssl_verify_peer = DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER;
     curlopt_ca_info[0] = '\0';
+
+    strncpy(device_id_prefix, DEFAULT_PROXY_DEVICE_ID_PREFIX, sizeof(device_id_prefix));
+    reboot_if_cloud_rejects = DEFAULT_REBOOT_IF_CLOUD_REJECTS;
 }
 
 /*
