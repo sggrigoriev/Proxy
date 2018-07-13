@@ -238,7 +238,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_LOG_REC_AMT, &log_rec_amt))                                     PCS_ERR;
     getLLTValue(cfg, PROXY_LOG_LEVEL, &log_level);
 
-    if(!getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id)))                        fprintf(stderr, "DeviceID will be generated\n");
+    getStrValue(cfg, PROXY_DEVICE_ID, device_id, sizeof(device_id));
 
     if(!getStrValue(cfg, PROXY_AUTH_TOKEN_FILE_NAME, auth_token_file_name, sizeof(auth_token_file_name)))
         fprintf(stderr, "%s setting is not found. Default name will be used instead\n", PROXY_AUTH_TOKEN_FILE_NAME);
