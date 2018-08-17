@@ -27,14 +27,18 @@ NB2! Interface functions are thread-protected. But still async...
 #define PRESTO_LIB_TCP_H
 
 #include <stdio.h>
+#include <pr_commands.h>
 
 #define LIB_TCP_BINGING_ATTEMPTS 1
 
-/*Errors returned instead of connection handler. Not a good practice... */
-#define LIB_TCP_READ_TIMEOUT (lib_tcp_rd_t*)1L          /*Read timeout */
-#define LIB_TCP_READ_MSG_TOO_LONG (lib_tcp_rd_t*)2L     /*Too big message on input */
-#define LIB_TCP_READ_NO_READY_CONNS (lib_tcp_rd_t*)3L   /*Connection pool is full - no place for new connections */
-#define LIB_TCP_READ_EOF (lib_tcp_rd_t*)4L              /*Connection is broken */
+/*Errors returned instead in RC */
+#define LIB_TCP_READ_OK             1
+#define LIB_TCP_READ_ERROR          -1  /* System errror */
+#define LIB_TCP_READ_TIMEOUT        0  /*Read timeout */
+#define LIB_TCP_READ_MSG_TOO_LONG   -3  /*Too big message on input */
+#define LIB_TCP_READ_NO_READY_CONNS -4  /*Connection pool is full - no place for new connections */
+#define LIB_TCP_READ_EOF            -5  /*Connection is broken */
+
 
 /* Status to prevent buffer overflow:
  * LIB_TCP_BUF_READY        - ready to accespt new message
@@ -62,8 +66,9 @@ typedef struct {
 } lib_tcp_in_t;
 
 /*Read descriptor */
-typedef struct {
+typedef struct lib_tcp_rd_tt{
     int socket;
+    char name[PR_MAX_PROC_NAME_SIZE];
     lib_tcp_in_t in_buf;
     lib_tcp_assembling_buf_t ass_buf;
 } lib_tcp_rd_t;
@@ -76,6 +81,21 @@ typedef struct {
     unsigned int sa_max_size;
 } lib_tcp_conn_t;
 
+/*************************
+ * Provides connection human readable name or connection index if the name is not set
+ * @param conn  - pointer to connection description
+ * @return      - connection name (if set) or connection number or empty string if conn is not defined
+ */
+const char* lib_tcp_get_conn_name(const lib_tcp_rd_t* conn);
+
+/*************************
+ * Set the name for connection desciptor
+ * @param conn - pointer to connection descriptor
+ * @param name  - name to set
+ * @return - 1 if Ok, 0 if not
+ */
+int lib_tcp_set_conn_name(lib_tcp_rd_t* conn, const char* name);
+
 /*Create the connection pool
   max_connections - size of connections pool
   in_size         - max size of incoming data read for one time
@@ -87,7 +107,7 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size)
 /*Create working connecion
   rd_socket   - TCP socket open for read
   all_conns   - pointer connection pool
-Return ptr for upfated descriptor ot NULL if no space
+Return ptr for updated descriptor ot NULL if err
 */
 lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns);
 
@@ -118,9 +138,10 @@ int lib_tcp_listen(int server_socket, int to_sec);
 /*Get the first of all ready to be red connections
   all_conns   - pointer to connections pool
   to_sec      - timeout to wait for ready for read connections
-Return connection desriptor or one of these funny defines described on top of the file
+Return connection desriptor or NULL if error or nothing to read
+ NB! check rc: 0 if timeout, -1 if error
 */
-lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec);
+lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec, int* rc);
 
 /*Assemble the incoming chnks to the 0-termineted char string and move it into out buffer
   conn    - connection descriptor

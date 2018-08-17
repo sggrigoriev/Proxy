@@ -23,6 +23,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include "presto_release_version.h"
 
@@ -36,19 +39,53 @@
 /* Help for Proxy start parameters syntax */
 static void print_Proxy_start_params();
 
+/*
+ * Debugging utility
+ */
+volatile uint32_t contextId = 0;
+void signalHandler( int signum ) {
+    pu_log(LL_ERROR, "PROXY.%s: Interrupt signal (%d) received. ContextId=%d thread_id=%d\n", __FUNCTION__, signum, contextId, pthread_self());
+    exit(signum);
+}
+
 /* Main function */
 int main(int argc, char* argv[]) {
+    signal(SIGSEGV, signalHandler);
+    signal(SIGBUS, signalHandler);
+    signal(SIGINT, signalHandler);
+    signal(SIGFPE, signalHandler);
+    signal(SIGKILL, signalHandler);
 
     if(argc > 1) {
         pu_set_log_level(LL_SILENT);
+        pc_cli_params_t par = pc_cli_process_params(argc, argv);
+
+        if(par.parameter) {
+            if(!pc_load_config(par.parameter)) exit(-1);
+        }
+
+        switch(par.action) {
+                case PCLI_VERSION:
+                    pc_cli_printVersion();
+                    exit(0);
+                case PCLI_DEVICE_ID:
+                    pc_cli_printDeviceID();
+                    exit(0);
+                default:
+                    if(!par.parameter) {
+                        pc_cli_printUsage();
+                        exit(0);
+                    }
+                    break;
+        }
+     }
+    else {
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
-        pc_cli_process_params(argc, argv);
-        exit(0);
     }
 
     printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
 
-    if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
+
     pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());

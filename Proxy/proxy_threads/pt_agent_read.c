@@ -64,32 +64,41 @@ static void* agent_read(void* params) {
     }
 
     while(!is_childs_stop()) {
-        lib_tcp_rd_t *conn = lib_tcp_read(all_conns, DEFAULT_S_TO); /* connection removed inside */
-        if (!conn) {
-            pu_log(LL_ERROR, "%s. Read op failed %d %s. Reconnect", PT_THREAD_NAME, errno, strerror(errno));
-            set_stop_agent_children();
-            break;
+        int rc;
+        lib_tcp_rd_t *conn = lib_tcp_read(all_conns, DEFAULT_S_TO, &rc); /* connection removed inside */
+        if(rc == LIB_TCP_READ_TIMEOUT) {
+            continue;   /* timeout */
         }
-        if(conn == LIB_TCP_READ_EOF) {
+        else if(rc == LIB_TCP_READ_EOF) {
             pu_log(LL_ERROR, "%s. Read op failed. Nobody on remote side (EOF). Reconnect", PT_THREAD_NAME);
             set_stop_agent_children();
             break;
         }
-        if (conn == LIB_TCP_READ_TIMEOUT) {
-            continue;   /* timeout */
-        }
-        if (conn == LIB_TCP_READ_MSG_TOO_LONG) {
+        else if (rc == LIB_TCP_READ_MSG_TOO_LONG) {
             pu_log(LL_ERROR, "%s: incoming mesage too large. Ignored", PT_THREAD_NAME);
             continue;
         }
-        if (conn == LIB_TCP_READ_NO_READY_CONNS) {
-            pu_log(LL_ERROR, "%s: internal error - no ready sockets. Reconnect", PT_THREAD_NAME);
+        else if(rc == LIB_TCP_READ_ERROR) {
+            pu_log(LL_ERROR, "%s. Read error. Reconnect", PT_THREAD_NAME);
+            set_stop_agent_children();
+            break;
+        }
+        else if(rc == LIB_TCP_READ_NO_READY_CONNS) {
+            pu_log(LL_ERROR, "%s: Connetion pool is too small. Ignored", PT_THREAD_NAME);
+            continue;
+        }
+        else if(rc != LIB_TCP_READ_OK) {
+            pu_log(LL_ERROR, "%s. Undefined error. Reconnect", PT_THREAD_NAME);
+            set_stop_agent_children();
+            break;
+        }
+        if (!conn) {
+            pu_log(LL_ERROR, "%s. Undefined error - connection not found. Reconnect", PT_THREAD_NAME);
             set_stop_agent_children();
             break;
         }
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
             pu_queue_push(to_proxy, out_buf, strlen(out_buf) + 1);
-
             pu_log(LL_INFO, "%s: message sent: %s", PT_THREAD_NAME, out_buf);
         }
     }

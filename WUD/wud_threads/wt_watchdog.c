@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "pu_logger.h"
 

@@ -20,6 +20,8 @@
 */
 
 #include <stdlib.h>
+#include <wc_settings.h>
+
 #ifndef WUD_ON_HOST
     #include <sys/reboot.h>
 #endif
@@ -29,12 +31,17 @@
 #include "wa_reboot.h"
 
 void wa_reboot() {
+    if(wc_getRebootByRequest()) {
 #ifdef WUD_ON_HOST
-    pu_log(LL_INFO, "wa_reboot: EXIT on host case");
-    exit(1);
+        pu_log(LL_INFO, "wa_reboot: EXIT on host case");
+        exit(1);
 #else
-    pu_log(LL_INFO, "wa_reboot: true reboot for true gateway");
-    sync();
-	reboot(RB_POWER_OFF);
+        pu_log(LL_INFO, "wa_reboot: true reboot for true gateway");
+        sync();
+        reboot(RB_POWER_OFF);
 #endif
+    }
+    else {
+        pu_log(LL_INFO, "%s: Reboot disabled by WUD configuration. Refer to the \"REBOOT_BY_REQUEST\" setting.", __FUNCTION__);
+    }
 }

@@ -32,11 +32,7 @@
 #include "pc_settings.h"
 #include "pc_cli.h"
 
-/***************** Private Prototypes ****************/
-static void _proxycli_printUsage();
-static void _proxycli_printVersion();
-
-static void print_device_id() {
+void pc_cli_printDeviceID() {
     if(!pc_existsProxyDeviceID()) {
         char eui_string[PROXY_DEVICE_ID_SIZE];
         if (!eui64_toString(eui_string, sizeof(eui_string))) {
@@ -51,47 +47,44 @@ static void print_device_id() {
     }
 }
 
-/***************** Public Functions ****************
+/***************** Public Prototypes ****************/
+/* Process the parameters passed on Proxy start
+ *  Return actions requested array terminated by PCLI_SIZE
+ */
+pc_cli_params_t pc_cli_process_params(int argc, char *argv[]) {
+    int c;
+    pc_cli_params_t ret;
 
- Parse the command line arguments, to be retrieved by getter functions when
- needed and update loadad from  config file parameters + updates the donfig file itself
-
-Return 0 if error. Parse and update config data + loaded params
-*/
-int pc_cli_process_params(int argc, char *argv[]) { /*Return 0 if error. Parse and update config data + loaded params*/
-
-  int c;
-
-  while ((c = getopt(argc, argv, "vd")) != -1) {
-    switch (c) {
-    case 'v':
-      _proxycli_printVersion();
-      return 0;
-    case 'd':
-         print_device_id();
-        return 0;
-    case '?':
-      _proxycli_printUsage();
-      return 0;
-     default:
-      printf("[cli] Unknown argument character code 0%o\n", c);
-      _proxycli_printUsage();
-      return 0;
+    ret.parameter = NULL;
+    ret.action = PCLI_UNDEF;
+    while ((c = getopt(argc, argv, "p:vd")) != -1) {
+        switch (c) {
+            case 'v':
+                ret.action = PCLI_VERSION;
+                break;
+            case 'd':
+                ret.action = PCLI_DEVICE_ID;
+                break;
+            case 'p':
+                ret.parameter = optarg;
+                break;
+            default:
+                break;
+        }
     }
-  }
-  return 1;
+  return ret;
 }
 
-/***************** Private Functions ****************/
 /**
  * Instruct the user how to use the application
  */
-static void _proxycli_printUsage() {
+void pc_cli_printUsage() {
   char *usage = ""
     "Usage: ./Proxy (options)\n"
     "\t[-v] : Print version information\n"
     "\t[-d] : Print deviceID\n"
-    "\t[-?] : Print this menu\n"
+    "\t[-p<path>] : Set path with name for configuration file\n"
+    "\t print this menu\n"
     "\n";
 
   printf("%s", usage);
@@ -99,7 +92,7 @@ static void _proxycli_printUsage() {
 /**
  * Print the version number
  */
-static void _proxycli_printVersion() {
+void pc_cli_printVersion() {
   printf("Built on %s at %s\n", __DATE__, __TIME__);
   printf("Git repository version %s\n", PRESTO_FIRMWARE_VERSION
   );

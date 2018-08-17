@@ -32,6 +32,7 @@
 #define WUD_MAX_HTTP_RETRIES                LIB_HTTP_MAX_POST_RETRIES   /* Max HTTP POST requests allowed before the reconnection */
 
 #define WD_DEFAULT_CFG_FILE_NAME            "./wud.conf"                /* Hardcoded configuration file name */
+#define WD_DEFAULT_REBOOT_BY_REQUEST        1
 
 /* Common defaults */
 #define WC_DEFAULT_LOG_NAME                 "./WUD_LOG"                 /* WUD log file name. Configured */

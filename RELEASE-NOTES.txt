@@ -1,3 +1,18 @@
+VERSION 1.2.4 17-JUL-2018
+=================================================================================================
+1. Common changes
+	lib_tcp changed: now it shows what connection is down (if it is)
+	signal handler added to Tenvis, Proxy and WUD
+	logger appends records if the log file is not empty
+2. Proxy changes
+	Changed regarding new lib_tcp interfaces
+	Parameter -p<config_path&name> start parameter added
+3. WUD changes
+	Changed regarding new lib_tcp interfaces
+	Parameter -p<config_path&name> start parameter added
+	REBOOT_BY_REQUEST setting added. Possible values:
+		1 - (defaut) reboot the gateway if neccesary
+		0 - disable the reoot. NB! For debugging purposes ONLY!
 VERSION 1.2.3 13-JUL-2018
 =================================================================================================
 1. ProxyJSON.conf changes

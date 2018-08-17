@@ -45,6 +45,7 @@
     #define WUD_LL_ERROR          "ERROR"
 
 #define WUD_QUEUES_REC_AMT          "QUEUES_REC_AMT"
+#define WUD_REBOOT_BY_REQUEST       "REBOOT_BY_REQUEST"
 
 #define WUD_WORKING_DIRECTORY       "WUD_WORKING_DIRECTORY"
 #define WUD_COMM_PORT               "WUD_COMM_PORT"
@@ -81,6 +82,7 @@ static unsigned int     log_rec_amt;
 static log_level_t      log_level;
 
 static unsigned int     queues_rec_amt;
+static unsigned int     reboot_by_request;
 
 static char working_dir[WC_MAX_PATH];
 static unsigned int wud_port;
@@ -177,6 +179,10 @@ log_level_t wc_getLogVevel() {
 
 unsigned int wc_getQueuesRecAmt() {
     WC_RET(WC_DEFAULT_QUEUES_REC_AMT, queues_rec_amt);
+}
+
+unsigned int wc_getRebootByRequest() {
+    WC_RET(WD_DEFAULT_REBOOT_BY_REQUEST, reboot_by_request);
 }
 
 const char* wc_getWorkingDir() {
@@ -282,6 +288,9 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getStrValue(cfg, WUD_LOG_NAME, log_name, sizeof(log_name)))                                                 WC_ERR();
     if(!getUintValue(cfg, WUD_LOG_REC_AMT, &log_rec_amt))                                                           WC_ERR();
     if(!getUintValue(cfg, WUD_QUEUES_REC_AMT, &queues_rec_amt))                                                     WC_ERR();
+
+    getUintValue(cfg, WUD_REBOOT_BY_REQUEST, &reboot_by_request);
+
     if(!getStrValue(cfg, WUD_WORKING_DIRECTORY, working_dir, sizeof(working_dir)))                                  WC_ERR();
     if(!getUintValue(cfg, WUD_COMM_PORT, &wud_port))                                                                WC_ERR();
     if(!getUintValue(cfg, WUD_CHILDREN_SHUTDOWN_TO_SEC, &children_to_sec))                                          WC_ERR();
@@ -371,6 +380,8 @@ static void initiate_defaults() {
     strcpy(log_name, WC_DEFAULT_LOG_NAME);
     log_rec_amt = WC_DEFAULT_LOG_RECORDS_AMT;
     log_level = WC_DEFAULT_LOG_LEVEL;
+
+    reboot_by_request= WD_DEFAULT_REBOOT_BY_REQUEST;
 
     strcpy(working_dir, WUD_DEFAULT_WORKING_DIRECTORY);
     wud_port = WUD_DEFAULT_COMM_PORT;

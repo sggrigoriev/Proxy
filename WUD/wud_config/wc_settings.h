@@ -31,6 +31,7 @@ unsigned int wc_getLogRecordsAmt();         /* Return max amount of records in l
 log_level_t wc_getLogVevel();               /* Return the log level for WUD logging */
 
 unsigned int wc_getQueuesRecAmt();          /* Return the max records amount in each queue used in QUD */
+unsigned int wc_getRebootByRequest();
 
 const char* wc_getWorkingDir();             /* Return WUD working directory */
 unsigned int wc_getWUDPort();               /* Return WUD communication port (read from Proxy & Agent) */

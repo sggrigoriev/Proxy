@@ -19,12 +19,33 @@
 #ifndef PROXYCLI_H
 #define PROXYCLI_H
 
+/* pc_cli_process_params RC */
+
+typedef enum {PCLI_UNDEF, PCLI_VERSION, PCLI_DEVICE_ID} pc_cli_action_t;
+typedef struct {
+    pc_cli_action_t action;
+    char* parameter;
+} pc_cli_params_t;
+
 
 /***************** Public Prototypes ****************/
 /* Process the parameters passed on Proxy start
- *  Return 0 if error. Parse and update config data + loaded params
+ *  Return actions requested array terminated by PCLI_SIZE
  */
-int pc_cli_process_params(int argc, char *argv[]);
+pc_cli_params_t pc_cli_process_params(int argc, char *argv[]);
+
+/**
+ * Instruct the user how to use the application
+ */
+void pc_cli_printUsage();
+
+/**
+ * Print the version number
+ */
+void pc_cli_printVersion();
+
+void pc_cli_printDeviceID();
+
 
 #endif
 

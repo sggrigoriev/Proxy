@@ -84,10 +84,12 @@ static char* getData(char* buf, unsigned max_size) {
 
 /************************************************
  * Oepn log file. If error - set stdout as a stream
+ * adding = 0 - truncate; adding = 1  add records
  * @return  - pointer to file descriptor
  */
-static FILE* open_log(const char* fname) {
-    FILE* ret = fopen(fname, "w");
+static FILE* open_log(const char* fname, int append) {
+
+    FILE* ret = fopen(fname, (append)?"a":"w");
 
     if (ret == NULL) {
         ret = stdout;
@@ -112,7 +114,7 @@ void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_lev
         max_rec = rec_amount;
         strncpy(LOG_FILE_NAME, file_name, sizeof(LOG_FILE_NAME)-1);
 
-        file = open_log(LOG_FILE_NAME);
+        file = open_log(LOG_FILE_NAME, 1);
 
     pthread_mutex_unlock(&lock);
  }
@@ -147,7 +149,7 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
 
         if (rec_amt >= max_rec) {
             fclose(file);
-            file = open_log(LOG_FILE_NAME);
+            file = open_log(LOG_FILE_NAME, 0);
             rec_amt = 0;
         }
 

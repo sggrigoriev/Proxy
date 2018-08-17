@@ -28,7 +28,7 @@
 #include "pr_commands.h"
 #include "eui64.h"
 
-#define DEFAULT_CFG_FILE_NAME   "./proxyJSON.conf"          /* Default Proxy configuration file */
+#define DEFAULT_CFG_FILE_NAME             "./proxyJSON.conf"/* Default Proxy configuration file */
 #define DEFAULT_AUTH_TOKEN_FILE_NAME      "./auth_token"    /* File name for authentication token. Configurable */
 #define DEFAULT_CLOUD_URL_FLIE_NAME       "./cloud_url"     /* File name with main contact URL */
 

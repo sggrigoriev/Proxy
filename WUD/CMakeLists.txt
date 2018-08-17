@@ -31,6 +31,7 @@ elseif(PRESTO_PLATFORM STREQUAL "ubuntu")
 	# To separate run on real HW and on server
 	#configure_file(wud.conf.x86 ../${PRESTO_PLATFORM}/wud.conf COPYONLY)
 	#add_definitions(-DWUD_NOT_STARTS_AGENT)											# separate Agent run if not commented
+	add_definitions(-DWUD_ON_HOST)
 	message(STATUS "Compiling for the X86.")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GCC_STANDARD} -O0 -g -Wall") #-lc
 	#	file(MAKE_DIRECTORY build/$ENV{PLATFORM})

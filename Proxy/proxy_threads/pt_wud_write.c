@@ -124,7 +124,7 @@ static void* wud_write(void* params) {
             }
             if (reconnect) {
                 lib_tcp_client_close(write_socket);
-                pu_log(LL_WARNING, "%s: reconnect");
+                pu_log(LL_WARNING, "%s: reconnect", PT_THREAD_NAME);
                 break;  /* inner while(!stop) */
             }
         }

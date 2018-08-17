@@ -26,11 +26,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-
+#include <sys/select.h>
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <sys/select.h>
 
 #include "pu_logger.h"
 #include "lib_tcp.h"
@@ -71,7 +71,15 @@ static int make_fdset(lib_tcp_conn_t* all_conns, fd_set* fds);
 Return ready connection or NULL
 */
 static lib_tcp_rd_t* get_ready_conn(lib_tcp_conn_t* all_conns, fd_set* fds);
-/*/
+/*************************
+ * Provides connection human readable name or connection index if the name is not set
+ * @param conn  - pointer to connection description
+ * @return      - connection name (if set) or connection number
+ */
+const char* lib_tcp_get_conn_name(const lib_tcp_rd_t* conn) {
+    return (!conn)?"":conn->name;
+}
+/*
 Public functions. Description in *h file
 */
 lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size) {
@@ -92,19 +100,23 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size)
         ret->rd_conn_array[i].ass_buf.idx = 0;
         ret->rd_conn_array[i].ass_buf.status = LIB_TCP_BUF_READY;
         if(!ret->rd_conn_array[i].ass_buf.buf || !ret->rd_conn_array[i].in_buf.buf) goto on_err;
+        snprintf(ret->rd_conn_array[i].name, sizeof(ret->rd_conn_array[i].name)-1, "%d", i);
     }
     ret->sa_max_size = max_connections;
     ret->sa_size = 0;
     ret->start_no = 0;
     pthread_mutex_unlock(&own_mutex);
     return ret;
-    on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf */
+on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf */
     pthread_mutex_unlock(&own_mutex);
     return NULL;
 }
 
 lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
-    assert(all_conns);
+    if(!all_conns) {
+        pu_log(LL_ERROR, "%s: Connection pool is not initialized");
+        return NULL;
+    }
     pthread_mutex_lock(&own_mutex);
     unsigned int i;
     for(i = 0; i < all_conns->sa_max_size; i++) {
@@ -116,11 +128,12 @@ lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
         }
     }
     pthread_mutex_unlock(&own_mutex);
+    pu_log(LL_ERROR, "%s: No free slot for new connection", __FUNCTION__);
     return NULL;
 }
 
 int lib_tcp_conn_amount(lib_tcp_conn_t* all_conns) {
-    return all_conns->sa_size;
+    return (all_conns)?all_conns->sa_size:0;
 }
 
 void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
@@ -147,11 +160,17 @@ int lib_tcp_get_server_socket(int port) {
     /*Create server socket */
     int server_socket;
 
-    if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) return -1;
+    if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) {
+        pu_log(LL_ERROR, "%s: Error socket creation: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1;
+    }
     /*Set socket options */
     int32_t on = 1;
     /*use the socket even if the address is busy (by previously killed process for ex) */
-    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) {
+        pu_log(LL_ERROR, "%s: Error setsockopt: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1;
+    }
     /*Make address */
     struct sockaddr_in addr_struct;
     memset(&addr_struct, 0, sizeof(addr_struct));
@@ -163,7 +182,10 @@ int lib_tcp_get_server_socket(int port) {
     int rpt = LIB_TCP_BINGING_ATTEMPTS;
     while (bind(server_socket, (struct sockaddr *) &addr_struct, sizeof(addr_struct)) < 0 ) {
         sleep(1);
-        if (!rpt--) return -1;
+        if (!rpt--) {
+            pu_log(LL_ERROR, "%s: Error binding: %d - %s", __FUNCTION__, errno, strerror(errno));
+            return -1;
+        }
     }
     return server_socket;
 }
@@ -174,6 +196,7 @@ int lib_tcp_listen(int server_socket, int to_sec) {
     listen for incoming connection
     */
     if (listen(server_socket, 1) < 0) {
+        pu_log(LL_ERROR, "%s: Error listen server socket: %d - %s", __FUNCTION__, errno, strerror(errno));
         return -1;
     }
 /* Call select() */
@@ -183,56 +206,89 @@ int lib_tcp_listen(int server_socket, int to_sec) {
     struct timeval tv = {to_sec, 0};
 
     int result = select(server_socket + 1, &readset, NULL, NULL, &tv);
-    if(result <= 0) return result; /* Timeout or error. nothing to read */
+    if(result <= 0) {
+        if(result < 0) pu_log(LL_ERROR, "%s: Error select: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return result; /* Timeout or error. nothing to read */
+    }
 /* We got something to read!
 accept incoming connection
 */
     struct sockaddr_in cli_addr = {0};
     socklen_t size = sizeof(struct sockaddr);
     int conn_sock = accept(server_socket, (struct sockaddr *) &cli_addr, &size);
-    if (conn_sock < 0) return -1;
+    if (conn_sock < 0) {
+        pu_log(LL_ERROR, "%s: Error accept: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1;
+    }
 
     int sock_flags = fcntl(conn_sock, F_GETFL);
     if (sock_flags < 0) {
+        pu_log(LL_ERROR, "%s: Error fcntl get flags: %d - %s", __FUNCTION__, errno, strerror(errno));
         return -1;
     }
     if (fcntl(conn_sock, F_SETFL, sock_flags|O_NONBLOCK) < 0) {
+        pu_log(LL_ERROR, "%s: Error fcntl set nonblock mode: %d - %s", __FUNCTION__, errno, strerror(errno));
         return -1;
     }
     return conn_sock;
 }
 
-/*return connection desriptor or NULL if error. in_buf.len == 0 in case of timeout */
-lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
+/*return connection desriptor or NULL if error or TO. in_buf.len == 0 in case of timeout
+ * rc == 0 if TO, -1 if error. All diagnostics are inside
+ * */
+lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec, int* rc) {
     assert(all_conns);
 /*Build set for select */
     struct timeval tv = {to_sec, 0};
     fd_set readset;
 
+
     pthread_mutex_lock(&own_mutex);
     int max_fd = make_fdset(all_conns, &readset);
     pthread_mutex_unlock(&own_mutex);
 
-    if(max_fd < 0) return NULL;
+    if(max_fd < 0) {
+        pu_log(LL_ERROR, "%s: Invalid socket returned: %d - %s", __FUNCTION__, errno, strerror(errno));
+        *rc = -1;
+        return NULL;
+    }
     int result = select(max_fd + 1, &readset, NULL, NULL, &tv);
-    if(result < 0) return NULL; /* Error. nothing to read */
-    if(result == 0) return LIB_TCP_READ_TIMEOUT;   /*timeout */
+    if(result < 0) {
+        pu_log(LL_ERROR, "%s: Error select: %d - %s", __FUNCTION__, errno, strerror(errno));
+        *rc = -1;
+        return NULL; /* Error. nothing to read */
+    }
+    if(result == 0) {
+        *rc = 0;
+        return NULL;   /*timeout */
+    }
 
     pthread_mutex_lock(&own_mutex);
     lib_tcp_rd_t* conn = get_ready_conn(all_conns, &readset);
     pthread_mutex_unlock(&own_mutex);
 
-    if(!conn) return LIB_TCP_READ_NO_READY_CONNS; /*no ready sockets error - they sould be! */
+    if(!conn) {
+        pu_log(LL_ERROR, "%s: No ready connections found", __FUNCTION__);
+        *rc = LIB_TCP_READ_NO_READY_CONNS;  /*no ready sockets error - they sould be! */
+        return NULL;
+    }
 
     conn->in_buf.len = read(conn->socket, conn->in_buf.buf, conn->in_buf.size);  /*todo mlevitin */
-    if(conn->in_buf.len <= 0) {  /*Get read error or (0) connection lost- reconnect required */
-        lib_tcp_rd_t* ret = (!conn->in_buf.len)?LIB_TCP_READ_EOF:NULL;
+    if(conn->in_buf.len <= 0) {         /*Get read error or (0) connection lost- reconnect required */
+        if(conn->in_buf.len < 0) {
+            pu_log(LL_ERROR, "%s: Error connection # %s read: %d - %s", __FUNCTION__, conn->name, errno, strerror(errno));
+            *rc = LIB_TCP_READ_ERROR;
+        }
+        else {  /* == 0 */
+            *rc = LIB_TCP_READ_EOF;
+            pu_log(LL_ERROR, "%s: Connesction # %s lost!", __FUNCTION__, conn->name);
+        }
 
         pthread_mutex_lock(&own_mutex);
-        remove_conn(all_conns, conn);
+        remove_conn(all_conns, conn);       /* Connection removed */
         pthread_mutex_unlock(&own_mutex);
 
-        return ret;
+        return NULL;
     }
 
 /*Put incoming message into assembling buffer */
@@ -240,7 +296,12 @@ lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec) {
     int ret = tcp_get(&conn->in_buf, &conn->ass_buf);
     pthread_mutex_unlock(&own_mutex);
 
-    if(!ret) return LIB_TCP_READ_MSG_TOO_LONG;  /*too long record */
+    if(!ret) {
+        pu_log(LL_ERROR, "%s: incoming message from conn# %s is too long. Ignored", __FUNCTION__, conn->name);
+        *rc = LIB_TCP_READ_MSG_TOO_LONG; /*too long record */
+        return conn;
+    }
+    *rc = LIB_TCP_READ_OK;
     return conn;
 }
 
@@ -283,12 +344,18 @@ return binded socket
 int lib_tcp_get_client_socket(int port, int to_sec) {
     int client_socket;
 /* Create socket */
-    if (client_socket = socket(AF_INET, SOCK_STREAM, 0), client_socket < 0) return -1;
+    if (client_socket = socket(AF_INET, SOCK_STREAM, 0), client_socket < 0) {
+        pu_log(LL_ERROR, "%s: Error socket: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1;
+    }
 
     /*Set socket options */
     int32_t on = 1;
     /*use the socket even if the address is busy (by previously killed process for ex) */
-    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) return -1;
+    if (setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) < 0) {
+        pu_log(LL_ERROR, "%s: Error setsockopt: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1;
+    }
 
 /*Make address */
     struct sockaddr_in addr_struct;
@@ -308,9 +375,11 @@ int lib_tcp_get_client_socket(int port, int to_sec) {
         else {
             int sock_flags = fcntl(client_socket, F_GETFL);
             if (sock_flags < 0) {
+                pu_log(LL_ERROR, "%s: Error fcntl get flags: %d - %s", __FUNCTION__, errno, strerror(errno));
                 return -1;
             }
             if (fcntl(client_socket, F_SETFL, sock_flags|O_NONBLOCK) < 0) {
+                pu_log(LL_ERROR, "%s: Error fcntl set nonblock: %d - %s", __FUNCTION__, errno, strerror(errno));
                 return -1;
             }
             return client_socket;
@@ -329,11 +398,18 @@ int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec) {
     FD_SET(wr_socket, &writedset);
 
     int result = select(wr_socket + 1, NULL, &writedset, NULL, &tv);
-    if(result < 0) return -1; /* Error. nothing to write */
+    if(result < 0) {
+        pu_log(LL_ERROR, "%s: Error select: %d - %s", __FUNCTION__, errno, strerror(errno));
+        return -1; /* Error. nothing to write */
+    }
     if(result == 0) return 0;   /*timeout */
 
 /*We got just one socket awaiting, so no need to check which is set */
-    return write(wr_socket, out, size);
+    int ret = write(wr_socket, out, size);
+    if(ret < 0) {
+        pu_log(LL_ERROR, "%s: Error write: %d - %s", __FUNCTION__, errno, strerror(errno));
+    }
+    return ret;
 }
 
 void lib_tcp_client_close(int write_socket) {
@@ -376,6 +452,8 @@ const char* lib_tcp_local_ip(const char* interface, char* ip_address, size_t siz
 Local functions implementation (Description on top)
 */
 static void remove_conn(lib_tcp_conn_t* all_conns, lib_tcp_rd_t* conn) {
+    if(!conn || conn->socket < 0) return;
+    shutdown(conn->socket, SHUT_RDWR);
     close(conn->socket);
     conn->socket = -1;
     conn->ass_buf.idx = 0;

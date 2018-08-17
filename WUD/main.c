@@ -23,12 +23,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <errno.h>
 #include <string.h>
-#include <wh_manager.h>
+#include <pthread.h>
+#include <signal.h>
 
 #include "pr_ptr_list.h"
 
+#include "wh_manager.h"
 #include "wc_defaults.h"
 #include "wc_settings.h"
 #include "wu_utils.h"
@@ -43,11 +46,37 @@
  */
 static void print_WUD_start_params();
 
+/*
+ * Debugging utility
+ */
+volatile uint32_t contextId = 0;
+void signalHandler( int signum ) {
+    pu_log(LL_ERROR, "WUD.%s: Interrupt signal (%d) received. ContextId=%d thread_id=%d\n", __FUNCTION__, signum, contextId, pthread_self());
+    exit(signum);
+}
+
 int main(int argc, char* argv[]) {
+    signal(SIGSEGV, signalHandler);
+    signal(SIGBUS, signalHandler);
+    signal(SIGINT, signalHandler);
+    signal(SIGFPE, signalHandler);
+    signal(SIGKILL, signalHandler);
+
+    char* config = WD_DEFAULT_CFG_FILE_NAME;
+
+    if(argc > 1) {
+        int c = getopt(argc, argv, "p:");
+        if(c != 'p') {
+            fprintf(stderr, "Wrong start parameter. Only -p<config_file_path_and_name> allowed");
+            exit(-1);
+        }
+        config = optarg;
+    }
+
     printf("WUD launcher start\n");
 /* read configuration file */
-    if(!wc_load_config(WD_DEFAULT_CFG_FILE_NAME)) {
-        fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", WD_DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
+    if(!wc_load_config(config)) {
+        fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", config, errno, strerror(errno));
         exit(1);
     }
 /* initiate logger */
@@ -137,6 +166,7 @@ static void print_WUD_start_params() {
     pu_log(LL_INFO, "\tLog file name: %s", wc_getLogFileName());
     pu_log(LL_INFO, "\t\tRecords amount in log file: %d", wc_getLogRecordsAmt());
     pu_log(LL_INFO, "\t\tLog level: %d", wc_getLogVevel());
+    pu_log(LL_INFO, "\tReboot if requested: %d", wc_getRebootByRequest());
     pu_log(LL_INFO, "\tWUD working directory: %s", wc_getWorkingDir());
     pu_log(LL_INFO, "\tWUD communication port: %d", wc_getWUDPort());
     pu_log(LL_INFO, "\tWUD delay before startup in seconds:%d", wc_getWUDDelay());

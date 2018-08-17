@@ -82,7 +82,7 @@ static void* ap_reader(void* params) {
     proxy_commands = wt_get_gueue(WT_to_Main);
 
     while(!stop) {
-       int server_socket = lib_tcp_get_server_socket(wc_getWUDPort());
+        int server_socket = lib_tcp_get_server_socket(wc_getWUDPort());
         if(server_socket < 0) {
             pu_log(LL_ERROR, "%s: unable to bind to port %d. %d %s", PT_THREAD_NAME, wc_getWUDPort(), errno, strerror(errno));
             stop = 1;
@@ -95,10 +95,9 @@ static void* ap_reader(void* params) {
             break;      /* Allez kaputt */
         }
         while(!stop) {
-
             int rd_socket = lib_tcp_listen(server_socket, 2);
             if(rd_socket < 0) {
-                pu_log(LL_ERROR, "%s: listen error. %d %s", PT_THREAD_NAME, errno, strerror(errno));
+                pu_log(LL_ERROR, "%s: listen error.", PT_THREAD_NAME);
                 close(server_socket);
                 break;      /*  Go to bing again */
             }
@@ -107,39 +106,48 @@ static void* ap_reader(void* params) {
             }
 /* Got valid socket */
             if(!lib_tcp_add_new_conn(rd_socket, all_conns)) {
-                pu_log(LL_WARNING, "%s: new incoming connection exeeds max amount. Ignored", PT_THREAD_NAME);
+                pu_log(LL_WARNING, "%s: new incoming connection exceeds max amount. Ignored", PT_THREAD_NAME);
                 close(rd_socket);
             }
             else {
                 pu_log(LL_INFO, "%s: got incoming connection", PT_THREAD_NAME);
             }
-            while(!stop && (all_conns->sa_max_size == all_conns->sa_size)) { /* all connections are in use - no need go to listen */
-                lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1); /* connection removed inside */
-                if (!conn) {
-                    pu_log(LL_ERROR, "%s: read error. Reconnect. %d %s", PT_THREAD_NAME, errno, strerror(errno));
+            while(!stop && (all_conns->sa_size > 0)) { /* there is at least one connection to read */
+                int rc;
+                lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1, &rc); /* if error then the connection removed inside */
+                if(rc == LIB_TCP_READ_ERROR) {
+                    pu_log(LL_ERROR, "%s: Read error. Reconnect", __FUNCTION__);
                     break;
                 }
-                if (conn == LIB_TCP_READ_TIMEOUT) {
-                    continue;   /* timeout */
-                }
-                if (conn == LIB_TCP_READ_MSG_TOO_LONG) {
-                    pu_log(LL_ERROR, "%s: incoming message too long. Ignored", PT_THREAD_NAME);
+                else if(rc == LIB_TCP_READ_TIMEOUT) {
                     continue;
                 }
-                if (conn == LIB_TCP_READ_NO_READY_CONNS) {
-                    pu_log(LL_ERROR, "%s: internal error - no ready sockets. Ignored", PT_THREAD_NAME);
+                else if(rc == LIB_TCP_READ_MSG_TOO_LONG) {
+                    pu_log(LL_ERROR, "%s: Too long message. Ignored");
+                    continue;
+                }
+                else if(rc == LIB_TCP_READ_NO_READY_CONNS) {
+                    pu_log(LL_ERROR, "%s: Connetion pool is too small. Ignored", PT_THREAD_NAME);
+                    continue;
+                }
+                else if(rc == LIB_TCP_READ_EOF) {
+                    pu_log(LL_ERROR, "%s. Read failed. Nobody on remote side (EOF). Reconnect", PT_THREAD_NAME);
                     break;
                 }
-                if(conn == LIB_TCP_READ_EOF) {
-                    pu_log(LL_ERROR, "%s. Read op failed. Nobody on remote side (EOF). Reconnect", PT_THREAD_NAME);
+                else if(!conn) {
+                    pu_log(LL_ERROR, "%s. Undefined error - connection not found. Reconnect", PT_THREAD_NAME);
                     break;
                 }
+
                 while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {      /* Read all fully incoming messages... */
                     pu_queue_push(proxy_commands, out_buf, strlen(out_buf) + 1);
-                    pu_log(LL_INFO, "%s: sent to wud main: %s", PT_THREAD_NAME, out_buf);
+                    pu_log(LL_INFO, "%s from conn# %s: sent to wud main: %s", PT_THREAD_NAME, lib_tcp_get_conn_name(conn), out_buf);
                 }
-            }
-        }
+                if(all_conns->sa_max_size > all_conns->sa_size) {
+                    break;  /* Not all the connections came */
+                }
+            } /* read loop */
+        } /* get connetions loop */
         close(server_socket);
         lib_tcp_destroy_conns(all_conns);
     }
