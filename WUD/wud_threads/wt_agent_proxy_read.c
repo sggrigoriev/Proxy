@@ -101,16 +101,14 @@ static void* ap_reader(void* params) {
                 close(server_socket);
                 break;      /*  Go to bing again */
             }
-            if(!rd_socket) {    /* timeout */
-                continue;
-            }
-/* Got valid socket */
-            if(!lib_tcp_add_new_conn(rd_socket, all_conns)) {
-                pu_log(LL_WARNING, "%s: new incoming connection exceeds max amount. Ignored", PT_THREAD_NAME);
-                close(rd_socket);
-            }
-            else {
-                pu_log(LL_INFO, "%s: got incoming connection", PT_THREAD_NAME);
+ /* Got valid socket */
+            if(rd_socket > 0) {
+                if (!lib_tcp_add_new_conn(rd_socket, all_conns)) {
+                    pu_log(LL_WARNING, "%s: new incoming connection exceeds max amount. Ignored", PT_THREAD_NAME);
+                    close(rd_socket);
+                } else {
+                    pu_log(LL_INFO, "%s: got incoming connection", PT_THREAD_NAME);
+                }
             }
             while(!stop && (all_conns->sa_size > 0)) { /* there is at least one connection to read */
                 int rc;
