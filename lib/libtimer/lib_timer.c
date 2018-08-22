@@ -21,6 +21,7 @@
 #include <sys/sysinfo.h>
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "pu_logger.h"
 #include "lib_timer.h"
@@ -54,7 +55,12 @@ void lib_timer_update(lib_timer_clock_t* dat) {
 }
 
 int lib_timer_alarm(lib_timer_clock_t dat) {
-    return dat.action_time < get_uptime();
+    time_t now = get_uptime();
+    if (dat.action_time < now) {
+        pu_log(LL_DEBUG, "%s ALARM!!! Delta = %d", __FUNCTION__, dat.action_time - now);
+    }
+
+    return dat.action_time < now;
 }
 
 void lib_timer_sleep(int to_counter, int max_to_amount, long u_to, unsigned int s_to) {

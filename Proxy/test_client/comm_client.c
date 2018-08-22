@@ -166,27 +166,38 @@ static void* read_proc(void* socket) {
     while(!rw_stop) {
         int rc;
         lib_tcp_rd_t *conn = lib_tcp_read(all_conns, 1, &rc); /* connection removed inside */
-        if (!conn) {
-            pu_log(LL_ERROR, "%s: read error. Reconnect. %d %s", "read_proc", errno, strerror(errno));
-            rw_stop = 1;
-            break;
-        }
         if (rc == LIB_TCP_READ_TIMEOUT) {
             continue;   /* timeout */
         }
-        if (rc == LIB_TCP_READ_MSG_TOO_LONG) {
-            pu_log(LL_ERROR, "%s: incoming message too long and can't be assempled. Ignored", "read_proc");
-            continue;
-        }
-        if (rc == LIB_TCP_READ_NO_READY_CONNS) {
-            pu_log(LL_ERROR, "%s: internal error - no ready sockets. Ignored", "read_proc");
-            break;
-        }
-        if (rc == LIB_TCP_READ_EOF) {
+        else if (rc == LIB_TCP_READ_EOF) {
             pu_log(LL_ERROR, "%s: remote connection closed. Restart", "read_proc");
             rw_stop = 1;
             break;
         }
+        else if (rc == LIB_TCP_READ_MSG_TOO_LONG) {
+            pu_log(LL_ERROR, "%s: incoming message too long and can't be assempled. Ignored", "read_proc");
+            continue;
+        }
+        else if (rc == LIB_TCP_READ_ERROR) {
+            pu_log(LL_ERROR, "%s: read error. Reconnect.", "read_proc");
+            rw_stop = 1;
+            break;
+        }
+        else if (rc == LIB_TCP_READ_NO_READY_CONNS) {
+            pu_log(LL_ERROR, "%s: internal error - no ready sockets. Ignored", "read_proc");
+            break;
+        }
+        else if(rc != LIB_TCP_READ_OK) {
+            pu_log(LL_ERROR, "%s. Undefined error. Reconnect", "read_proc");
+            rw_stop = 1;
+            break;
+        }
+        else if (!conn) {
+            pu_log(LL_ERROR, "%s: Undefined error - connection not found. Reconnect", "read_proc");
+            rw_stop = 1;
+            break;
+        }
+
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
             pu_log(LL_INFO, "%s: got from Proxy: %s", "read_proc", out_buf);
         }
