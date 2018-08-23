@@ -52,6 +52,7 @@ void lib_timer_init(volatile lib_timer_clock_t* dat, time_t to) {
 void lib_timer_update(volatile lib_timer_clock_t* dat) {
     dat->last_update_time = get_uptime();
     dat->action_time = dat->last_update_time + dat->timeout;
+    pu_log(LL_DEBUG, "%s: now = %d, action time = %d,timeout = %d", __FUNCTION__, dat->last_update_time, dat->action_time, dat->timeout);
 }
 
 int lib_timer_alarm(volatile lib_timer_clock_t dat) {
