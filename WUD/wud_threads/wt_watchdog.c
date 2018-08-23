@@ -84,7 +84,7 @@ static void* wd_proc(void* params) {
                 pr_make_restart_child_cmd(restart, sizeof(restart), pr_chld_2_string((pr_child_t) i));
                 pu_queue_push(to_main, restart, strlen(restart) + 1);
                 pu_log(LL_DEBUG, "%s: WD alert sent to main thread %s", PT_THREAD_NAME, restart);
-                wa_alarm_update((pr_child_t)i);   /* Just to check alarms are working correctly */
+                 wa_alarm_update((pr_child_t)i);    /* Just for ... */
             }
         }
         sleep(DEFAULT_S_TO);

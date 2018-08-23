@@ -43,13 +43,13 @@ static time_t get_uptime() {
 /*//////////////////////////////////////////////////////////////////
 //Public funcions (description in *.h)
 */
-void lib_timer_init(lib_timer_clock_t* dat, time_t to) {
+void lib_timer_init(volatile lib_timer_clock_t* dat, time_t to) {
     dat->timeout = to;
     dat->last_update_time = get_uptime();
     dat->action_time = dat->last_update_time + to;
 }
 
-void lib_timer_update(lib_timer_clock_t* dat) {
+void lib_timer_update(volatile lib_timer_clock_t* dat) {
     dat->last_update_time = get_uptime();
     dat->action_time = dat->last_update_time + dat->timeout;
 }

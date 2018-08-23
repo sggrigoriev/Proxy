@@ -28,7 +28,7 @@
 
 static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER; /* Concurrent use ALARMS protection */
 
-static lib_timer_clock_t ALARMS[PR_CHILD_SIZE] = {{0}};         /* Child's timers */
+static volatile lib_timer_clock_t ALARMS[PR_CHILD_SIZE] = {{0}};         /* Child's timers */
 
 /*****************************************************************************************
  * Public functions implementaiton
@@ -55,5 +55,8 @@ void wa_alarm_update(pr_child_t proc) {
 
 int wa_alarm_wakeup(pr_child_t proc) {
     if(!pr_child_t_range_check(proc)) return 0;
-    return lib_timer_alarm(ALARMS[proc]);
+    pthread_mutex_lock(&local_mutex);
+        int is_alarm = lib_timer_alarm(ALARMS[proc]);
+    pthread_mutex_unlock(&local_mutex);
+    return is_alarm;
 }

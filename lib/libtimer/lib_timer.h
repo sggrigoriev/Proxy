@@ -36,12 +36,12 @@ typedef struct {
 //  dat - timer data to be initiated
 //  to  - alarm delta (timeout) in seconds
 */
-void lib_timer_init(lib_timer_clock_t* dat, time_t to);
+void lib_timer_init(volatile lib_timer_clock_t* dat, time_t to);
 
 /*Reset the timer for the timeout set on init step
 //  dat - timer to be updated
 */
-void lib_timer_update(lib_timer_clock_t* dat);
+void lib_timer_update(volatile lib_timer_clock_t* dat);
 
 /*Check for alarm
 //  dat - timer to be analyzed
