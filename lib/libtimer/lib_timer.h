@@ -47,7 +47,7 @@ void lib_timer_update(volatile lib_timer_clock_t* dat);
 //  dat - timer to be analyzed
 //Return 1 if alarm; 0 if not
 */
-int lib_timer_alarm(lib_timer_clock_t dat);
+int lib_timer_alarm(volatile lib_timer_clock_t dat);
 
 /*
  * Calls nanosleep(u_to) if to_counter < max_to_amount or sleep(s_to) otherwise

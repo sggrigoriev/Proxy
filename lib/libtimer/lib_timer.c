@@ -54,10 +54,10 @@ void lib_timer_update(volatile lib_timer_clock_t* dat) {
     dat->action_time = dat->last_update_time + dat->timeout;
 }
 
-int lib_timer_alarm(lib_timer_clock_t dat) {
+int lib_timer_alarm(volatile lib_timer_clock_t dat) {
     time_t now = get_uptime();
     if (dat.action_time < now) {
-        pu_log(LL_DEBUG, "%s ALARM!!! Delta = %d", __FUNCTION__, dat.action_time - now);
+        pu_log(LL_DEBUG, "%s ALARM!!! Delta = %d, Timeout = %d", __FUNCTION__, dat.action_time - now, dat.timeout);
     }
 
     return dat.action_time < now;

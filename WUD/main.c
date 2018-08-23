@@ -41,6 +41,7 @@
 #include "wf_upgrade.h"
 #include "wa_reboot.h"
 #include "wt_threads.h"
+#include "wud_release_version.h"
 
 
 /****************************************
@@ -75,7 +76,7 @@ int main(int argc, char* argv[]) {
         config = optarg;
     }
 
-    printf("WUD launcher start\n");
+    printf("WUD %s start\n", WUD_FIRMWARE_VERSION);
 /* read configuration file */
     if(!wc_load_config(config)) {
         fprintf(stderr, "Can\'t read configuration file %s: %d %s. Abort.\n", config, errno, strerror(errno));
