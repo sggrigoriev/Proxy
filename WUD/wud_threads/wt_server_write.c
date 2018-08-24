@@ -108,6 +108,7 @@ void wt_set_stop_server_write() {
                             }
                         }
                     } /* while (!stop && !out) */
+                    len = sizeof(msg);
                 } /* while (pu_queue_pop(to_cloud, msg, &len)) */
                 break;
             }

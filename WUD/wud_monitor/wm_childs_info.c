@@ -31,6 +31,8 @@
 
 #include "wm_childs_info.h"
 
+#define ERR ((pu_log(LL_ERROR, "%s: Process not found. No action performed!", __FUNCTION__)))
+
 /***********************************************************************
  * Local data
  */
@@ -60,39 +62,60 @@ pr_child_t  wm_create_cd(const char* pn, const char* bn, const char* wd, char* c
 }
 
 pid_t wm_child_get_pid(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return 0;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return 0;
+    }
     return child_array[idx].pid;
 }
 
 int wm_child_set_pid(pr_child_t idx, pid_t pid) {
     pu_log(LL_DEBUG, "wm_child_set_pid: Proc = %d, pid = %d", idx, pid);
-    if(!pr_child_t_range_check(idx)) return 0;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return 0;
+    }
     child_array[idx].pid = pid;
     return 1;
 }
 
 const char* wm_child_get_binary_name(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return NULL;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return NULL;
+    }
     return child_array[idx].binary_name;
 }
 
 char** const wm_child_get_start_parameters(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return NULL;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return NULL;
+    }
     return child_array[idx].start_parameters;
 }
 
 const char* wm_child_get_working_directory(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return NULL;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return NULL;
+    }
     return child_array[idx].working_directory;
 }
 
 unsigned int wm_child_get_child_to(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return 0;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return 0;
+    }
     return child_array[idx].watchdog_to;
 }
 
 const char* wm_get_child_name(pr_child_t idx) {
-    if(!pr_child_t_range_check(idx)) return NULL;
+    if(!pr_child_t_range_check(idx)) {
+        ERR;
+        return NULL;
+    }
     return child_array[idx].process_name;
 }
 

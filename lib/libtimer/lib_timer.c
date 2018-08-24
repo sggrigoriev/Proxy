@@ -52,13 +52,13 @@ void lib_timer_init(volatile lib_timer_clock_t* dat, time_t to) {
 void lib_timer_update(volatile lib_timer_clock_t* dat) {
     dat->last_update_time = get_uptime();
     dat->action_time = dat->last_update_time + dat->timeout;
-    pu_log(LL_DEBUG, "%s: now = %d, action time = %d,timeout = %d", __FUNCTION__, dat->last_update_time, dat->action_time, dat->timeout);
+    pu_log(LL_TRACE_1, "%s: now = %d, action time = %d,timeout = %d", __FUNCTION__, dat->last_update_time, dat->action_time, dat->timeout);
 }
 
 int lib_timer_alarm(volatile lib_timer_clock_t dat) {
     time_t now = get_uptime();
     if (dat.action_time < now) {
-        pu_log(LL_DEBUG, "%s ALARM!!! Delta = %d, Timeout = %d", __FUNCTION__, dat.action_time - now, dat.timeout);
+        pu_log(LL_TRACE_1, "%s ALARM!!! Delta = %d, Timeout = %d", __FUNCTION__, dat.action_time - now, dat.timeout);
     }
 
     return dat.action_time < now;

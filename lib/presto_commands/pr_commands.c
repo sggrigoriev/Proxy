@@ -80,15 +80,16 @@ static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
 
 void pr_store_child_name(int child_name, const char* name) {
-    assert(pr_child_t_range_check(child_name));
-    assert(name);
+    if(!name || !pr_child_t_range_check(child_name)) return;
     pthread_mutex_lock(&own_mutex);
-    strncpy(PROC_NAMES[child_name], name, PR_MAX_PROC_NAME_SIZE-1);
+        strncpy(PROC_NAMES[child_name], name, PR_MAX_PROC_NAME_SIZE-1);
     pthread_mutex_unlock(&own_mutex);
 }
 
 const char* pr_chld_2_string(pr_child_t child_name) {
-    assert(pr_child_t_range_check(child_name));
+    if(!pr_child_t_range_check(child_name)) {
+        return "";
+    }
     return PROC_NAMES[child_name];
 }
 

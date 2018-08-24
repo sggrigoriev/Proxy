@@ -19,12 +19,15 @@
     Created by gsg on 15/01/17.
 */
 #include <pthread.h>
+#include <pu_logger.h>
 
 #include "lib_timer.h"
 
 #include "wm_childs_info.h"
 
 #include "wa_alarm.h"
+
+#define ERR (pu_log(LL_ERROR, "%s: Process not found. No action performed!", __FUNCTION__))
 
 static pthread_mutex_t local_mutex = PTHREAD_MUTEX_INITIALIZER; /* Concurrent use ALARMS protection */
 
@@ -40,21 +43,30 @@ void wa_alarms_init() {
 }
 
 void wa_alarm_reset(pr_child_t proc) {
-    if(!pr_child_t_range_check(proc)) return;
+    if(!pr_child_t_range_check(proc)) {
+        ERR;
+        return;
+    }
     pthread_mutex_lock(&local_mutex);
         lib_timer_init(&ALARMS[proc], wm_child_get_child_to(proc));
     pthread_mutex_unlock(&local_mutex);
 }
 
 void wa_alarm_update(pr_child_t proc) {
-    if(!pr_child_t_range_check(proc)) return;
+    if(!pr_child_t_range_check(proc)) {
+        ERR;
+        return;
+    }
     pthread_mutex_lock(&local_mutex);
         lib_timer_update(&ALARMS[proc]);
     pthread_mutex_unlock(&local_mutex);
 }
 
 int wa_alarm_wakeup(pr_child_t proc) {
-    if(!pr_child_t_range_check(proc)) return 0;
+    if(!pr_child_t_range_check(proc)) {
+        ERR;
+        return 0;
+    }
     pthread_mutex_lock(&local_mutex);
         int is_alarm = lib_timer_alarm(ALARMS[proc]);
     pthread_mutex_unlock(&local_mutex);
