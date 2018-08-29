@@ -63,7 +63,9 @@ int main(int argc, char* argv[]) {
         if(par.parameter) {
             if(!pc_load_config(par.parameter)) exit(-1);
         }
-
+        else {
+            if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);
+        }
         switch(par.action) {
                 case PCLI_VERSION:
                     pc_cli_printVersion();
