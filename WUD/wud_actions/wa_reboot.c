@@ -38,7 +38,11 @@ void wa_reboot() {
 #else
         pu_log(LL_INFO, "wa_reboot: true reboot for true gateway");
         sync();
+#ifdef PLATFORM_HISILICON_C1
+        reboot(RB_AUTOBOOT);
+#else
         reboot(RB_POWER_OFF);
+#endif
 #endif
     }
     else {

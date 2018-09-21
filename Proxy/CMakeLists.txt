@@ -91,6 +91,8 @@ elseif (PRESTO_PLATFORM STREQUAL "quark")
 elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 
 	add_definitions(-DPROXY_ETHERNET_INTERFACE="ra0")
+	add_definitions(-D__LINUX__)
+	add_definitions(-DEXTERN=)
 	file(MAKE_DIRECTORY ../${PRESTO_PLATFORM})
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../${PRESTO_PLATFORM})
 	set(CMAKE_SYSTEM_NAME Linux)
