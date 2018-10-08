@@ -50,7 +50,7 @@ char** pr_duplicate_ptr_list(char** dest, char* const * src) {
     return dest;
 }
 
-char** pr_push(char** dest, const char* el, char* const* src) {
+char** pr_push(char** dest, const char* el, char* const* src) { //TODO! The implementation is total shit!!!
     assert(el);
     assert(src);
 

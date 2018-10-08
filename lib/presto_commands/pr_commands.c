@@ -481,6 +481,22 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const
     snprintf(buf, size-1, "%s%s%s%s%s", part1, device_id, part2, comp, part3);
     return buf;
 }
+/*
+ * Send file to cloud - internal Agent-WUD command. IPCam Agent uses it!
+ * buf         - buffer to store the message
+ * size        - buffer size
+ * files_list   - JSON array of files with full path: "filesList":["name1",..."nameN"]
+ * end_date     - end alarm period
+ * path         - path to folder with files
+ * alarm_letter - "S" for SD, "M" for MD
+ * file_preffix - "0-" for now
+ * device_id   - gateway device_id
+ *
+ * Return pointer to the buf
+*/
+const char* pr_make_send_files4WUD(char* buf, size_t size, const char* files_list, const char* device_id) {
+    return NULL;
+}
 
 /* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>", "deviceAuthToken":"<auth_token>","connString":"<mainURL>}}]}*/
 const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect, const char* auth_token, const char* conn_string) {
