@@ -353,16 +353,13 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, 
  * Send file to cloud - internal Agent-WUD command. IPCam Agent uses it!
  * buf         - buffer to store the message
  * size        - buffer size
+ * files_type   - 'A' - audio, 'V' - video, 'S' - cound, 'P' - phote
  * files_list   - JSON array of files with full path: "filesList":["name1",..."nameN"]
- * end_date     - end alarm period
- * path         - path to folder with files
- * alarm_letter - "S" for SD, "M" for MD
- * file_preffix - "0-" for now
  * device_id   - gateway device_id
  *
  * Return pointer to the buf
 */
-const char* pr_make_send_files4WUD(char* buf, size_t size, const char* files_list, const char* device_id);
+const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list, const char* device_id);
 
 /*************************************************************************************************
  * Create the notification to the Agent about no/off line cloud connection status

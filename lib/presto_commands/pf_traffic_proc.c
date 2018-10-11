@@ -83,7 +83,7 @@ static const char* CMD_RC = "result";
 
 /* Make answer from the message and put into buf. Returns buf addess */
 const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc) {
-/* json_answer: "{"responses": [{"commandId": <command_id> "result": <RC>}]}"; */
+/* json_answer: "{"responses": [{"commandId": <command_id>, "result": <RC>}]}"; */
     assert(root); assert(buf); assert(buf_size);
     cJSON* arr = cJSON_GetObjectItem(root, CLOUD_COMMANDS);
     buf[0] = '\0';

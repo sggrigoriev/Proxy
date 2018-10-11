@@ -26,8 +26,8 @@
 /***************************************************************************
  * Local data
  */
-static pu_queue_t* qu_arr[PS_MAX_QUEUE-PS_MIN_QUEUE+1];     /* Proxy queues pool */
-static pthread_mutex_t  own_mutex;                          /* Pool concurrent use protection */
+static pu_queue_t* qu_arr[PS_MAX_QUEUE-PS_MIN_QUEUE+1];         /* Proxy queues pool */
+static pthread_mutex_t  own_mutex=PTHREAD_MUTEX_INITIALIZER;    /* Pool concurrent use protection */
 
 /******************************************************************************
  * Public functions implementation
