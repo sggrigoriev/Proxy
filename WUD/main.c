@@ -58,6 +58,8 @@ void signalHandler( int signum ) {
     exit(signum);
 }
 
+
+
 int main(int argc, char* argv[]) {
     signal(SIGSEGV, signalHandler);
     signal(SIGBUS, signalHandler);
@@ -68,12 +70,19 @@ int main(int argc, char* argv[]) {
     char* config = WD_DEFAULT_CFG_FILE_NAME;
 
     if(argc > 1) {
-        int c = getopt(argc, argv, "p:");
-        if(c != 'p') {
-            fprintf(stderr, "Wrong start parameter. Only -p<config_file_path_and_name> allowed");
-            exit(-1);
+        int c = getopt(argc, argv, "p:v");
+        switch (c) {
+            case 'p':
+                config = optarg;
+                break;
+            case 'v':
+                printf("Built on %s at %s\n", __DATE__, __TIME__);
+                printf("Git repository version %s\n", WUD_FIRMWARE_VERSION);
+                exit(0);
+            default:
+                fprintf(stderr, "Wrong start parameter. Only -p<config_file_path_and_name> or -v allowed");
+                exit(-1);
         }
-        config = optarg;
     }
 
     printf("WUD %s start\n", WUD_FIRMWARE_VERSION);
