@@ -48,6 +48,8 @@ static const char* alerts = "alerts";
 static const char* alertText = "alertText";
 static const char* component = "component";
 static const char* wud_ping = "wud_ping";       /*special case, blin... */
+/* internal commant 2 WUD (from camera)*/
+static const char* send_files = "sendFiles";
 /*
 item names for cmd
 */
@@ -293,6 +295,8 @@ pr_msg_type_t pr_get_message_type(msg_obj_t* msg) {
     if(obj) return PR_ALERTS_MSG;
     obj = cJSON_GetObjectItem(msg, wud_ping);
     if(obj) return PR_ALERTS_MSG;
+    obj = cJSON_GetObjectItem(msg, send_files);
+    if(obj) return PR_SF_MSG;
     return PR_OTHER_MSG;
 }
 
@@ -485,14 +489,16 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* comp, const
  * Send file to cloud - internal Agent-WUD command. IPCam Agent uses it!
  * buf         - buffer to store the message
  * size        - buffer size
- * files_type   - 'A' - audio, 'V' - video, 'S' - cound, 'P' - phote
+ * files_type   - 'A' - audio, 'V' - video, 'S' - cound, 'P' - photo
  * files_list   - JSON array of files with full path: "filesList":["name1",..."nameN"]
- * device_id   - gateway device_id
  *
- * Return pointer to the buf
+ * Return pointer to the buf as
+ * {"name": "sendFiles", "type": <fileTypeString", "filesList": ["<filename>", ..., "<filename>"]}
 */
-const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list, const char* device_id) {
-    return NULL;
+const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list) {
+    snprintf(buf, size-1, "{\"name\": \"sendFiles\", \"type\": \"%c\", %s}", files_type, files_list);
+    buf[size-1] = '\0';
+    return buf;
 }
 
 /* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>", "deviceAuthToken":"<auth_token>","connString":"<mainURL>}}]}*/
@@ -571,6 +577,7 @@ PR_CMD_CLOUD_CONN "parameters": [{"name":"connString", "value": "<url>"}, {"name
 PR_CMD_CLOUD_OFF "parameters": [{"name": "cloudOff", "value": "1"}]
 PG_CMD_REBOOT     "parameters": [{"name": "reboot", "value": "1"}]
 PR_CMD_UPDATE_MAIN_URL: "parameters": [{"name": "cloud", "value": "url"}]
+PR_CMD_SEND_FILES: "parameters": "[{"name
  */
 static pr_cmd_item_t get_cmd_params_from_array(cJSON* params_array) {
     pr_cmd_item_t ret;

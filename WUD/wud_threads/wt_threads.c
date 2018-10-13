@@ -40,6 +40,7 @@
 #include "wt_agent_proxy_read.h"
 #include "wt_watchdog.h"
 #include "wt_fw_upgrade.h"
+#include "wt_send_files.h"
 #include "wt_server_write.h"
 
 #define PT_THREAD_NAME "WUD_MAIN"
@@ -49,14 +50,16 @@
  */
 static pu_queue_t* to_main;         /* Queue to receive messages */
 static pu_queue_t* to_cloud;        /* Queue to send messages to server_write (to cloud) */
+static pu_queue_t* from_sf;
 
 static pu_queue_msg_t q_msg[WC_MAX_MSG_LEN];    /* Buffer for messages received */
 
 static volatile int stop = 0;       /* request processor stop flag */
 static int fw_started = 0;          /* firmware upgrade start sign */
+static int sf_started = 0;          /* send files start sig */
 
-/*******************************************
- * Local functiones definition
+/*
+ * Local functions definition
  */
 /*******************************************
  * Stop firmware upgrade thread. check if thread really works before
@@ -67,6 +70,13 @@ static void fw_upgrade_cancel() {
     wt_stop_fw_upgrade();
     fw_started = 0;
     pu_log(LL_INFO, "%s: fw_upgrade stop", PT_THREAD_NAME);
+}
+
+static void sf_cancel() {
+    if(!sf_started) return;
+    wt_set_stop_sf();
+    wt_stop_sf();
+    sf_started = 0;
 }
 
 /*******************************************
@@ -114,12 +124,14 @@ static void routine_shutdown() {
 /*    wt_set_stop_monitor(); */
     wt_set_stop_watchdog();
     wt_set_stop_fw_upgrade();
+    wt_set_stop_sf();
     wt_set_stop_server_write();
 
     wt_stop_agent_proxy_read();
 /*     wt_stop_monitor(); */
     wt_stop_watchdog();
     fw_upgrade_cancel();
+    sf_cancel();
     wt_stop_server_write();
 }
 
@@ -265,6 +277,30 @@ static void process_alerts(msg_obj_t* alerts) {
         }
     }
 }
+/*
+ * Process internel "send files" request from IP camera
+ * TODO! the whole commands/alerts/... parsing should be refactored
+ * IT coluld be my task or you, guys will make it by yourself ;-)
+ */
+static void process_send_files(msg_obj_t* fs) {
+    if(!fs) return;
+    cJSON* arr = cJSON_GetObjectItem(fs, "filesList");
+    if(!arr || !cJSON_GetArraySize(arr)) {
+        pu_log(LL_WARNING, "%s: No files to send, command ignored", __FUNCTION__);
+        return;
+    }
+    cJSON* ft = cJSON_GetObjectItem(fs, "type");
+    if(!ft || ft->valuestring[0]!='A'|| ft->valuestring[0]!='V'|| ft->valuestring[0]!='P') {
+        pu_log(LL_WARNING, "%s: Wrong or unefined files type, command ignored", __FUNCTION__);
+        return;
+    }
+    if(!wt_start_sf(ft->valuestring, arr)) {
+        pu_log(LL_ERROR, "%s: Can't start send files thread", __FUNCTION__);
+        return;
+    }
+    sf_started = 1;
+    pu_log(LL_INFO, "%s: Send files thread started", __FUNCTION__);
+}
 
 /*******************************************
  * Process the message sent to WUD (WD, alert ...
@@ -283,6 +319,8 @@ static void process_message(char* msg) {
         case PR_ALERTS_MSG: /* special cases! "wud_ping" and gw_cloud_connections */
             process_alerts(obj);
             break;
+        case PR_SF_MSG:
+            process_send_files(obj);
         default:
             pu_log(LL_ERROR, "%s: unsupported message %s. Ignored.", PT_THREAD_NAME, msg);
             break;
@@ -301,6 +339,7 @@ int wt_request_processor() {
     }
 
     pu_queue_event_t events = pu_add_queue_event(pu_create_event_set(), WT_to_Main);
+    events = pu_add_queue_event(events, WT_from_SF);
 
     pu_log(LL_INFO, "%s: start.", PT_THREAD_NAME);
 
@@ -317,6 +356,14 @@ int wt_request_processor() {
                 while(pu_queue_pop(to_main, q_msg, &len)) {
                     pu_log(LL_DEBUG, "%s: received: %s", PT_THREAD_NAME, q_msg);
                     process_message(q_msg);
+/* restore original buf len for the next cycle */
+                    len = sizeof(q_msg);
+                }
+                break;
+            case WT_from_SF:
+                while(pu_queue_pop(from_sf, q_msg, &len)) {
+                    pu_log(LL_DEBUG, "%s: received: %s", PT_THREAD_NAME, q_msg);
+                    sf_started = 0;                     /* If anything came - the thread stops load files */
 /* restore original buf len for the next cycle */
                     len = sizeof(q_msg);
                 }

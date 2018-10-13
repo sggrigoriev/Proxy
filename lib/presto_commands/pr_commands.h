@@ -73,19 +73,19 @@ PR_COMMANDS_MSG   - commands
 PR_ALERTS_MSG     - alerts
 PR_OTHER_MSG      - watchdogs + some strange messages to Agent
 */
-typedef enum {PR_COMMANDS_MSG, PR_ALERTS_MSG, PR_OTHER_MSG, PR_MSG_TYPE_SIZE
+typedef enum {PR_COMMANDS_MSG, PR_ALERTS_MSG, PR_SF_MSG, PR_OTHER_MSG, PR_MSG_TYPE_SIZE
 } pr_msg_type_t;
 
 /* Proxy-WUD commands+Cloud-Proxy commands (PR_COMMANDS_MSG subtypes)
-PR_CMD_UNDEFINED      - for unrecognized commands
-PR_CMD_FWU_START      - start firmware upgrade    (cloud -> Proxy)
-PR_CMD_FWU_CANCEL     - cancel firmware upgrade   (cloud -> Proxy)
-PR_CMD_RESTART_CHILD  - restart one child         (Watchdog->WUD)
-PR_CMD_CLOUD_CONN     - cloud connections parameters (Proxy -> WUD; Proxy IO threads tp Proxy main)
-PR_CMD_CLOUD_OFF      - cloud connection off signal (Proxy IO threads to Proxy main)
-PR_CMD_STOP           - ??? just for some case
-PR_CMD_UPDATE_MAIN_URL- update main cloud url     (cloud -> Proxy)
-PR_CMD_REBOOT         - command for reboot        (watchdog->WUD)
+PR_CMD_UNDEFINED        - for unrecognized commands
+PR_CMD_FWU_START        - start firmware upgrade    (cloud -> Proxy)
+PR_CMD_FWU_CANCEL       - cancel firmware upgrade   (cloud -> Proxy)
+PR_CMD_RESTART_CHILD    - restart one child         (Watchdog->WUD)
+PR_CMD_CLOUD_CONN       - cloud connections parameters (Proxy -> WUD; Proxy IO threads tp Proxy main)
+PR_CMD_CLOUD_OFF        - cloud connection off signal (Proxy IO threads to Proxy main)
+PR_CMD_STOP             - ??? just for some case
+PR_CMD_UPDATE_MAIN_URL  - update main cloud url     (cloud -> Proxy)
+PR_CMD_REBOOT           - command for reboot        (watchdog->WUD)
 */
 typedef enum {PR_CMD_UNDEFINED, PR_CMD_FWU_START, PR_CMD_FWU_CANCEL, PR_CMD_RESTART_CHILD, PR_CMD_CLOUD_CONN, PR_CMD_CLOUD_OFF,
     PR_CMD_STOP,
@@ -136,11 +136,11 @@ typedef struct {
 
 /*Internal command presentation */
 typedef union {
-    pr_cmd_t               command_type; /*just head to understand which field from the union is valid */
-    pr_cmd_fwu_start_t     fwu_start;
-    pr_cmd_restart_t       restart_child;
-    pr_cmd_cloud_t         cloud_conn;
-    pr_cmd_update_main_t   update_main_url;
+    pr_cmd_t                command_type; /*just head to understand which field from the union is valid */
+    pr_cmd_fwu_start_t      fwu_start;
+    pr_cmd_restart_t        restart_child;
+    pr_cmd_cloud_t          cloud_conn;
+    pr_cmd_update_main_t    update_main_url;
 } pr_cmd_item_t;
 /*
 Common functions
@@ -357,9 +357,10 @@ const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, 
  * files_list   - JSON array of files with full path: "filesList":["name1",..."nameN"]
  * device_id   - gateway device_id
  *
+ * {"name": "sendFiles", "type": <fileTypeString", "filesList": ["<filename>", ..., "<filename>"]}
  * Return pointer to the buf
 */
-const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list, const char* device_id);
+const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list);
 
 /*************************************************************************************************
  * Create the notification to the Agent about no/off line cloud connection status
