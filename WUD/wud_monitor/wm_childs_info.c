@@ -37,7 +37,7 @@
  * Local data
  */
 /* Buffer with all processes registered. */
-static wm_child_descriptor_t child_array[PR_CHILD_SIZE] = {0};
+static wm_child_descriptor_t child_array[PR_CHILD_SIZE] = {{0}};
 
 /***********************************************************************
  * Public suncrions implementation

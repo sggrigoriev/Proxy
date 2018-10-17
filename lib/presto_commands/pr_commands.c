@@ -79,7 +79,7 @@ static const char* AGENT_CONNECT = "connect";
 /*Using for PROC_NAMES changes protecion only */
 static pthread_mutex_t own_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {0};
+static char PROC_NAMES[PR_CHILD_SIZE][PR_MAX_PROC_NAME_SIZE] = {{0}};
 
 void pr_store_child_name(int child_name, const char* name) {
     if(!name || !pr_child_t_range_check(child_name)) return;

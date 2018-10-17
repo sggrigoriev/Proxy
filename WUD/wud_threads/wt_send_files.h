@@ -16,6 +16,26 @@
  *  limitations under the License.
 */
 /*
+ * Overall communication scheme for IPCam send files:
+Agent:
+    Send to WUD "sendFiles" command
+    Set send_files flag to 1
+    Get answer from WUD with command results
+    Delete sent files
+    Set send_files flag to 0
+WUD:
+    Got "sendFiles" command
+    Run SF thread with files list
+    Set flag send_files = 1
+    Got "Finish sending" request from SF
+    Send the result to Agent
+    Kill SF
+    Set flag send_files = 0
+SF thread:
+    Send POST to cloud to get URL as answer
+    Send files by URL
+    Send PUT to update sent files properties to "completey sent ("incomplete" : "false")
+    Send to WUD "Finish sendings" request
  Created by gsg on 13/10/18.
 */
 

@@ -139,12 +139,15 @@ pu_queue_event_t pu_add_queue_event(pu_queue_event_t queue_events_mask, pu_queue
     }
     return (queue_events_mask | make_event_mask(event));
 }
-
+/*
+ * Modification:
+ * Even if TO happens - check the events set: anyway. If nothing - goto timeout
+ * NB! If we got event from other thread - our thread will have TO.
+ */
 pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned int to_sec) { /* wait for one or several queue events */
     pu_queue_event_t ret;
     struct timespec timeToWait;
     struct timeval now;
-    int rt;
 
     gettimeofday(&now, NULL);
 
@@ -152,17 +155,12 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
     timeToWait.tv_nsec = 0;
 
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
-    wait:
-    if(to_sec) {
-        rt = pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
-        if (rt == ETIMEDOUT) {
-            pthread_mutex_unlock(&ps_all_queues_cond_mutex);
-            return PQ_TIMEOUT;
-        }
-    }
-    else {
+
+    if(to_sec)
+        pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
+    else
         pthread_cond_wait(&ps_all_queues_cond, &ps_all_queues_cond_mutex);
-    }
+
     ret = PQ_TIMEOUT;
     pu_queue_event_t i;
     for(i = 1; i < PQ_Size; i++) {
@@ -171,7 +169,6 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
             ret = i;
         }
     }
-    if(ret == PQ_TIMEOUT) goto wait;    /*That was not our condition! */
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
     return ret;
 }

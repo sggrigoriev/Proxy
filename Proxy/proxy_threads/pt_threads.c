@@ -84,6 +84,7 @@ static volatile int main_finish;        /* stop flag for main thread */
  */
 void pt_main_thread() { /* Starts the main thread. */
     main_finish = 0;
+    int agent_got_online_status = 0;
 
     if(!main_thread_startup()) {
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
@@ -93,10 +94,11 @@ void pt_main_thread() { /* Starts the main thread. */
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
     lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
 
-    report_cloud_conn_status(proxy_is_online);  /* sending to the agent offline status - no connection with the cloud */
+    report_cloud_conn_status(0);  /* sending to the agent offline status - no connection with the cloud */
     send_fw_version_to_cloud();                 /* sending the fw version to the cloud */
     send_reboot_status(PR_AFTER_REBOOT);        /* sending the reboot status to the cloud */
 
+    pu_log(LL_ERROR, "%s: Main loop starts", PT_THREAD_NAME);
     while(!main_finish) {
         size_t len = sizeof(mt_msg);
         pu_queue_event_t ev;
