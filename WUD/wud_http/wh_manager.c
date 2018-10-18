@@ -36,7 +36,7 @@
 static pthread_mutex_t frd_mutex = PTHREAD_MUTEX_INITIALIZER;     /* Protect parallel file i/o opertations */
 static pthread_mutex_t wr_mutex= PTHREAD_MUTEX_INITIALIZER;       /* To prevent double penetration to write */
 
-static unsigned int CONNECTIONS_TOTAL = 2;    /*Regular post, + file GET) */
+static unsigned int CONNECTIONS_TOTAL = 2;    /*Regular post, file GET) */
 static lib_http_conn_t post_conn = -1;
 
 /*************************************************************

@@ -27,11 +27,11 @@
 #include "pu_queue.h"
 
 #define WT_MIN_QUEUE WT_to_Main
-#define WT_MAX_QUEUE WT_to_SF
+#define WT_MAX_QUEUE WT_to_Cloud
 
 /* WUD queue events. TIMEOUT & STOP are predefined */
 typedef enum {WT_Timeout = PQ_TIMEOUT,
-    WT_to_Main = 1, WT_to_Cloud = 2, WT_from_SF = 3, WT_to_SF=4,
+    WT_to_Main = 1, WT_to_Cloud = 2,
     WT_STOP = PQ_STOP} wt_queue_events_t;
 
 /****************************************************

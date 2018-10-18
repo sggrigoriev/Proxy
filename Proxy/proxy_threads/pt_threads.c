@@ -84,7 +84,6 @@ static volatile int main_finish;        /* stop flag for main thread */
  */
 void pt_main_thread() { /* Starts the main thread. */
     main_finish = 0;
-    int agent_got_online_status = 0;
 
     if(!main_thread_startup()) {
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);

@@ -48,8 +48,6 @@ static const char* alerts = "alerts";
 static const char* alertText = "alertText";
 static const char* component = "component";
 static const char* wud_ping = "wud_ping";       /*special case, blin... */
-/* internal commant 2 WUD (from camera)*/
-static const char* send_files = "sendFiles";
 /*
 item names for cmd
 */
@@ -295,8 +293,6 @@ pr_msg_type_t pr_get_message_type(msg_obj_t* msg) {
     if(obj) return PR_ALERTS_MSG;
     obj = cJSON_GetObjectItem(msg, wud_ping);
     if(obj) return PR_ALERTS_MSG;
-    obj = cJSON_GetObjectItem(msg, send_files);
-    if(obj) return PR_SF_MSG;
     return PR_OTHER_MSG;
 }
 

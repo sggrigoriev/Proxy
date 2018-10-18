@@ -32,7 +32,6 @@
 #define PQ_TIMEOUT 0
 
 /* TODO: Add pesistent layer to some queue(s) to be able to sent some alerts after resart */
-/* TODO: Known problem: first wait_for_queue() should start earliar than pu_push() */
 /*****************************************************************************************************
  Common part, concerning all queues
 */

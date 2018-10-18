@@ -73,7 +73,7 @@ PR_COMMANDS_MSG   - commands
 PR_ALERTS_MSG     - alerts
 PR_OTHER_MSG      - watchdogs + some strange messages to Agent
 */
-typedef enum {PR_COMMANDS_MSG, PR_ALERTS_MSG, PR_SF_MSG, PR_OTHER_MSG, PR_MSG_TYPE_SIZE
+typedef enum {PR_COMMANDS_MSG, PR_ALERTS_MSG, PR_OTHER_MSG, PR_MSG_TYPE_SIZE
 } pr_msg_type_t;
 
 /* Proxy-WUD commands+Cloud-Proxy commands (PR_COMMANDS_MSG subtypes)
@@ -349,18 +349,6 @@ const char* pr_make_fw_ok4WUD(char* buf, size_t size, const char* device_id);
 Return pointer to the buf
 */
 const char* pr_make_wd_alert4WUD(char* buf, size_t size, const char* component, const char* device_id);
-/*
- * Send file to cloud - internal Agent-WUD command. IPCam Agent uses it!
- * buf         - buffer to store the message
- * size        - buffer size
- * files_type   - 'A' - audio, 'V' - video, 'S' - cound, 'P' - phote
- * files_list   - JSON array of files with full path: "filesList":["name1",..."nameN"]
- * device_id   - gateway device_id
- *
- * {"name": "sendFiles", "type": <fileTypeString", "filesList": ["<filename>", ..., "<filename>"]}
- * Return pointer to the buf
-*/
-const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, const char* files_list);
 
 /*************************************************************************************************
  * Create the notification to the Agent about no/off line cloud connection status
