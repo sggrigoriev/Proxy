@@ -104,15 +104,14 @@ elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 	set(PROXY_LIBS_PATH ${PP_SDK_PATH}/lib)
 	set(COMPILER_PREFIX arm-hisiv500-linux-uclibcgnueabi-)
 	set(CMAKE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc)
-	set(CMAKE_SYSROOT ${TOOLCHAIN_PATH}/target/usr)
+#	set(CMAKE_SYSROOT ${TOOLCHAIN_PATH}/target/usr)
 	set(CMAKE_FORCE_C_COMPILER ${TOOLCHAIN_PATH}/bin/${COMPILER_PREFIX}gcc GNU)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -I${SYSROOT_PATH}/usr/include -L${SYSROOT_PATH}/usr/lib -L${TOOLCHAIN_PATH}/target/lib -D_GNU_SOURCE -Wall -O2 -std=c89 -D_BSD_SOURCE -pthread -s")
 	set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 	set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 	set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 	set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
-
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${SYSROOT_PATH}/usr/include/gstreamer-1.0 -I${SYSROOT_PATH}/usr/include/glib-2.0 -I${SYSROOT_PATH}/usr/include -D_BSD_SOURCE -L${SYSROOT_PATH}/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
 
 	set(REQUIRED_LIBRARIES
 			curl
@@ -120,7 +119,8 @@ elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 			pthread
 			nopoll
 			ssl
-			crypto)
+			crypto
+			dl)
 	message(STATUS "Compiling for hiSilicon CPU (${CMAKE_SYSROOT})")
 
 else()
@@ -201,7 +201,7 @@ elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 			${SYSROOT_PATH}/usr/lib/libintl.a
 			${SYSROOT_PATH}/usr/lib/libffi.a
 			${SYSROOT_PATH}/usr/lib/libcurl.a
-			${SYSROOT_PATH}/usr/lib/libdl.so.0
+#			${SYSROOT_PATH}/usr/lib/libdl.so.0
 
 			)
 	INSTALL(TARGETS Proxy DESTINATION /build )
