@@ -60,6 +60,11 @@ int main(int argc, char* argv[]) {
         pu_set_log_level(LL_SILENT);
         pc_cli_params_t par = pc_cli_process_params(argc, argv);
 
+        if(par.action == PCLI_VERSION) {
+            pc_cli_printVersion();
+            exit(0);
+        }
+
         if(par.parameter) {
             if(!pc_load_config(par.parameter)) exit(-1);
         }
