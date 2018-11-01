@@ -7,6 +7,50 @@ add_definitions(-DDEFAUT_U_TO=200)
 add_definitions(-DDEFAULT_TO_RPT_TIMES=5)
 add_definitions(-DDEFAULT_S_TO=1)
 
+
+execute_process(
+		COMMAND  bash "-c" "git rev-parse --verify HEAD | tr -d '\n'"
+		RESULT_VARIABLE result
+		OUTPUT_VARIABLE commit_hash)
+
+execute_process(
+		COMMAND bash "-c" "git rev-parse --abbrev-ref HEAD | tr -d '\n'"
+		RESULT_VARIABLE result
+		OUTPUT_VARIABLE branch)
+
+execute_process(
+		COMMAND bash "-c" "date '+%Y-%m-%d.%H:%M:%S' | tr -d '\n'"
+		RESULT_VARIABLE result
+		OUTPUT_VARIABLE build_date)
+
+execute_process(
+		COMMAND bash "-c" "git diff --exit-code"
+		RESULT_VARIABLE git_diff
+		OUTPUT_VARIABLE git_diff_output)
+
+execute_process(
+		COMMAND bash "-c" "git config --get remote.origin.url | tr -d '\n'"
+		RESULT_VARIABLE result
+		OUTPUT_VARIABLE git_url)
+
+
+if (git_diff STREQUAL "0")
+	message("No changes '${git_diff}'")
+else()
+	message("!!!! Uncommited changes '${git_diff}' !!!!!!!!")
+endif()
+
+
+message("value is  'Commit:${commit_hash} Branch:${branch}: Date:${build_date}' URL: ${git_url}")
+
+
+add_definitions(-DGIT_COMMIT="${commit_hash}")
+add_definitions(-DGIT_BRANCH="${branch}")
+add_definitions(-DGIT_URL="${git_url}")
+add_definitions(-DBUILD_DATE="${build_date}")
+add_definitions(-DUNCOMMITED_CHANGES=${git_diff})
+
+
 if (PRESTO_PLATFORM STREQUAL "cross")
 
 	# MLevitin additions
