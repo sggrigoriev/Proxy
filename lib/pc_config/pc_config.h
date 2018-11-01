@@ -102,6 +102,11 @@ int saveUintValue(const char* func_name, const char* conf_fname, const char* fie
 /************************************************************************************/
 int read_one_string_file(const char* file_name, char* value, size_t size, const char* value_name);
 int save_one_string_file(const char* file_name, const char* new_val, const char* value_name);
+/*
+ * version - the version number from the corresponding include
+ * Return all this about version, branch and so on
+ */
+const char* get_version_printout(const char* version, char* buf, size_t size);
 
 
 

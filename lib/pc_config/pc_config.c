@@ -288,3 +288,31 @@ int save_one_string_file(const char* file_name, const char* new_val, const char*
     sync();
     return 1;
 }
+
+/*
+ * Return all this about version, branch and so on
+ *
+ */
+const char* get_version_printout(const char* version, char* buf, size_t size) {
+    snprintf(buf, size,
+             "Built on %s at %s\n"
+             "Git repository version %s\n"
+             "Git commit: %s\n"
+             "Git branch: %s\n"
+             "\tUncommited: %s\n"
+             "*** To repeat this build use:\n"
+             "\tgit clone --single-branch -b  %s %s .\n"
+             "\tgit fetch origin %s\n"
+             "\tgit reset --hard FETCH_HEAD\n"
+             ,
+             __DATE__, __TIME__
+             ,version
+             ,GIT_COMMIT
+             ,GIT_BRANCH
+             ,(UNCOMMITED_CHANGES == 0) ? "NO": " !!!!! YES !!!!!!"
+             ,GIT_BRANCH, GIT_URL
+             ,GIT_COMMIT
+            );
+    char* ret = strdup(buf);
+    return ret;
+}

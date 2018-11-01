@@ -29,6 +29,7 @@
 
 #include "presto_release_version.h"
 
+#include "pc_config.h"
 #include "pc_cli.h"
 #include "pc_settings.h"
 #include "pc_defaults.h"
@@ -90,9 +91,6 @@ int main(int argc, char* argv[]) {
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
     }
 
-    printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
-
-
     pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
@@ -113,7 +111,8 @@ int main(int argc, char* argv[]) {
 }
 
 static void print_Proxy_start_params() {
-    char buf[500];
+    char buf[1024]={0};
+    pu_log(LL_INFO, "\n%s", get_version_printout(PRESTO_FIRMWARE_VERSION, buf, sizeof(buf)));
     pu_log(LL_INFO, "Proxy start parameters:");
     pu_log(LL_INFO, "\tLog file name: %s", pc_getLogFileName());
     pu_log(LL_INFO, "\t\tRecords amount in log file: %d", pc_getLogRecordsAmt());

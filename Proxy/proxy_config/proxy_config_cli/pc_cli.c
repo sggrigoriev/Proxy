@@ -26,11 +26,13 @@
 #include <stdio.h>
 #include <getopt.h>
 
-#include "presto_release_version.h"
 
+#include "presto_release_version.h"
+#include "pc_config.h"
 #include "pc_defaults.h"
 #include "pc_settings.h"
 #include "pc_cli.h"
+
 
 void pc_cli_printDeviceID() {
     if(!pc_existsProxyDeviceID()) {
@@ -93,14 +95,6 @@ void pc_cli_printUsage() {
  * Print the version number
  */
 void pc_cli_printVersion() {
-  printf("Built on %s at %s\n", __DATE__, __TIME__);
-  printf("Git repository version %s\n", PRESTO_FIRMWARE_VERSION);
-  printf("Git commit: %s\n", GIT_COMMIT);
-  printf("Git branch: %s\n", GIT_BRANCH);
-  printf("\tUncommited: %s\n", (UNCOMMITED_CHANGES == 0 ? "NO": " !!!!! YES !!!!!!"));
-  printf("*** To repeat this build use:\n");
-  printf("\tgit clone --single-branch -b  %s %s .\n", GIT_BRANCH, GIT_URL);
-  printf("\tgit fetch origin %s\n", GIT_COMMIT);
-  printf("\tgit reset --hard FETCH_HEAD\n");
-
+    char buf[1024]={0};
+    printf("%s", get_version_printout(PRESTO_FIRMWARE_VERSION, buf, sizeof(buf)));
 }
