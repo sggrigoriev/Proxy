@@ -90,7 +90,9 @@ int main(int argc, char* argv[]) {
     else {
         if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);    /* Run w/o input parameters */
     }
-
+    
+    printf("Presto v %s\n", PRESTO_FIRMWARE_VERSION);
+    
     pc_readFWVersion(); /* Get the current FW version from file DEFAULT_FW_VERSION_FILE */
 
     pu_start_logger(pc_getLogFileName(), pc_getLogRecordsAmt(), pc_getLogVevel());
