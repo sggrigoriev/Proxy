@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include "lib_tcp.h"
 #include "lib_timer.h"
@@ -40,6 +41,8 @@
 */
 #define SEND_TO_SEC 30
 #define FIRST_FAST_MESSAGES 5
+
+volatile uint32_t contextId = 0;
 
 static lib_timer_clock_t send_clock = {0};
 static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
