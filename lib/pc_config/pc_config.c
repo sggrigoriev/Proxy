@@ -313,6 +313,5 @@ const char* get_version_printout(const char* version, char* buf, size_t size) {
              ,GIT_BRANCH, GIT_URL
              ,GIT_COMMIT
             );
-    char* ret = strdup(buf);
-    return ret;
+    return buf;
 }

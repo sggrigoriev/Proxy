@@ -464,6 +464,7 @@ int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
 
     if(handler = check_conn(gf_conn), handler == NULL) return -1;
 
+    if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_DNS_CACHE_TIMEOUT, 0L), curlResult != CURLE_OK) goto out;
     if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, file_writer), curlResult != CURLE_OK) goto out;
     if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &rx_file), curlResult != CURLE_OK) goto out;
 

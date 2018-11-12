@@ -34,6 +34,8 @@
 #include "pu_logger.h"
 #include "pu_queue.h"
 
+extern uint32_t contextId;
+
 /*****************************************************************************************************
     Common local data
 */
@@ -149,27 +151,46 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
     struct timespec timeToWait;
     struct timeval now;
 
+    contextId = 1;
+
     gettimeofday(&now, NULL);
 
+    contextId = 2;
+
     timeToWait.tv_sec = now.tv_sec+to_sec;
+    contextId = 3;
     timeToWait.tv_nsec = 0;
-
+    contextId = 4;
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
-
-    if(to_sec)
+    contextId = 5;
+    if(to_sec) {
+        contextId = 6;
         pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
-    else
+        contextId = 7;
+    }
+    else {
+        contextId = 8;
         pthread_cond_wait(&ps_all_queues_cond, &ps_all_queues_cond_mutex);
-
+        contextId = 9;
+    }
+    contextId = 10;
     ret = PQ_TIMEOUT;
     pu_queue_event_t i;
+    contextId = 11;
     for(i = 1; i < PQ_Size; i++) {
+        contextId = 12;
         if(((queue_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1) && ((ps_all_queues_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1)) {
+            contextId = 13;
             ps_all_queues_events_set &= ~make_event_mask(i);
+            contextId = 14;
             ret = i;
+            contextId = 15;
         }
+        contextId = 16;
     }
+    contextId = 17;
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
+    contextId = 18;
     return ret;
 }
 
