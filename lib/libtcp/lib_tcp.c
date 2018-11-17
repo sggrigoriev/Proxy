@@ -112,7 +112,7 @@ on_err:         /* TODO possibly not all the memory frees: ret, in_buf, as_buf *
     return NULL;
 }
 
-lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
+lib_tcp_rd_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
     if(!all_conns) {
         pu_log(LL_ERROR, "%s: Connection pool is not initialized");
         return NULL;
@@ -124,7 +124,7 @@ lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns) {
             all_conns->rd_conn_array[i].socket = rd_socket;
             all_conns->sa_size++;
             pthread_mutex_unlock(&own_mutex);
-            return all_conns;
+            return all_conns->rd_conn_array+i;
         }
     }
     pthread_mutex_unlock(&own_mutex);

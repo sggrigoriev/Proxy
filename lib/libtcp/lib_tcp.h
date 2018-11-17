@@ -109,7 +109,7 @@ lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size)
   all_conns   - pointer connection pool
 Return ptr for updated descriptor ot NULL if err
 */
-lib_tcp_conn_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns);
+lib_tcp_rd_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns);
 
 /*Get the amount of working connections
   all_conns   - pointer to connections pool
