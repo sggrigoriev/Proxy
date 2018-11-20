@@ -85,17 +85,17 @@ Public functions. Description in *h file
 lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size) {
     pthread_mutex_lock(&own_mutex);
     assert(max_connections);
-    lib_tcp_conn_t* ret = malloc(sizeof(lib_tcp_conn_t));
+    lib_tcp_conn_t* ret = calloc(sizeof(lib_tcp_conn_t), 1);
     if(!ret) goto on_err;
-    ret->rd_conn_array = malloc(max_connections* sizeof(lib_tcp_rd_t));
+    ret->rd_conn_array = calloc(max_connections* sizeof(lib_tcp_rd_t), 1);
     if(!ret->rd_conn_array) goto on_err;
     unsigned int i;
     for(i = 0; i < max_connections; i++) {
         ret->rd_conn_array[i].socket = -1;
-        ret->rd_conn_array[i].in_buf.buf = malloc(in_size);
+        ret->rd_conn_array[i].in_buf.buf = calloc(in_size, 1);
         ret->rd_conn_array[i].in_buf.len = 0;
         ret->rd_conn_array[i].in_buf.size = in_size;
-        ret->rd_conn_array[i].ass_buf.buf = malloc(in_size*2);
+        ret->rd_conn_array[i].ass_buf.buf = calloc(in_size*2, 1);
         ret->rd_conn_array[i].ass_buf.size = in_size*2;
         ret->rd_conn_array[i].ass_buf.idx = 0;
         ret->rd_conn_array[i].ass_buf.status = LIB_TCP_BUF_READY;

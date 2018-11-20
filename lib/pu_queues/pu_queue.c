@@ -153,7 +153,10 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
 
     contextId = 1;
 
-    gettimeofday(&now, NULL);
+    if(gettimeofday(&now, NULL)) {
+        pu_log(LL_ERROR, "%s: gettimeofday error %d - %s", __FUNCTION__, errno, strerror((errno)));
+        return PQ_TIMEOUT;
+    }
 
     contextId = 2;
 
@@ -165,6 +168,8 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
     contextId = 5;
     if(to_sec) {
         contextId = 6;
+        if(&timeToWait < 0x0b000000) pu_log(LL_DEBUG, "%s: POINTER = %p, VALUE = %d", __FUNCTION__, &timeToWait, timeToWait.tv_sec);
+        contextId = 11038;
         pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
         contextId = 7;
     }
@@ -197,13 +202,13 @@ pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned 
 pu_queue_t* pu_queue_create(unsigned long records_amt, pu_queue_event_t my_event) {
 
     pu_queue_t* queue;
-    if(queue = malloc(sizeof(pu_queue_t)), queue == NULL) {
+    if(queue = calloc(sizeof(pu_queue_t),1), queue == NULL) {
         pu_log(LL_ERROR, "Queue %d creation: not enough memory to create the queue. Failed.", my_event);
         return NULL;
     }
 
     queue->q_array_size = (records_amt)?records_amt:DEFAULT_QUEUE_SIZE;
-    if(queue->q_array = malloc(queue->q_array_size * sizeof(pu_queue_element_t)), queue->q_array == NULL) {
+    if(queue->q_array = calloc(queue->q_array_size * sizeof(pu_queue_element_t), 1), queue->q_array == NULL) {
         free(queue);
         pu_log(LL_ERROR, "Queue %d creation: not enough memory to create the queue array. Failed.", my_event);
         return NULL;
@@ -246,64 +251,105 @@ void pu_queue_stop(pu_queue_t* queue) {
 }
 
 void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
-
+    contextId = 10;
     if(!check_params_for_pu_queue_push(queue, data, len)) return;
+    contextId = 11;
     pthread_mutex_lock(&queue->own_mutex);
-
+    contextId = 12;
 /* check for possible overflow */
     if((queue->wr_idx == queue->rd_idx) && !queue->empty) { /* overflow case! */
+        contextId = 13;
         queue->overflow = 1;
+        contextId = 14;
         pu_log(LL_WARNING, "Queue %d overflow!. Lost msg: %s", queue->event, queue->q_array[queue->rd_idx].data);
+        contextId = 15;
         erase_element(queue, queue->rd_idx);
+        contextId = 16;
         queue->rd_idx = inc_idx(queue, queue->rd_idx);
+        contextId = 17;
     }
 /* add new element to the queue */
-    if(queue->q_array[queue->wr_idx].data = malloc(len * sizeof(pu_queue_msg_t)), !queue->q_array[queue->wr_idx].data) {
+    contextId = 18;
+    if(queue->q_array[queue->wr_idx].data = calloc(len * sizeof(pu_queue_msg_t), 1), !queue->q_array[queue->wr_idx].data) {
+        contextId = 19;
         pu_log(LL_ERROR, "Queue %d: not enough memory to add data!", queue->event);
+        contextId = 20;
         pu_log(LL_WARNING, "Queue %d lost data: %s", queue->event, data);
+        contextId = 21;
         pthread_mutex_unlock(&queue->own_mutex);
+        contextId = 22;
         return;
     }
+    contextId = 23;
     queue->q_array[queue->wr_idx].len = len;
+    contextId = 24;
     memcpy(queue->q_array[queue->wr_idx].data, data, len*sizeof(pu_queue_msg_t));
+    contextId = 25;
     queue->wr_idx = inc_idx(queue, queue->wr_idx);
+    contextId = 26;
     queue->empty = 0;
+    contextId = 27;
 
 /* send the signal we got smth */
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
+        contextId = 28;
        ps_all_queues_events_set |= make_event_mask(queue->event);
+        contextId = 29;
        pthread_cond_broadcast(&ps_all_queues_cond);           /* Who is the first - owns the slippers! */
+        contextId = 30;
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
+        contextId = 31;
 
     pthread_mutex_unlock(&queue->own_mutex);
+    contextId = 32;
 }
 
 int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
+    contextId = 40;
     if(!check_ptr(queue, "pu_queue_pop() got NULL \'queue\' parameter. Failed.")) return 0;
+    contextId = 41;
     if(!check_ptr(data, "pu_queue_pop() got NULL \'data\' parameter. Failed.")) return 0;
+    contextId = 42;
     if(!check_ptr(len, "pu_queue_pop() got NULL \'len\' parameter. Failed.")) return 0;
+    contextId = 43;
 
     pthread_mutex_lock(&queue->own_mutex);
+    contextId = 44;
     if(queue->empty) {
+        contextId = 45;
         pthread_mutex_unlock(&queue->own_mutex);
+        contextId = 46;
         return 0;
     }
-
+    contextId = 47;
     if(*len < queue->q_array[queue->rd_idx].len) {
+        contextId = 48;
         pu_log(LL_WARNING, "pu_queue_pop: too small buffer: data truncated");
+        contextId = 49;
     }
     else {
+        contextId = 50;
         *len = queue->q_array[queue->rd_idx].len;
+        contextId = 51;
     }
+    contextId = 52;
     memcpy(data, queue->q_array[queue->rd_idx].data, *len);
+    contextId = 53;
     free(queue->q_array[queue->rd_idx].data);
+    contextId = 54;
     queue->q_array[queue->rd_idx].data = NULL;
+    contextId = 55;
     queue->q_array[queue->rd_idx].len = 0;
+    contextId = 56;
     queue->rd_idx = inc_idx(queue, queue->rd_idx);
+    contextId = 57;
     queue->overflow = 0;
+    contextId = 58;
     queue->empty = (queue->rd_idx == queue->wr_idx);
+    contextId = 60;
 
     pthread_mutex_unlock(&queue->own_mutex);
+    contextId = 61;
     return 1;
 }
 
