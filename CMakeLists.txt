@@ -9,6 +9,9 @@ set(PRESTO_PLATFORM $ENV{PLATFORM})
 add_subdirectory(Proxy)
 add_subdirectory(WUD)
 set(GCC_STANDARD "-std=c99")
+set(BUILD_TYPE $ENV{BUILD_TYPE})
+message (" Build type is ${BUILD_TYPE}")
+
 
 if (PRESTO_PLATFORM STREQUAL "cross")
     # this is for cross-compile using OpenWRT toolchain

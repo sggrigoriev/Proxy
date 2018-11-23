@@ -7,6 +7,9 @@ add_definitions(-DDEFAUT_U_TO=200)
 add_definitions(-DDEFAULT_TO_RPT_TIMES=5)
 add_definitions(-DDEFAULT_S_TO=1)
 
+message(STATUS "WUD: platform is set to ${PRESTO_PLATFORM}")
+set(BUILD_TYPE $ENV{BUILD_TYPE})
+message (" Proxy Build type is ${BUILD_TYPE}")
 
 execute_process(
 		COMMAND  bash "-c" "git rev-parse --verify HEAD | tr -d '\n'"
@@ -139,7 +142,15 @@ elseif (PRESTO_PLATFORM STREQUAL "hisilicon")
 
 
 #	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${SYSROOT_PATH}/usr/include/gstreamer-1.0 -I${SYSROOT_PATH}/usr/include/glib-2.0 -I${SYSROOT_PATH}/usr/include -D_BSD_SOURCE -L${SYSROOT_PATH}/usr/lib -D_GNU_SOURCE -O3 -Wall -s")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -I${SYSROOT_PATH}/usr/include -L${SYSROOT_PATH}/usr/lib -L${TOOLCHAIN_PATH}/target/lib -D_GNU_SOURCE -Wall -O2 -std=c89 -D_BSD_SOURCE -pthread -s")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -I${SYSROOT_PATH}/usr/include -L${SYSROOT_PATH}/usr/lib -L${TOOLCHAIN_PATH}/target/lib -D_GNU_SOURCE -Wall -O2 -std=c89 -D_BSD_SOURCE -pthread -s")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -I${SYSROOT_PATH}/usr/include -L${SYSROOT_PATH}/usr/lib -L${TOOLCHAIN_PATH}/target/lib -D_GNU_SOURCE -D_BSD_SOURCE -Wall -std=c89")
+	if(BUILD_TYPE STREQUAL "Development")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+	else()
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -O3 -s ")
+	endif()
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+
 
 
 set(REQUIRED_LIBRARIES
