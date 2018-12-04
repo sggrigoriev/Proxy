@@ -48,7 +48,6 @@
  */
 static int main_thread_startup();                           /* Total Proxy therads startup */
 static void main_thread_shutdown();                         /* Total Proxy shutdown */
-static void send_fw_version_to_cloud();                     /* Inform the cloud about the gateway firmware version */
 static void send_reboot_status(pr_reboot_param_t status);   /* Sand the alert to the cloud: bofore reboot and after reboot */
 static void process_cloud_message(char* cloud_msg);         /* Parse the info from the clud and sends ACKs to Agent and/or provede commands to the Proxy */
 static void process_agent_message(char* msg);               /* Parse & split Agent's messages to rge cloud and to the Proxy; forward cloud and process Proxy's */
@@ -91,10 +90,8 @@ void pt_main_thread() { /* Starts the main thread. */
     }
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   /* Initiating the timer for watchdog sendings */
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
-    lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
 
     report_cloud_conn_status(0);  /* sending to the agent offline status - no connection with the cloud */
-    send_fw_version_to_cloud();                 /* sending the fw version to the cloud */
     send_reboot_status(PR_AFTER_REBOOT);        /* sending the reboot status to the cloud */
 
     pu_log(LL_ERROR, "%s: Main loop starts", PT_THREAD_NAME);
@@ -146,11 +143,6 @@ void pt_main_thread() { /* Starts the main thread. */
 
                 lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs() * 3600);
             }
-        }
-/* 3. Regular sending the fw version to the cloud */
-        if(lib_timer_alarm(gw_fw_version_sending_clock) && !lock_gw_fw_version_sending) {
-            send_fw_version_to_cloud();
-            lib_timer_init(&gw_fw_version_sending_clock, pc_getFWVerSendToHrs()*3600);
         }
     }
     main_thread_shutdown();
@@ -222,22 +214,6 @@ static void send_wd() {
 
         pu_queue_push(to_wud, buf, strlen(buf)+1);
     }
-
-/*Sending the fw version to the cloud accordingly to the schedule */
-static void send_fw_version_to_cloud() {
-    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
-    char fw_ver[DEFAULT_FW_VERSION_SIZE];
-    char msg[LIB_HTTP_MAX_MSG_SIZE];
-
-    pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pc_getFWVersion(fw_ver, sizeof(fw_ver));
-
-    pr_make_fw_status4cloud(msg, sizeof(msg), PR_FWU_STATUS_STOP, fw_ver, device_id);
-    pf_add_proxy_head(msg, sizeof(msg), device_id);
-
-    pu_queue_push(to_server, msg, strlen(msg)+1);
-    pu_log(LL_INFO, "%s: firmware version was sent to the Cloud: %s", PT_THREAD_NAME, msg);
-}
 
 static void send_reboot_status(pr_reboot_param_t status) {
     char device_id[LIB_HTTP_DEVICE_ID_SIZE];
