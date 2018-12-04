@@ -169,7 +169,7 @@ static void notify(fw_notify_t n) {
             break;
         case FWU_NOTIFY_FAIL:
 /* Notify cloud */
-            pr_make_fw_status4cloud(alert, sizeof(alert), PR_FWU_STATUS_STOP, fw_version, deviceID);
+            pr_make_fw_status4cloud(alert, sizeof(alert), PR_FWU_STATUS_FAIL, fw_version, deviceID);
             pf_add_proxy_head(alert, sizeof(alert), deviceID);
             pu_queue_push(to_cloud, alert, strlen(alert)+1);
 /* Notify WUD */
