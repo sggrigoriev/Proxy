@@ -19,6 +19,7 @@
     Created by gsg on 29/10/16.
 */
 
+
 #if __STDC_VERSION__ >= 199901L
 #define _XOPEN_SOURCE 600
 #else
@@ -33,8 +34,6 @@
 
 #include "pu_logger.h"
 #include "pu_queue.h"
-
-extern uint32_t contextId;
 
 /*****************************************************************************************************
     Common local data
@@ -141,61 +140,35 @@ pu_queue_event_t pu_add_queue_event(pu_queue_event_t queue_events_mask, pu_queue
     }
     return (queue_events_mask | make_event_mask(event));
 }
-/*
- * Modification:
- * Even if TO happens - check the events set: anyway. If nothing - goto timeout
- * NB! If we got event from other thread - our thread will have TO.
- */
+
 pu_queue_event_t pu_wait_for_queues(pu_queue_event_t queue_events_set, unsigned int to_sec) { /* wait for one or several queue events */
     pu_queue_event_t ret;
     struct timespec timeToWait;
     struct timeval now;
-
-    contextId = 1;
 
     if(gettimeofday(&now, NULL)) {
         pu_log(LL_ERROR, "%s: gettimeofday error %d - %s", __FUNCTION__, errno, strerror((errno)));
         return PQ_TIMEOUT;
     }
 
-    contextId = 2;
-
     timeToWait.tv_sec = now.tv_sec+to_sec;
-    contextId = 3;
     timeToWait.tv_nsec = 0;
-    contextId = 4;
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
-    contextId = 5;
     if(to_sec) {
-        contextId = 6;
-        if(&timeToWait < 0x0b000000) pu_log(LL_DEBUG, "%s: POINTER = %p, VALUE = %d", __FUNCTION__, &timeToWait, timeToWait.tv_sec);
-        contextId = 11038;
         pthread_cond_timedwait(&ps_all_queues_cond, &ps_all_queues_cond_mutex, &timeToWait);
-        contextId = 7;
     }
     else {
-        contextId = 8;
         pthread_cond_wait(&ps_all_queues_cond, &ps_all_queues_cond_mutex);
-        contextId = 9;
     }
-    contextId = 10;
     ret = PQ_TIMEOUT;
     pu_queue_event_t i;
-    contextId = 11;
     for(i = 1; i < PQ_Size; i++) {
-        contextId = 12;
         if(((queue_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1) && ((ps_all_queues_events_set >> (PQ_Size - 1 - i))&(pu_queue_event_t)1)) {
-            contextId = 13;
             ps_all_queues_events_set &= ~make_event_mask(i);
-            contextId = 14;
             ret = i;
-            contextId = 15;
         }
-        contextId = 16;
     }
-    contextId = 17;
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
-    contextId = 18;
     return ret;
 }
 
@@ -251,105 +224,61 @@ void pu_queue_stop(pu_queue_t* queue) {
 }
 
 void pu_queue_push(pu_queue_t* queue, const pu_queue_msg_t* data, size_t len) {
-    contextId = 10;
     if(!check_params_for_pu_queue_push(queue, data, len)) return;
-    contextId = 11;
     pthread_mutex_lock(&queue->own_mutex);
-    contextId = 12;
 /* check for possible overflow */
     if((queue->wr_idx == queue->rd_idx) && !queue->empty) { /* overflow case! */
-        contextId = 13;
         queue->overflow = 1;
-        contextId = 14;
         pu_log(LL_WARNING, "Queue %d overflow!. Lost msg: %s", queue->event, queue->q_array[queue->rd_idx].data);
-        contextId = 15;
         erase_element(queue, queue->rd_idx);
-        contextId = 16;
         queue->rd_idx = inc_idx(queue, queue->rd_idx);
-        contextId = 17;
     }
 /* add new element to the queue */
-    contextId = 18;
     if(queue->q_array[queue->wr_idx].data = calloc(len * sizeof(pu_queue_msg_t), 1), !queue->q_array[queue->wr_idx].data) {
-        contextId = 19;
         pu_log(LL_ERROR, "Queue %d: not enough memory to add data!", queue->event);
-        contextId = 20;
         pu_log(LL_WARNING, "Queue %d lost data: %s", queue->event, data);
-        contextId = 21;
         pthread_mutex_unlock(&queue->own_mutex);
-        contextId = 22;
         return;
     }
-    contextId = 23;
     queue->q_array[queue->wr_idx].len = len;
-    contextId = 24;
     memcpy(queue->q_array[queue->wr_idx].data, data, len*sizeof(pu_queue_msg_t));
-    contextId = 25;
     queue->wr_idx = inc_idx(queue, queue->wr_idx);
-    contextId = 26;
     queue->empty = 0;
-    contextId = 27;
 
 /* send the signal we got smth */
     pthread_mutex_lock(&ps_all_queues_cond_mutex);
-        contextId = 28;
        ps_all_queues_events_set |= make_event_mask(queue->event);
-        contextId = 29;
        pthread_cond_broadcast(&ps_all_queues_cond);           /* Who is the first - owns the slippers! */
-        contextId = 30;
     pthread_mutex_unlock(&ps_all_queues_cond_mutex);
-        contextId = 31;
 
     pthread_mutex_unlock(&queue->own_mutex);
-    contextId = 32;
 }
 
 int pu_queue_pop(pu_queue_t* queue, pu_queue_msg_t* data, size_t* len) {
-    contextId = 40;
     if(!check_ptr(queue, "pu_queue_pop() got NULL \'queue\' parameter. Failed.")) return 0;
-    contextId = 41;
     if(!check_ptr(data, "pu_queue_pop() got NULL \'data\' parameter. Failed.")) return 0;
-    contextId = 42;
     if(!check_ptr(len, "pu_queue_pop() got NULL \'len\' parameter. Failed.")) return 0;
-    contextId = 43;
 
     pthread_mutex_lock(&queue->own_mutex);
-    contextId = 44;
     if(queue->empty) {
-        contextId = 45;
         pthread_mutex_unlock(&queue->own_mutex);
-        contextId = 46;
         return 0;
     }
-    contextId = 47;
     if(*len < queue->q_array[queue->rd_idx].len) {
-        contextId = 48;
         pu_log(LL_WARNING, "pu_queue_pop: too small buffer: data truncated");
-        contextId = 49;
     }
     else {
-        contextId = 50;
         *len = queue->q_array[queue->rd_idx].len;
-        contextId = 51;
     }
-    contextId = 52;
     memcpy(data, queue->q_array[queue->rd_idx].data, *len);
-    contextId = 53;
     free(queue->q_array[queue->rd_idx].data);
-    contextId = 54;
     queue->q_array[queue->rd_idx].data = NULL;
-    contextId = 55;
     queue->q_array[queue->rd_idx].len = 0;
-    contextId = 56;
     queue->rd_idx = inc_idx(queue, queue->rd_idx);
-    contextId = 57;
     queue->overflow = 0;
-    contextId = 58;
     queue->empty = (queue->rd_idx == queue->wr_idx);
-    contextId = 60;
 
     pthread_mutex_unlock(&queue->own_mutex);
-    contextId = 61;
     return 1;
 }
 
