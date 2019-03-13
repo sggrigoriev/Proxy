@@ -152,9 +152,13 @@ void pu_log(log_level_t lvl, const char* fmt, ...) {
             file = open_log(LOG_FILE_NAME, 0);
             rec_amt = 0;
         }
+        if (file != NULL)
+            fprintf(file, "%s\n", buf),
+            fflush(file);
+        else
+            fprintf(stderr, "%s\n", buf),
+            fflush(stderr);
 
-        fprintf(file, "%s\n", buf);
-        fflush(file);
         rec_amt++;
 
     pthread_mutex_unlock(&lock);

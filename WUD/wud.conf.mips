@@ -10,7 +10,7 @@
 "CHILDREN_SHUTDOWN_TO_SEC":     10,
 
 "FW_DOWNLOAD_FOLDER":           "/tmp/presto/upload",
-"FW_UPGRADE_FOLDER":            "/root/download",
+"FW_UPGRADE_FOLDER":            "/root/presto/download",
 "FW_UPGRADE_FILE_NAME":         "presto_mt7688.tgz",
 
 "AGENT_PROCESS_NAME":           "zbagent",
@@ -26,7 +26,7 @@
 "PROXY_WD_TIMEOUT_SEC":         600,
 
 "WUD_MONITORING_TO_SEC":        3600,
-"WUD_DELAY_BEFORE_START_SEC":    5
+"WUD_DELAY_BEFORE_START_SEC":    2
 }
 
 
