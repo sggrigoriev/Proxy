@@ -183,9 +183,7 @@ size_t pr_get_array_size(msg_obj_t* array) {
 }
 
 msg_obj_t* pr_get_arr_item(msg_obj_t* array, size_t idx) {
-    assert(array);
-    assert(array->type == cJSON_Array);
-    assert(idx < (size_t)cJSON_GetArraySize(array));
+    if(!array || (array->type != cJSON_Array) || (idx > (size_t)cJSON_GetArraySize(array))) return NULL;
     return cJSON_GetArrayItem(array, (int)idx);
 }
 

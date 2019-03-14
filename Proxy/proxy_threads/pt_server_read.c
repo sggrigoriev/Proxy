@@ -87,6 +87,7 @@ static void read_from_cloud(char* buf, size_t size) {
     int out = 0;
     int to_counter = 0;
     while(!out && !stop) {
+        pu_log(LL_DEBUG, "%s: set long read", __FUNCTION__);
         switch(ph_read(buf, size)) {
             case -1:        /*error*/
                 pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);

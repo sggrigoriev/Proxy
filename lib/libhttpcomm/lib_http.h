@@ -47,7 +47,7 @@ NB-2! no thread protection
 /* Long GET from Proxy's side will be less on LIB_HTTP_PROXY_SERVER_TO_DELTA than the cloud conn timeout */
 #define LIB_HTTP_PROXY_SERVER_TO_DELTA      20
 /* Maximum time for an HTTP connection, including name resolving */
-#define LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC    30
+#define LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC    300
 /* Maximum time for an HTTP transfer */
 #define LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC   60
 
