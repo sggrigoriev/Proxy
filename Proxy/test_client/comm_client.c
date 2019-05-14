@@ -308,11 +308,11 @@ static void* main_client_proc(void* dummy) {
 
 int main(int argv, char* argc[]) {
     if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) {
-        fprintf(stderr, "Client: error config loading %s: %d %s", DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
+        fprintf(stderr, "Client: error config loading %s: %d %s\n", DEFAULT_CFG_FILE_NAME, errno, strerror(errno));
         exit(1);
     }
 
-    pu_start_logger("./AGENT_LOG", 5000, LL_DEBUG);
+    pu_start_logger("./agent.log", 5000, LL_DEBUG);
 
     main_client_proc(NULL);
 

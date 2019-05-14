@@ -196,11 +196,13 @@ static void process_commands(msg_obj_t* cmds) {
                 pu_log(LL_WARNING, "%s: %s restart requested", PT_THREAD_NAME, cmd_item.restart_child.component);
                 if (!wa_restart_child(pr_string_2_chld(cmd_item.restart_child.component))) {
                     pu_log(LL_ERROR, "%s: restart of %s failed. Reboot.", PT_THREAD_NAME, cmd_item.restart_child.component);
+                    fprintf(stdout, "%s: restart of %s failed. Reboot.\n", PT_THREAD_NAME, cmd_item.restart_child.component);
                     process_reboot();
                 }
                 break;
             case PR_CMD_REBOOT: {
                 pu_log(LL_WARNING, "%s: REBOOT requested", PT_THREAD_NAME);
+                fprintf(stdout, "%s: Reboot initiated by REBOOT command\n", PT_THREAD_NAME);
                 process_reboot();
             }
                 break;
@@ -256,6 +258,7 @@ static void process_alerts(msg_obj_t* alerts) {
             case PR_ALERT_FWU_READY_4_INSTALL:   /* fw file received, checked, moved & renamed - ready to start complition - reboot! */
                 pu_log(LL_INFO, "%s: fw upgrade: ready for install", PT_THREAD_NAME);
                 fw_upgrade_cancel();    /* just to clean-up after the process */
+                fprintf(stdout, "%s: Firmware is ready for installation. Reboot.\n", PT_THREAD_NAME);
                 process_reboot();
                 stop = 1;
                 break;

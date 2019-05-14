@@ -432,7 +432,8 @@ static void send_reboot() {
     char deviceID[LIB_HTTP_DEVICE_ID_SIZE] = {0};
 
     pc_getProxyDeviceID(deviceID, sizeof(deviceID));
-    pu_log(LL_INFO, "%s: cloud rejects the Proxy connection - reboot");
+    pu_log(LL_INFO, "%s: cloud rejects the Proxy connection - reboot", PT_THREAD_NAME);
+    fprintf(stdout, "%s: cloud rejects the Proxy connection - reboot\n", PT_THREAD_NAME);
     pr_make_reboot_command(buf, sizeof(buf), deviceID);
     to_wud = pt_get_gueue(PS_ToWUDQueue);
     pu_queue_push(to_wud, buf, strlen(buf) + 1);

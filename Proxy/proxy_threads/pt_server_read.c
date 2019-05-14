@@ -123,7 +123,7 @@ static void* read_proc(void* params) {
     while(!stop) {
         read_from_cloud(buf, sizeof(buf));
         pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
-        pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
+        pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message to the proxy_main */
 
         send_answers_if_command(buf);   /* Send result 0 for all commands came from the cloud */
     }
@@ -132,7 +132,7 @@ static void* read_proc(void* params) {
 }
 
 /************************************************************************************************
- * Public functions impementation
+ * Public functions implementation
  */
 int start_server_read() {
     if(pthread_attr_init(&attr)) return 0;

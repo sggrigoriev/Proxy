@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <wc_settings.h>
+#include <stdio.h>
 
 #ifndef WUD_ON_HOST
     #include <sys/reboot.h>
@@ -34,9 +35,11 @@ void wa_reboot() {
     if(wc_getRebootByRequest()) {
 #ifdef WUD_ON_HOST
         pu_log(LL_INFO, "wa_reboot: EXIT on host case");
+        fprintf(stdout, "wa_reboot: EXIT on host case\n");
         exit(1);
 #else
-        pu_log(LL_INFO, "wa_reboot: true reboot for true gateway");
+        pu_log(LL_INFO, "wa_reboot: reboot!");
+        fprintf(stdout, "wa_reboot: reboot!");
         sync();
 #ifdef PLATFORM_HISILICON_C1
         reboot(RB_AUTOBOOT);
@@ -46,6 +49,8 @@ void wa_reboot() {
 #endif
     }
     else {
-        pu_log(LL_INFO, "%s: Reboot disabled by WUD configuration. Refer to the \"REBOOT_BY_REQUEST\" setting.", __FUNCTION__);
+        pu_log(LL_INFO, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.", __FUNCTION__);
+        fprintf(stdout, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.\n", __FUNCTION__);
+        exit(1);
     }
 }

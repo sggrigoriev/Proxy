@@ -261,7 +261,7 @@ const char* wc_getCurloptCAInfo() {
     return curlopt_ca_info;
 }
 int wc_getCurloptSSLVerifyPeer() {
-    return curlopt_ssl_verify_peer;
+    WC_RET(WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER, curlopt_ssl_verify_peer);
 }
 
 

@@ -55,7 +55,8 @@ static void print_WUD_start_params();
  */
 volatile uint32_t contextId = 0;
 void signalHandler( int signum ) {
-    pu_log(LL_ERROR, "WUD.%s: Interrupt signal (%d) received. ContextId=%d thread_id=%d\n", __FUNCTION__, signum, contextId, pthread_self());
+    pu_log(LL_ERROR, "WUD.%s: Interrupt signal (%d) received. ContextId=%d thread_id=%lu\n", __FUNCTION__, signum, contextId, pthread_self());
+    fprintf(stdout, "WUD.%s: Interrupt signal (%d) received. ContextId=%d thread_id=%lu\n", __FUNCTION__, signum, contextId, pthread_self());
     exit(signum);
 }
 
@@ -82,7 +83,7 @@ int main(int argc, char* argv[]) {
                 exit(0);
             }
             default:
-                fprintf(stderr, "Wrong start parameter. Only -p<config_file_path_and_name> or -v allowed");
+                fprintf(stderr, "Wrong start parameter. Only -p<config_file_path_and_name> or -v allowed\n");
                 exit(-1);
         }
     }
@@ -154,12 +155,14 @@ int main(int argc, char* argv[]) {
 #ifndef WUD_NOT_STARTS_AGENT      /* The agent runs by itself on real gateway. */
   if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
+        fprintf(stdout, "WUD startup: error. %s process start failed. Reboot.\n", wc_getAgentProcessName());
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getAgentProcessName());
 #endif
     if(!wa_start_child(proxy_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getProxyProcessName());
+        fprintf(stdout, "WUD startup: error. %s process start failed. Reboot.\n", wc_getProxyProcessName());
         wa_reboot();
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getProxyProcessName());
@@ -168,9 +171,8 @@ int main(int argc, char* argv[]) {
     wh_mgr_init();
     wt_request_processor();
     wh_mgr_destroy();
+    fprintf(stdout, "WUD stop\n");
     wa_reboot();
-
-    printf("WUD stop\n");
 
     return 0;
 }

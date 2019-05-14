@@ -67,6 +67,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
 void wh_mgr_init(){
     if(!lib_http_init(CONNECTIONS_TOTAL, wc_getCurloptSSLVerifyPeer(), wc_getCurloptCAInfo())) {
         lib_http_close();
+        fprintf(stdout, "%s: Error on lib_http_init\n", __FUNCTION__);
         wa_reboot();
     }
 }
@@ -92,6 +93,7 @@ void wh_reconnect() {
     pthread_mutex_unlock(&wr_mutex);
     pthread_mutex_unlock(&frd_mutex);
     lib_http_close();
+    fprintf(stdout, "%s: Hard error\n", __FUNCTION__);
     wa_reboot();
 }
 
