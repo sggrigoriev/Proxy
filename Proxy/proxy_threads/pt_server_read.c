@@ -123,10 +123,9 @@ static void* read_proc(void* params) {
     while(!stop) {
         read_from_cloud(buf, sizeof(buf));
         pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
-
-        send_answers_if_command(buf);   /* Send result 0 for all commands came from the cloud immediately */
-
         pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message ot the proxy_main */
+
+        send_answers_if_command(buf);   /* Send result 0 for all commands came from the cloud */
     }
     pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
     pthread_exit(NULL);
