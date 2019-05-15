@@ -46,6 +46,9 @@ unsigned int    pc_getFWVerSendToHrs();     /* timeout for fw version sending to
 
 unsigned int    pc_getWUDPort();            /* Return WUD communication port */
 
+unsigned int    pc_getCloudConnTimeout();   /* Return connection to cloud timeout for POST */
+unsigned int    pc_getCloudPostAttempts();  /* Times to repeat post attempts to cloud */
+
 /*  For Agent emulator */
 unsigned int    pc_getAgentPort();         /* Return the port# for communications with the Agent */
 

@@ -29,7 +29,6 @@
 #define WC_MAX_PATH                         LIB_HTTP_MAX_URL_SIZE       /* Max path length */
 #define WC_MAX_PROCESS_NAME_LEN             30                          /* Max process name allowed (used for childs management */
 #define WC_MAX_MSG_LEN                      LIB_HTTP_MAX_MSG_SIZE       /* Max incoming message lenth allowed */
-#define WUD_MAX_HTTP_RETRIES                LIB_HTTP_MAX_POST_RETRIES   /* Max HTTP POST requests allowed before the reconnection */
 
 #define WD_DEFAULT_CFG_FILE_NAME            "./wud.conf"                /* Hardcoded configuration file name */
 #define WD_DEFAULT_REBOOT_BY_REQUEST        1

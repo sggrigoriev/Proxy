@@ -170,7 +170,7 @@ static int get_post_connection(lib_http_conn_t* conn) {
             return 0;
         }
 /* Open POST connection */
-        if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *conn < 0) {
+        if(*conn = lib_http_createConn(LIB_HTTP_CONN_POST, contact_url, auth_token, device_id, wc_getCloudConnTimeout()), *conn < 0) {
             pu_log(LL_ERROR, "get_post_connection: Can't create POST connection descriptor for %s", contact_url);
             lib_http_eraseConn(conn);
             sleep(DEFAULT_S_TO);
@@ -187,7 +187,7 @@ static int get_post_connection(lib_http_conn_t* conn) {
 static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t reply_size, const char* auth_token) {
     int out = 0;
     int ret = 0;
-    int retries = LIB_HTTP_MAX_POST_RETRIES;
+    int retries = wc_getCloudPostAttempts();
     if(conn < 0) return 0;
     while(!out) {
         switch (lib_http_post(conn, msg, reply, reply_size, auth_token)) {

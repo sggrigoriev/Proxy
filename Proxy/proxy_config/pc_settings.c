@@ -72,6 +72,9 @@
 #define PROXY_DEVICE_ID_PREFIX          "DEVICE_ID_PREFIX"
 #define PROXY_REBOOT_IF_CLOUD_REJECTS   "REBOOT_IF_CLOUD_REJECTS"
 
+#define PROXY_CLOUD_CONN_TIMEOUT        "CLOUD_CONN_TIMEOUT"
+#define PROXY_CLOUD_POST_ATTEMPTS       "CLOUD_POST_ATTEMPTS"
+
 
 /********************************************************************
     Config values saved in memory
@@ -104,6 +107,9 @@ static char             curlopt_ca_info[PROXY_MAX_PATH];
 
 static char             device_id_prefix[20];
 static int              reboot_if_cloud_rejects;
+
+static unsigned int     cloud_conn_timeout;
+static unsigned int     cloud_post_attempts;
 
 static char             fw_version[DEFAULT_FW_VERSION_SIZE];
 
@@ -209,8 +215,16 @@ const char* pc_getCurloptCAInfo() {
 const char* pc_getProxyDeviceIDPrefix() {
     PC_RET(DEFAULT_PROXY_DEVICE_ID_PREFIX, device_id_prefix);
 }
+
 int pc_rebootIfCloudRejects() {
     PC_RET(DEFAULT_REBOOT_IF_CLOUD_REJECTS, reboot_if_cloud_rejects);
+}
+
+unsigned int    pc_getCloudConnTimeout() {
+    PC_RET(LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC, cloud_conn_timeout);
+}
+unsigned int    pc_getCloudPostAttempts() {
+    PC_RET(LIB_HTTP_MAX_POST_RETRIES, cloud_post_attempts);
 }
 
 
@@ -269,8 +283,11 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))              PCS_ERR;
     if(!getStrValue(cfg, PROXY_CURLOPT_CAINFO, curlopt_ca_info, sizeof(curlopt_ca_info)))       PCS_ERR;
 
-    if(!getStrValue(cfg, PROXY_DEVICE_ID_PREFIX, device_id_prefix, sizeof(device_id_prefix)))       PCS_ERR;
+    if(!getStrValue(cfg, PROXY_DEVICE_ID_PREFIX, device_id_prefix, sizeof(device_id_prefix)))   PCS_ERR;
     if(!getUintValue(cfg, PROXY_REBOOT_IF_CLOUD_REJECTS, (unsigned int *)(&reboot_if_cloud_rejects)))                 PCS_ERR;
+
+    if(!getUintValue(cfg, PROXY_CLOUD_CONN_TIMEOUT, (unsigned int *)(&cloud_conn_timeout)))     PCS_ERR;
+    if(!getUintValue(cfg, PROXY_CLOUD_POST_ATTEMPTS, (unsigned int *)(&cloud_post_attempts)))   PCS_ERR;
 
     cJSON_Delete(cfg);
 
@@ -457,6 +474,9 @@ static void initiate_defaults() {
 
     strncpy(device_id_prefix, DEFAULT_PROXY_DEVICE_ID_PREFIX, sizeof(device_id_prefix));
     reboot_if_cloud_rejects = DEFAULT_REBOOT_IF_CLOUD_REJECTS;
+
+    cloud_conn_timeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
+    cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
 }
 
 /*

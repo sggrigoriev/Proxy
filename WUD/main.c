@@ -192,6 +192,9 @@ static void print_WUD_start_params() {
     pu_log(LL_INFO, "\tCurlopt SSL Verify Peer: %d", wc_getCurloptSSLVerifyPeer());
     pu_log(LL_INFO, "\tCurlopt CA Info: %s", wc_getCurloptCAInfo());
 
+    pu_log(LL_INFO, "\tCloud POST connection timeout sec: %d", wc_getCloudConnTimeout());
+    pu_log(LL_INFO, "\tPost attempts amount: %d", wc_getCloudPostAttempts());
+
     pu_log(LL_INFO, "Agent settings:");
     pu_log(LL_INFO, "\tAgent name: %s", wc_getAgentProcessName());
     pu_log(LL_INFO, "\tAgent executable file name: %s", wc_getAgentBinaryName());

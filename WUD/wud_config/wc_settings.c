@@ -74,6 +74,9 @@
 #define WUD_CURLOPT_CAINFO          "CURLOPT_CAINFO"
 #define WUD_CURLOPT_SSL_VERIFYPEER  "CURLOPT_SSL_VERIFYPEER"
 
+#define WUD_CLOUD_CONN_TIMEOUT      "CLOUD_CONN_TIMEOUT"
+#define WUD_CLOUD_POST_ATTEMPTS     "CLOUD_POST_ATTEMPTS"
+
 /****************************************************************************************
  Config values in memory. Loaded from the configuration file or taken from defaults if the file does not contain the setting
 */
@@ -109,6 +112,9 @@ static unsigned int wud_delay_before_start_sec;
 
 static int          curlopt_ssl_verify_peer;
 static char         curlopt_ca_info[WC_MAX_PATH];
+
+unsigned int        cloud_conn_timeout;
+unsigned int        cloud_post_attempts;
 
 static char conf_fname[WC_MAX_PATH];
 
@@ -264,6 +270,12 @@ int wc_getCurloptSSLVerifyPeer() {
     WC_RET(WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER, curlopt_ssl_verify_peer);
 }
 
+unsigned int    wc_getCloudConnTimeout() {
+    WC_RET(LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC, cloud_conn_timeout);
+}
+unsigned int    wc_getCloudPostAttempts() {
+    WC_RET(LIB_HTTP_MAX_POST_RETRIES, cloud_post_attempts);
+}
 
 /*********************************************************************************
     Thread-protected functions
@@ -312,6 +324,9 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_DELAY_BEFORE_START_SEC, &wud_delay_before_start_sec))                                 WC_ERR();
     if(!getUintValue(cfg, WUD_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))                    WC_ERR();
     if(!getStrValue(cfg, WUD_CURLOPT_CAINFO, curlopt_ca_info, sizeof(curlopt_ca_info)))                             WC_ERR();
+
+    if(!getUintValue(cfg, WUD_CLOUD_CONN_TIMEOUT, &cloud_conn_timeout))                                             WC_ERR();
+    if(!getUintValue(cfg, WUD_CLOUD_POST_ATTEMPTS, &cloud_post_attempts))                                           WC_ERR();
 
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
     getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
@@ -407,6 +422,9 @@ static void initiate_defaults() {
 
     curlopt_ca_info[0] = '\0';
     curlopt_ssl_verify_peer = WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER;
+
+    cloud_conn_timeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
+    cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
 }
 
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {

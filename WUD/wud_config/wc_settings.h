@@ -63,6 +63,10 @@ unsigned int wc_getWUDDelay();              /* Return the pause in seconds befor
 const char* wc_getCurloptCAInfo();
 int wc_getCurloptSSLVerifyPeer();
 
+unsigned int    wc_getCloudConnTimeout();   /* Return connection to cloud timeout for POST */
+unsigned int    wc_getCloudPostAttempts();  /* Times to repeat post attempts to cloud */
+
+
 /* Thread-protected functions */
 /******************************************************************
  * Load WUD configuration file; Save values in memory.

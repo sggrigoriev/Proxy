@@ -137,4 +137,6 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tProxy device ID preffix: %s", pc_getProxyDeviceIDPrefix());
     pu_log(LL_INFO, "\tReboot if Cloud rejects Proxy: %d", pc_rebootIfCloudRejects());
 
+    pu_log(LL_INFO, "\tCloud POST connection timeout sec: %d", pc_getCloudConnTimeout());
+    pu_log(LL_INFO, "\tPost attempts amount: %d", pc_getCloudPostAttempts());
 }

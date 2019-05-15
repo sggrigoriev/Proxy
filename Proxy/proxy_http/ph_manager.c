@@ -399,7 +399,7 @@ static int cloud_notify(const char* old_contact, const char* old_token, const ch
     pf_add_proxy_head(msg, sizeof(msg), device_id);
 
 /* 2. Open the connection */
-    if(post = lib_http_createConn(LIB_HTTP_CONN_POST, old_contact, old_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post < 0) {
+    if(post = lib_http_createConn(LIB_HTTP_CONN_POST, old_contact, old_token, device_id, pc_getCloudConnTimeout()), post < 0) {
         pu_log(LL_ERROR, "ph_notify: Can't create POST connection descriptor for %s", old_contact);
         lib_http_eraseConn(&post);
         return 0;
@@ -424,7 +424,7 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
 
     int out = 0;
     lib_http_io_result_t ret = LIB_HTTP_IO_ERROR;
-    int retries = LIB_HTTP_MAX_POST_RETRIES;
+    int retries = pc_getCloudPostAttempts();
     if(post_conn < 0) return ret;
 
     while(!out) {
@@ -470,7 +470,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
     lib_http_conn_type_t conn_type = (pc_setSSLForCloudURLRequest())?LIB_HTTP_CONN_INIT_MAIN:LIB_HTTP_CONN_INIT_MAIN_NOSSL;
 
 
-    if(get_conn = lib_http_createConn(conn_type, main, "", device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), get_conn < 0) {
+    if(get_conn = lib_http_createConn(conn_type, main, "", device_id, pc_getCloudConnTimeout()), get_conn < 0) {
         pu_log(LL_ERROR, "get_contact: Can't create connection descriptor for %s", main);
         lib_http_eraseConn(&get_conn);
         return 0;
@@ -510,7 +510,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
 
 static int get_connections(char* conn, char* auth, char* device_id, lib_http_conn_t* post, lib_http_conn_t* get, lib_http_conn_t* post1) {
 
-    if(*post = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *post < 0) {
+    if(*post = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, pc_getCloudConnTimeout()), *post < 0) {
         pu_log(LL_ERROR, "get_connections: Can't create POST connection descriptor for %s", conn);
         lib_http_eraseConn(post);
         return 0;
@@ -520,7 +520,7 @@ static int get_connections(char* conn, char* auth, char* device_id, lib_http_con
         lib_http_eraseConn(get);
         return 0;
     }
-    if(*post1 = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), *post1 < 0) {
+    if(*post1 = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth, device_id, pc_getCloudConnTimeout()), *post1 < 0) {
         pu_log(LL_ERROR, "get_connections: Can't create IMMEDIATE POST connection descriptor for %s", conn);
         lib_http_eraseConn(post);
         return 0;
@@ -541,7 +541,7 @@ static void erase_connections(lib_http_conn_t* post, lib_http_conn_t* get, lib_h
 static int get_auth_token(const char* conn, const char* device_id, char* auth_token, size_t size) {
     lib_http_conn_t post_d;
 
-    if(post_d = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth_token, device_id, LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC), post_d < 0) {
+    if(post_d = lib_http_createConn(LIB_HTTP_CONN_POST, conn, auth_token, device_id, pc_getCloudConnTimeout()), post_d < 0) {
         pu_log(LL_ERROR, "get_auth_token: Can't create connection to the %s", conn);
         return 0;
     }
