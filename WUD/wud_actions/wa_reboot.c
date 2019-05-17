@@ -20,21 +20,23 @@
 */
 
 #include <stdlib.h>
-#include <wc_settings.h>
 #include <stdio.h>
+#include <wc_settings.h>
+#include "pu_logger.h"
+#include "wa_manage_children.h"
 
 #ifndef WUD_ON_HOST
     #include <sys/reboot.h>
 #endif
 
-#include "pu_logger.h"
-
 #include "wa_reboot.h"
+
 
 void wa_reboot() {
     if(wc_getRebootByRequest()) {
 #ifdef WUD_ON_HOST
         pu_log(LL_INFO, "wa_reboot: EXIT on host case");
+        wa_stop_children();
         fprintf(stdout, "wa_reboot: EXIT on host case\n");
         exit(1);
 #else
@@ -50,6 +52,7 @@ void wa_reboot() {
     }
     else {
         pu_log(LL_INFO, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.", __FUNCTION__);
+        wa_stop_children();
         fprintf(stdout, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.\n", __FUNCTION__);
         exit(1);
     }

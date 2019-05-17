@@ -55,11 +55,14 @@ int wa_start_child(pr_child_t id) {
 }
 
 void wa_stop_child(pr_child_t id) {     /* Later. currently we can'r do it */
-/*
-    kill(wm_child_get_pid(id), SIGTERM);
-    sleep(wc_getChildrenShutdownTO());
-    kill(wm_child_get_pid(id), SIGKILL);  //In case the process didn't listen SIGTERM carefully...
-*/
+
+    if(wm_child_get_pid(id)) {
+        kill(wm_child_get_pid(id), SIGKILL);  //In case the process didn't listen SIGTERM carefully...
+        pu_log(LL_INFO, "%s: Process %s was killed. RIP", __FUNCTION__, wm_get_child_name(id));
+    }
+    else {
+        pu_log(LL_WARNING, "%s: Process %s wasn't killed because of zero PID", __FUNCTION__, wm_get_child_name(id));
+    }
 }
 
 void wa_stop_children() {
