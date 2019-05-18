@@ -107,8 +107,11 @@ elseif(PRESTO_PLATFORM STREQUAL "openwrt")
 	set(REQUIRED_LIBRARIES
 			m
 #			pthread
-			curl
-#			mbedtls
+#			curl
+			mbedtls
+#			$ENV{STAGING_DIR}/target-mipsel_24kec+dsp_uClibc-0.9.33.2/usr/lib/libcurl.a
+			$ENV{STAGING_DIR}/usr/lib/libcurl.a
+			$ENV{STAGING_DIR}/usr/lib/libmbedtls.a
 			c
 		)
 elseif (PRESTO_PLATFORM STREQUAL "quark")
@@ -236,7 +239,7 @@ file(GLOB SOURCE_FILES_TEST_CLIENT
 
 if (PRESTO_PLATFORM STREQUAL "openwrt")
     add_executable(Proxy ${SOURCE_FILES})
-    target_link_libraries(Proxy ${REQUIRED_LIBRARIES})
+    target_link_libraries(Proxy ${REQUIRED_LIBRARIES} )
     INSTALL(TARGETS Proxy DESTINATION /build )
     INSTALL(FILES proxyJSON.conf.mips DESTINATION /build )
 	INSTALL(FILES cloud_url DESTINATION /build )
