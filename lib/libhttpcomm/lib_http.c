@@ -353,7 +353,7 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_js
         else if (!curlErrno) ret = LIB_HTTP_IO_OK;   /* Got smth to read */
         else ret = LIB_HTTP_IO_ERROR;
         if(no_json) return ret;
-        else return calc_io_result(msg, ret);    /* Make final analysis based on "status" field in the msg */;
+        else return calc_io_result(msg, ret);    /* Make final analysis based on "status" field in the msg */
      }
 }
 
@@ -361,6 +361,11 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
     CURLcode curlResult;
     http_handler_t* handler = NULL;
     char tx_buf[LIB_HTTP_MAX_MSG_SIZE];
+
+    long httpResponseCode = 0;
+    long httpConnectCode = 0;
+    long curlErrno = 0;
+
     assert(msg); assert(reply); assert(auth_token);
 
     if(handler = check_conn(post_conn), handler == NULL) return LIB_HTTP_IO_ERROR;
@@ -393,9 +398,6 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
 
     curlResult = curl_easy_perform(handler->hndlr);
 
-    long httpResponseCode = 0;
-    long httpConnectCode = 0;
-    long curlErrno = 0;
 
     curl_easy_getinfo(handler->hndlr, CURLINFO_RESPONSE_CODE, &httpResponseCode );
     curl_easy_getinfo(handler->hndlr, CURLINFO_HTTP_CONNECTCODE, &httpConnectCode );
