@@ -219,6 +219,8 @@ file(GLOB SOURCE_FILES
 #Test client
 file(GLOB SOURCE_FILES_TEST_CLIENT
         test_client/comm_client.c
+		test_client/cc_queues.c
+		test_client/cc_emulator.c
         proxy_functions/*.c
 #        proxy_threads/*.c
         proxy_config/pc_settings.c

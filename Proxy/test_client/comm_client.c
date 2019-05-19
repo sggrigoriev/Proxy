@@ -29,9 +29,13 @@
 #include "lib_tcp.h"
 #include "lib_timer.h"
 #include "pr_commands.h"
+#include "pu_queue.h"
 
 #include "pc_defaults.h"
 #include "pc_settings.h"
+
+#include "cc_queues.h"
+#include "cc_emulator.h"
 /*
 {"version": "2", "proxyId": "PROXY_ID", "sequenceNumber": "13117",
     "measures": [{"deviceId": "DEVICE_ID_NO_TIMESTAMP",
@@ -39,8 +43,11 @@
     ]
 }
 */
-#define SEND_TO_SEC 30
-#define FIRST_FAST_MESSAGES 5
+#define SEND_TO_SEC 1
+#define FIRST_FAST_MESSAGES 50
+
+static pu_queue_t* from_reader;                      /* reader -> brain_thread */
+static pu_queue_t* to_writer;                        /* brain_therad -> writer */
 
 volatile uint32_t contextId = 0;
 
@@ -50,7 +57,7 @@ static char wr_src[LIB_HTTP_MAX_MSG_SIZE];
 static int ffm_counter = 0;
 const char* write_source() {
     snprintf ( wr_src, sizeof(wr_src), "%s",
-/*
+
 "{"
     "\"measures\": "
     "["
@@ -70,7 +77,7 @@ const char* write_source() {
         "}"
     "]"
 "}"
-*/
+/*
                "{\n"
                        "\"measures\": [{\n"
                        "\t\"deviceId\": \"00155F00F861DCD8-00010014-0569\",\n"
@@ -82,6 +89,7 @@ const char* write_source() {
                    "\t\t}\n"
                "\t}]\n"
                "}"
+*/
 );
     char* ret = NULL;
     if(ffm_counter++ > FIRST_FAST_MESSAGES) {
@@ -148,11 +156,10 @@ static void* wud_proc(void* socket) {
     pthread_exit(NULL);
 }
 /************************************************************/
-static char out_buf[500];
-
 
 static void* read_proc(void* socket) {
     int read_socket = *(int *)socket;
+    static char out_buf[PROXY_MAX_MSG_LEN];
 
     lib_tcp_conn_t* all_conns = lib_tcp_init_conns(1, 500);
     if(!all_conns) {
@@ -203,6 +210,7 @@ static void* read_proc(void* socket) {
 
         while (lib_tcp_assemble(conn, out_buf, sizeof(out_buf))) {     /* Read all fully incoming messages */
             pu_log(LL_INFO, "%s: got from Proxy: %s", "read_proc", out_buf);
+            pu_queue_push(from_reader, out_buf, strlen(out_buf)+1);
         }
     }
     allez:
@@ -214,28 +222,79 @@ static void* read_proc(void* socket) {
 static void* write_proc(void* socket) {
     int write_socket = *(int *)socket;
     lib_timer_init(&send_clock, SEND_TO_SEC);
+    static char out_buf[PROXY_MAX_MSG_LEN]; /* buffer for write into the socket */
 /* Main loop */
     while(!rw_stop) {
-        /* Get smth to write */
-         const char* info = write_source(); /* should be wait for info from queue(s) */
+        pu_queue_event_t events;
+        events = pu_add_queue_event(pu_create_event_set(), CC_ToWriterQueie);
 
-        if(!info) {
-            sleep(1);   /* To prevent dead loop on time of new message waiting */
-            continue;
+        size_t len = sizeof(out_buf);
+        pu_queue_event_t ev;
+        switch(ev=pu_wait_for_queues(events, DEFAULT_S_TO)) {
+            case CC_ToWriterQueie: {
+                while (pu_queue_pop(to_writer, out_buf, &len)) {
+                    ssize_t ret;
+                    while(ret = lib_tcp_write(write_socket, out_buf, len+1, 1), !ret&&!rw_stop);  /* run until the timeout */
+                    if(rw_stop) continue; /* goto reconnect */
+                    if(ret < 0) { /* op write failed */
+                        pu_log(LL_ERROR, "write_proc: Write op failed: %d %s. Reconnect", errno, strerror(errno));
+                        rw_stop = 1;
+                    }
+                    pu_log(LL_DEBUG, "write_proc: sent to Proxy: %s", out_buf);
+                    len = sizeof(out_buf);
+                }
+            }
+                break;
+            case CC_Timeout:
+                break;
+            case CC_STOP:
+                finish = 1;
+                break;
+            default:
+                pu_log(LL_ERROR, "%s: Undefined incoming event %d. Ignoring", __FUNCTION__, ev);
+                break;
         }
-
-        /* Prepare write operation */
-        ssize_t ret;
-        while(ret = lib_tcp_write(write_socket, info, strlen(info)+1, 1), !ret&&!rw_stop);  /* run until the timeout */
-        if(rw_stop) continue; /* goto reconnect */
-        if(ret < 0) { /* op start failed */
-            pu_log(LL_ERROR, "write_proc: Write op start failed: %d %s. Reconnect", errno, strerror(errno));
-            rw_stop = 1;
-        }
-        pu_log(LL_DEBUG, "write_proc: sent to Proxy: %s", info);
-    }
+     }
     lib_tcp_client_close(write_socket);
     pu_log(LL_INFO, "Client's write is finished");
+    pthread_exit(NULL);
+}
+
+/****************Emilator thread***************************************************************************/
+static void* brain_proc(void* dummy) {
+    pu_queue_event_t events;
+    events = pu_add_queue_event(pu_create_event_set(), CC_FromReaderQueie);
+    char in_buf[PROXY_MAX_MSG_LEN];
+
+    pu_queue_event_t ev;
+    size_t len = sizeof(in_buf);
+    while(!finish) {
+        switch (ev = pu_wait_for_queues(events, DEFAULT_S_TO)) {
+            case CC_FromReaderQueie: {
+                while (pu_queue_pop(from_reader, in_buf, &len)) {
+                    char out_buf[PROXY_MAX_MSG_LEN];
+                    const char* ret = make_answer(in_buf, out_buf, sizeof(out_buf));
+                    if(ret && strlen(ret)) {
+                        pu_queue_push(to_writer, ret, strlen(ret) + 1);
+                        ret = get_mesure(out_buf, sizeof(out_buf));
+                        pu_queue_push(to_writer, ret, strlen(ret)+1);
+                    }
+                    len = sizeof(in_buf);
+                }
+            }
+                break;
+            case CC_Timeout:
+                break;
+            case CC_STOP:
+                finish = 1;
+                break;
+            default:
+                pu_log(LL_ERROR, "%s: Undefined incoming event %d. Ignoring", __FUNCTION__, ev);
+                break;
+
+        }
+    }
+    pu_log(LL_INFO, "Brain thread is finished");
     pthread_exit(NULL);
 }
 
@@ -245,6 +304,8 @@ static pthread_t readThreadId;
 static pthread_attr_t readThreadAttr;
 static pthread_t writeThreadId;
 static pthread_attr_t writeThreadAttr;
+static pthread_t brainThreadId;
+static pthread_attr_t brainThreadAttr;
 
 static void* main_client_proc(void* dummy) {
 
@@ -267,6 +328,15 @@ static void* main_client_proc(void* dummy) {
         }
         pu_log(LL_INFO, "Client: watchdog started. Port = %d, Socket = %d", pc_getWUDPort(), wud);
 
+/* Brain thread start */
+        pthread_attr_init(&brainThreadAttr);
+        if (pthread_create(&brainThreadId, &brainThreadAttr, &brain_proc, NULL)) {
+            pu_log(LL_ERROR, "Client: Creating brain thread failed: %s", strerror(errno));
+            break;
+        }
+        pu_log(LL_INFO, "Client: brain thread started.");
+
+/* RW threads start */
         int read_socket = -1;
         int write_socket = -1;
 
@@ -275,6 +345,7 @@ static void* main_client_proc(void* dummy) {
             sleep(1);
         }
         write_socket = dup(read_socket);
+
 /* Connected to proxy */
         pthread_attr_init(&readThreadAttr);
         if (pthread_create(&readThreadId, &readThreadAttr, &read_proc, &read_socket)) {
@@ -314,9 +385,16 @@ int main(int argv, char* argc[]) {
 
     pu_start_logger("./agent.log", 5000, LL_DEBUG);
 
+/* Queues initiation */
+    init_queues();
+    from_reader = cc_get_gueue(CC_FromReaderQueie);
+    to_writer = cc_get_gueue(CC_ToWriterQueie);
+
     main_client_proc(NULL);
 
     pu_log(LL_INFO, "Client Main is finished");
+
+    erase_queues();
     pu_stop_logger();
     return 1;
 }
