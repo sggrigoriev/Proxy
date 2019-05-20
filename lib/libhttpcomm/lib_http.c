@@ -266,7 +266,7 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPIDLE, (long)conn_to+1), curlResult != CURLE_OK) goto out;
-            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, (long)conn_to+1), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, (long)20), curlResult != CURLE_OK) goto out;
             break;
         default:
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
