@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 
+int is_eateable(const char* in_msg);
 const char* make_answer(const char* in_msg, char* out_msg, size_t max_len);
 const char* get_mesure(char* out_buf, size_t max_len);
 

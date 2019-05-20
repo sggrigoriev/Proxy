@@ -36,6 +36,29 @@ const char* nam = "name";
 const char* val = "value";
 const char* perm = "permitJoining";
 
+static const char* get_command_id(cJSON* msg, char* command_id, size_t max_len) {
+    command_id[0] = '\0';
+
+    cJSON* cmd_arr = cJSON_GetObjectItem(msg, cmd);
+    if(!cmd_arr) goto on_exit;
+    cJSON* cmd_elem = cJSON_GetArrayItem(cmd_arr, 0);
+    if(!cmd_elem) goto on_exit;
+    cJSON* cmd_id_obj = cJSON_GetObjectItem(cmd_elem, cmd_id);
+    if(!cmd_id_obj) goto on_exit;
+    snprintf(command_id, max_len-1, "%d", cmd_id_obj->valueint);
+on_exit:
+    return command_id;
+}
+
+static const char* make_permit_ans(cc_command_type_t permitNo, const char* command_id, char* out_msg, size_t max_len) {
+    const char* ans = "{\"responses\":[{\"commandId\":%s,\"result\":1}],\"proxyId\":\"%s\",\"sequenceNumber\":100050}";
+    char proxy_id[PROXY_DEVICE_ID_SIZE+1];
+    pc_getProxyDeviceID(proxy_id, sizeof(proxy_id));
+
+    snprintf(out_msg, max_len-1, ans, command_id, proxy_id);
+    return out_msg;
+}
+
 static cc_command_type_t wtf(cJSON* in) {
     cJSON* cmd_arr = cJSON_GetObjectItem(in, cmd);
     if(!cmd_arr) return CC_UNDEF;
@@ -58,27 +81,12 @@ static cc_command_type_t wtf(cJSON* in) {
     return CC_UNDEF;
 }
 
-static const char* get_command_id(cJSON* msg, char* command_id, size_t max_len) {
-    command_id[0] = '\0';
-
-    cJSON* cmd_arr = cJSON_GetObjectItem(msg, cmd);
-    if(!cmd_arr) goto on_exit;
-    cJSON* cmd_elem = cJSON_GetArrayItem(cmd_arr, 0);
-    if(!cmd_elem) goto on_exit;
-    cJSON* cmd_id_obj = cJSON_GetObjectItem(cmd_elem, cmd_id);
-    if(!cmd_id_obj) goto on_exit;
-    snprintf(command_id, max_len-1, "%d", cmd_id_obj->valueint);
-on_exit:
-    return command_id;
-}
-
-static const char* make_permit_ans(cc_command_type_t permitNo, const char* command_id, char* out_msg, size_t max_len) {
-    const char* ans = "{\"responses\":[{\"commandId\":%s,\"result\":1}],\"proxyId\":\"%s\",\"sequenceNumber\":100050}";
-    char proxy_id[PROXY_DEVICE_ID_SIZE+1];
-    pc_getProxyDeviceID(proxy_id, sizeof(proxy_id));
-
-    snprintf(out_msg, max_len-1, ans, command_id, proxy_id);
-    return out_msg;
+int is_eateable(const char* in_msg) {
+    int ret = 0;
+    cJSON* obj = cJSON_Parse(in_msg);
+    if(obj) ret = (wtf(obj) != CC_UNDEF);
+    cJSON_Delete(obj);
+    return ret;
 }
 
 const char* make_answer(const char* in_msg, char* out_msg, size_t max_len) {

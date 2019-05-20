@@ -233,8 +233,10 @@ static void* write_proc(void* socket) {
         switch(ev=pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case CC_ToWriterQueie: {
                 while (pu_queue_pop(to_writer, out_buf, &len)) {
-                    ssize_t ret;
-                    while(ret = lib_tcp_write(write_socket, out_buf, len+1, 1), !ret&&!rw_stop);  /* run until the timeout */
+                    ssize_t ret = 0;
+                    while(!ret&&!rw_stop) {
+                        ret = lib_tcp_write(write_socket, out_buf, len, 1);
+                    }
                     if(rw_stop) continue; /* goto reconnect */
                     if(ret < 0) { /* op write failed */
                         pu_log(LL_ERROR, "write_proc: Write op failed: %d %s. Reconnect", errno, strerror(errno));
@@ -272,10 +274,11 @@ static void* brain_proc(void* dummy) {
         switch (ev = pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case CC_FromReaderQueie: {
                 while (pu_queue_pop(from_reader, in_buf, &len)) {
-                    char out_buf[PROXY_MAX_MSG_LEN];
-                    const char* ret = make_answer(in_buf, out_buf, sizeof(out_buf));
-                    if(ret && strlen(ret)) {
+                    if(is_eateable(in_buf)) {
+                        char out_buf[PROXY_MAX_MSG_LEN] = {'\0'};
+                        const char* ret = make_answer(in_buf, out_buf, sizeof(out_buf));
                         pu_queue_push(to_writer, ret, strlen(ret) + 1);
+
                         ret = get_mesure(out_buf, sizeof(out_buf));
                         pu_queue_push(to_writer, ret, strlen(ret)+1);
                     }
