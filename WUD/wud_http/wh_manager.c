@@ -192,7 +192,7 @@ static int _post(lib_http_conn_t conn, const char* msg, char* reply, size_t repl
     while(!out) {
         switch (lib_http_post(conn, msg, reply, reply_size, auth_token)) {
             case LIB_HTTP_IO_RETRY:
-                pu_log(LL_WARNING, "_post: Connectivity problems, retry");
+                pu_log(LL_WARNING, "_post: Connectivity problems (%s), retry",msg);
                 if (retries-- == 0) {
                     out = 1;
                 }

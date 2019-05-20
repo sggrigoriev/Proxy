@@ -436,7 +436,7 @@ static lib_http_io_result_t _post(lib_http_conn_t post_conn, const char* msg, ch
                 break;
             case LIB_HTTP_IO_RETRY:
             case LIB_HTTP_IO_ERROR:
-                pu_log(LL_WARNING, "_post: Connectivity problems, retry");
+                pu_log(LL_WARNING, "_post: Connectivity problems (%s), retry",msg);
                 if (retries-- == 0) {
                     out = 1;
                 }
