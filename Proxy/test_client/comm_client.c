@@ -274,9 +274,14 @@ static void* brain_proc(void* dummy) {
         switch (ev = pu_wait_for_queues(events, DEFAULT_S_TO)) {
             case CC_FromReaderQueie: {
                 while (pu_queue_pop(from_reader, in_buf, &len)) {
+                    const char* ret;
+                    char out_buf[PROXY_MAX_MSG_LEN] = {'\0'};
+                    if(is_command(in_buf)) {
+                        ret = make_0_answer(in_buf, out_buf, sizeof(out_buf));
+                        pu_queue_push(to_writer, ret, strlen(ret)+1);
+                    }
                     if(is_eateable(in_buf)) {
-                        char out_buf[PROXY_MAX_MSG_LEN] = {'\0'};
-                        const char* ret = make_answer(in_buf, out_buf, sizeof(out_buf));
+                        ret = make_answer(in_buf, out_buf, sizeof(out_buf));
                         pu_queue_push(to_writer, ret, strlen(ret) + 1);
 
                         ret = get_mesure(out_buf, sizeof(out_buf));

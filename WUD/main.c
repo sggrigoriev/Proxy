@@ -105,11 +105,13 @@ int main(int argc, char* argv[]) {
 /* WUD must check if /var/run/wud.pid exists */
     if(wu_process_exsists(WC_DEFAULT_WUD_NAME)) {
         pu_log(LL_ERROR, "WUD is already running. Abort");
+        fprintf(stdout, "%s: WUD is already running. Abort.\n", __FUNCTION__);
         exit(1);
     }
 /* create pid file (var/run/wud.pid */
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
         pu_log(LL_ERROR, "Can\'t create PID file for %s: %d %s. Abort", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
+        fprintf(stdout, "Can\'t create PID file for %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
         exit(1);
     }
 
@@ -118,12 +120,14 @@ int main(int argc, char* argv[]) {
     wf_set_download_state(wu_dir_empty(wc_getFWDownloadFolder()));
     if(!wf_was_download_empty() && !wu_clear_dir(wc_getFWDownloadFolder())) {
         pu_log(LL_ERROR, "Can\'t clear %s : %d %s. Abort.", wc_getFWDownloadFolder(), errno, strerror(errno));
+        fprintf(stdout, "Can\'t clear %s : %d %s. Abort.\n", wc_getFWDownloadFolder(), errno, strerror(errno));
         exit(1);
     }
 
     wf_set_upgrade_state(wu_dir_empty(wc_getFWUpgradeFolder()));
     if(!wf_was_upgrade_empty() && !wu_clear_dir(wc_getFWUpgradeFolder())) {
         pu_log(LL_ERROR, "Can\'t clear %s : %d %s. Abort.", wc_getFWUpgradeFolder(), errno, strerror(errno));
+        fprintf(stdout, "Can\'t clear %s : %d %s. Abort.\n", wc_getFWUpgradeFolder(), errno, strerror(errno));
         exit(1);
     }
 

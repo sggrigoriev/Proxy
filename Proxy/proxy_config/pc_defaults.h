@@ -67,7 +67,8 @@
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24                          /* Preiod of cloud conection URL request in hours. Configured */
 #define DEFAULT_FW_VER_SENDING_TO_HRS   24                          /* Period of firmware version sending to the cloud in hours. Configured */
 
-#define DEFAULT_UPLOAD_TIMEOUT_SEC  120         /* Log get timeout. Configfured */
+#define DEFAULT_LONG_GET_TO_SEC         120         /* Log get timeout. Configfured */
+#define DEFAULT_KEEPALIVE_INTERVAL_SEC  20      /* Keep alive TCP signals intervals during the long GET. Configured */
 #define DEFAULT_PROXY_DEV_TYPE      31          /* Obsolete. The Agent sends it by itself Anyway, configured */
 
 

@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <wc_settings.h>
+#include <sys/wait.h>
 #include "pu_logger.h"
 #include "wa_manage_children.h"
 
@@ -53,6 +54,7 @@ void wa_reboot() {
     else {
         pu_log(LL_INFO, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.", __FUNCTION__);
         wa_stop_children();
+        wait(NULL);
         fprintf(stdout, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.\n", __FUNCTION__);
         exit(1);
     }

@@ -40,7 +40,6 @@ size_t          pc_getQueuesRecAmt();       /* Return max amount of records kept
 
 unsigned int    pc_getProxyDeviceType();    /* Obsolete */
 unsigned int    pc_getProxyWDTO();          /* timeout for watchdog sending */
-unsigned int    pc_getLongGetTO();          /* Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage */
 unsigned int    pc_getCloudURLTOHrs();      /* timeout for new contact URL request */
 unsigned int    pc_getFWVerSendToHrs();     /* timeout for fw version sending to the cloud */
 
@@ -48,6 +47,8 @@ unsigned int    pc_getWUDPort();            /* Return WUD communication port */
 
 unsigned int    pc_getCloudConnTimeout();   /* Return connection to cloud timeout for POST */
 unsigned int    pc_getCloudPostAttempts();  /* Times to repeat post attempts to cloud */
+unsigned int    pc_getLongGetKeepaliveTO(); /* Returns keepalive intervals during the long get TO */
+unsigned int    pc_getLongGetTO();          /* Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage */
 
 /*  For Agent emulator */
 unsigned int    pc_getAgentPort();         /* Return the port# for communications with the Agent */

@@ -266,7 +266,6 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPIDLE, (long)conn_to+1), curlResult != CURLE_OK) goto out;
-            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, (long)20), curlResult != CURLE_OK) goto out;
             break;
         default:
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
@@ -289,11 +288,12 @@ void lib_http_eraseConn(lib_http_conn_t* conn) {
     *conn = -1;
 }
 
-int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json) {
+int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, long keepalive_interval) {
     long httpResponseCode = 0;
     long httpConnectCode = 0;
     long curlErrno = 0;
     http_handler_t* handler = NULL;
+    CURLcode curlResult = CURLE_OK;
 
     assert(msg);
 
@@ -305,7 +305,9 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_js
 
     msg[0] = '\0';  /* in case we got nothing */
 
-    CURLcode curlResult = curl_easy_perform(handler->hndlr);
+    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, keepalive_interval), curlResult != CURLE_OK) goto out;
+
+    curlResult = curl_easy_perform(handler->hndlr);
 
     curl_easy_getinfo(handler->hndlr, CURLINFO_RESPONSE_CODE, &httpResponseCode );
     curl_easy_getinfo(handler->hndlr, CURLINFO_HTTP_CONNECTCODE, &httpConnectCode );

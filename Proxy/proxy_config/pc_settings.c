@@ -58,7 +58,6 @@
 #define PROXY_CLOUD_URL_REQ_TO_HRS  "CLOUD_URL_REQ_TO_HRS"
 #define PROXY_FW_VER_SEND_TO_HRS    "FW_VER_SEND_TO_HRS"
 
-#define PROXY_UPLOAD_TO_SEC     "UPLOAD_TO_SEC"
 #define PROXY_QUEUES_REC_AMT    "QUEUES_REC_AMT"
 #define PROXY_AGENT_PORT        "AGENT_PORT"
 
@@ -66,7 +65,7 @@
 #define PROXY_WATCHDOG_TO_SEC   "WATCHDOG_TO_SEC"
 
 #define PROXY_SET_SSL_FOR_URL_REQUEST   "SET_SSL_FOR_URL_REQUEST"
-#define PROXY_CURLOPT_CAINFO    "CURLOPT_CAINFO"
+#define PROXY_CURLOPT_CAINFO            "CURLOPT_CAINFO"
 #define PROXY_CURLOPT_SSL_VERIFYPEER    "CURLOPT_SSL_VERIFYPEER"
 
 #define PROXY_DEVICE_ID_PREFIX          "DEVICE_ID_PREFIX"
@@ -74,46 +73,49 @@
 
 #define PROXY_CLOUD_CONN_TIMEOUT        "CLOUD_CONN_TIMEOUT"
 #define PROXY_CLOUD_POST_ATTEMPTS       "CLOUD_POST_ATTEMPTS"
+#define PROXY_LONG_GET_KEEPALIVE_TO     "LONG_GET_KEEPALIVE_TO"
+#define PROXY_LONG_GET_TO               "LONG_GET_TO"
 
 
 /********************************************************************
     Config values saved in memory
 */
-static char             proxy_name[PROXY_MAX_PROC_NAME];
-static char             log_name[PROXY_MAX_PATH];
-static unsigned int     log_rec_amt;
-static log_level_t      log_level;
+static char             proxy_name[PROXY_MAX_PROC_NAME] = {0};
+static char             log_name[PROXY_MAX_PATH] = {0};
+static unsigned int     log_rec_amt = 0;
+static log_level_t      log_level = 0;
 
-static char             auth_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE];
-static char             auth_token_file_name[PROXY_MAX_PATH];
-static char             device_id[PROXY_DEVICE_ID_SIZE];
-static unsigned int     device_type;
-static char             cloud_url[PROXY_MAX_PATH];
-static char             main_cloud_url[PROXY_MAX_PATH];
-static char             main_cloud_url_file_name[PROXY_MAX_PATH];
+static char             auth_token[PROXY_MAX_ACTIVATION_TOKEN_SIZE] = {0};
+static char             auth_token_file_name[PROXY_MAX_PATH] = {0};
+static char             device_id[PROXY_DEVICE_ID_SIZE] = {0};
+static unsigned int     device_type = 0;
+static char             cloud_url[PROXY_MAX_PATH] = {0};
+static char             main_cloud_url[PROXY_MAX_PATH] = {0};
+static char             main_cloud_url_file_name[PROXY_MAX_PATH] = {0};
 
-static unsigned int     cloud_url_req_to_hrs;
-static unsigned int     fw_ver_sending_to_hrs;
+static unsigned int     cloud_url_req_to_hrs = 0;
+static unsigned int     fw_ver_sending_to_hrs = 0;
 
-static unsigned int     long_get_to;
-static unsigned int     queue_rec_amt;
-static unsigned int     agent_port;
-static unsigned int     WUD_port;
-static unsigned int     proxy_wd_to;
+static unsigned int     queue_rec_amt = 0;
+static unsigned int     agent_port = 0;
+static unsigned int     WUD_port = 0;
+static unsigned int     proxy_wd_to = 0;
 
-static unsigned int     set_ssl_for_url_request;
-static int              curlopt_ssl_verify_peer;
-static char             curlopt_ca_info[PROXY_MAX_PATH];
+static unsigned int     set_ssl_for_url_request = 0;
+static int              curlopt_ssl_verify_peer = 0;
+static char             curlopt_ca_info[PROXY_MAX_PATH] = {0};
 
-static char             device_id_prefix[20];
-static int              reboot_if_cloud_rejects;
+static char             device_id_prefix[20] = {0};
+static int              reboot_if_cloud_rejects = 0;
 
-static unsigned int     cloud_conn_timeout;
-static unsigned int     cloud_post_attempts;
+static unsigned int     cloud_conn_timeout = 0;
+static unsigned int     cloud_post_attempts = 0;
+static unsigned int     long_get_keepalive_to = 0;
+static unsigned int     long_get_to = 0;
 
-static char             fw_version[DEFAULT_FW_VERSION_SIZE];
+static char             fw_version[DEFAULT_FW_VERSION_SIZE] = {0};
 
-static char conf_fname[PROXY_MAX_PATH];
+static char conf_fname[PROXY_MAX_PATH] = {0};
 
 
 /*****************************************************************************************************
@@ -135,73 +137,67 @@ static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_set
 
 /***************************************************************************************/
 #define PCS_ERR fprintf(stderr, "PROXY: Default value will be used instead. %s line %d\n", __FUNCTION__, __LINE__)
-#define PC_RET(a,b) return (!initiated)?a:b
 
 /* Set of "get" functions to make an access to settings for Presto modules */
 
 /* Return LOG-file name */
 const char* pc_getLogFileName() {
-    PC_RET(DEFAULT_LOG_NAME, log_name);
+    return log_name;
 }
 
 /* Return max capacity of log file */
 size_t pc_getLogRecordsAmt() {
-    PC_RET(DEFAULT_LOG_RECORDS_AMT, log_rec_amt);
+    return log_rec_amt;
 }
 
 /* Return the min log level to be stored in LOG_FILE */
 /* LL_DEBUG<LL_WARNING<LL_INFO<LL_ERROR */
 log_level_t pc_getLogVevel() {
-    PC_RET(DEFAULT_LOG_LEVEL, log_level);
-}
-
-/* Return the timeout in seconds for "long get" made by Presto to listen the Cloud messages. */
-unsigned int pc_getLongGetTO() {
-    PC_RET(DEFAULT_UPLOAD_TIMEOUT_SEC, long_get_to);
+    return log_level;
 }
 
 /* Return the port# for communications with the Agent */
 unsigned int pc_getAgentPort() {
-    PC_RET(DEFAULT_AGENT_PORT, agent_port);
+    return agent_port;
 }
 
 /* Return max amount of records kept in Presto queues */
 size_t pc_getQueuesRecAmt() {
-    PC_RET(DEFAULT_QUEUE_RECORDS_AMT, queue_rec_amt);
+    return queue_rec_amt;
 }
 
 /* Return the Presto device type.(31 for now...) */
 unsigned int pc_getProxyDeviceType() {
-    PC_RET(DEFAULT_PROXY_DEV_TYPE, device_type);
+    return device_type;
 }
 
 /* Return port for watchdogging */
 unsigned int pc_getWUDPort() {
-    PC_RET(DEFAULT_WUD_PORT, WUD_port);
+    return WUD_port;
 }
 
 /* Get the Proxy process name - used in watchdog messages */
 const char* pc_getProxyName() {
-    PC_RET(PROXY_PROCESS_NAME, proxy_name);
+    return proxy_name;
 }
 
 /* Get the watchdog sending period */
 unsigned int pc_getProxyWDTO() {
-    PC_RET(DEFAULT_PROXY_WATCHDOG_TO_SEC, proxy_wd_to);
+    return proxy_wd_to;
 }
 
 /* Get the contact cloud URL request period in seconds */
 unsigned int pc_getCloudURLTOHrs() {
-    PC_RET(DEFAULT_CLOUD_URL_REQ_TO_HRS, cloud_url_req_to_hrs);
+    return cloud_url_req_to_hrs;
 }
 
 /* Get the period of firmware version sendinf to the cloud by Proxy */
 unsigned int pc_getFWVerSendToHrs() {
-    PC_RET(DEFAULT_FW_VER_SENDING_TO_HRS, fw_ver_sending_to_hrs);
+    return fw_ver_sending_to_hrs;
 }
 
 int pc_setSSLForCloudURLRequest() {
-    PC_RET(DEFAULT_SET_SSL_FOR_URL_REQUEST, set_ssl_for_url_request);
+    return set_ssl_for_url_request;
 }
 
 int pc_getCurloptSSPVerifyPeer() {
@@ -213,19 +209,26 @@ const char* pc_getCurloptCAInfo() {
 }
 
 const char* pc_getProxyDeviceIDPrefix() {
-    PC_RET(DEFAULT_PROXY_DEVICE_ID_PREFIX, device_id_prefix);
+    return device_id_prefix;
 }
 
 int pc_rebootIfCloudRejects() {
-    PC_RET(DEFAULT_REBOOT_IF_CLOUD_REJECTS, reboot_if_cloud_rejects);
+    return reboot_if_cloud_rejects;
 }
 
 unsigned int    pc_getCloudConnTimeout() {
-    PC_RET(LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC, cloud_conn_timeout);
+    return cloud_conn_timeout;
 }
 unsigned int    pc_getCloudPostAttempts() {
-    PC_RET(LIB_HTTP_MAX_POST_RETRIES, cloud_post_attempts);
+    return cloud_post_attempts;
 }
+unsigned int    pc_getLongGetKeepaliveTO() {
+    return long_get_keepalive_to;
+}
+unsigned int    pc_getLongGetTO() {
+    return long_get_to;
+}
+
 
 
 /***********************************************************************
@@ -273,21 +276,22 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   PCS_ERR;
     if(!getUintValue(cfg, PROXY_FW_VER_SEND_TO_HRS, &fw_ver_sending_to_hrs))                    PCS_ERR;
 
-    if(!getUintValue(cfg, PROXY_UPLOAD_TO_SEC, &long_get_to))                                   PCS_ERR;
     if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                PCS_ERR;
     if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       PCS_ERR;
     if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           PCS_ERR;
     if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   PCS_ERR;
     if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 PCS_ERR;
     if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             PCS_ERR;
-    if(!getUintValue(cfg, PROXY_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))              PCS_ERR;
+    if(!getUintValue(cfg, PROXY_CURLOPT_SSL_VERIFYPEER, (unsigned int* )&curlopt_ssl_verify_peer))          PCS_ERR;
     if(!getStrValue(cfg, PROXY_CURLOPT_CAINFO, curlopt_ca_info, sizeof(curlopt_ca_info)))       PCS_ERR;
 
     if(!getStrValue(cfg, PROXY_DEVICE_ID_PREFIX, device_id_prefix, sizeof(device_id_prefix)))   PCS_ERR;
-    if(!getUintValue(cfg, PROXY_REBOOT_IF_CLOUD_REJECTS, (unsigned int *)(&reboot_if_cloud_rejects)))                 PCS_ERR;
+    if(!getUintValue(cfg, PROXY_REBOOT_IF_CLOUD_REJECTS, (unsigned int *)(&reboot_if_cloud_rejects)))       PCS_ERR;
 
     if(!getUintValue(cfg, PROXY_CLOUD_CONN_TIMEOUT, (unsigned int *)(&cloud_conn_timeout)))     PCS_ERR;
     if(!getUintValue(cfg, PROXY_CLOUD_POST_ATTEMPTS, (unsigned int *)(&cloud_post_attempts)))   PCS_ERR;
+    if(!getUintValue(cfg, PROXY_LONG_GET_KEEPALIVE_TO, &long_get_keepalive_to))                 PCS_ERR;
+    if(!getUintValue(cfg, PROXY_LONG_GET_TO, &long_get_to))                                     PCS_ERR;
 
     cJSON_Delete(cfg);
 
@@ -464,7 +468,6 @@ static void initiate_defaults() {
     strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);
     cloud_url_req_to_hrs = DEFAULT_CLOUD_URL_REQ_TO_HRS;
 
-    long_get_to = DEFAULT_UPLOAD_TIMEOUT_SEC;
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;
     agent_port = DEFAULT_AGENT_PORT;
     strncpy(fw_version, DEFAULT_FW_VERSION_NUM, DEFAULT_FW_VERSION_SIZE-1);
@@ -477,6 +480,8 @@ static void initiate_defaults() {
 
     cloud_conn_timeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
     cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
+    long_get_keepalive_to = DEFAULT_KEEPALIVE_INTERVAL_SEC;
+    long_get_to = DEFAULT_LONG_GET_TO_SEC;
 }
 
 /*

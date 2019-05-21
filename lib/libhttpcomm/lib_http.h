@@ -51,6 +51,7 @@ NB-2! no thread protection
 /* Maximum time for an HTTP transfer */
 #define LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC   60
 
+
 #define LIB_HTTP_MAIN_CONN_IFACE    "/cloud/json/settingsServer?type=deviceio&deviceId="
 #define LIB_HTTP_ROUTINE_CONN_IFACE "/deviceio/mljson?id="
 
@@ -106,9 +107,10 @@ void lib_http_eraseConn(lib_http_conn_t* conn);
  * @param msg           - buffer for received message
  * @param msg_size      - buffer size
  * @param no_json       - 0 if no JSON expected in answer
+ * @param keepalive_interval - period in seconds of keepalive sendings
  * @return  - see lib_http_io_result_t; Logged inside
  */
-lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json);
+lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, long keepalive_interval);
 
 /***************************************************
  * Perform POST request

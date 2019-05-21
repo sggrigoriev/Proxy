@@ -68,10 +68,16 @@ int main(int argc, char* argv[]) {
         }
 
         if(par.parameter) {
-            if(!pc_load_config(par.parameter)) exit(-1);
+            if(!pc_load_config(par.parameter)) {
+                fprintf(stdout, "%s: Error configuration %s load. Proxy exiting\n", __FUNCTION__, par.parameter);
+                exit(-1);
+            }
         }
         else {
-            if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) exit(-1);
+            if(!pc_load_config(DEFAULT_CFG_FILE_NAME)) {
+                fprintf(stdout, "%s: Error configuration %s load. Proxy exiting\n", __FUNCTION__, DEFAULT_CFG_FILE_NAME);
+                exit(-1);
+            }
         }
         switch(par.action) {
                 case PCLI_VERSION:
@@ -100,7 +106,10 @@ int main(int argc, char* argv[]) {
 
     print_Proxy_start_params();
 
-    if(!pf_get_cloud_conn_params()) exit(-1);
+    if(!pf_get_cloud_conn_params()) {
+        fprintf(stdout, "%s: Can't get cloud connection parameters. Proxy exiting\n", __FUNCTION__);
+        exit(-1);
+    }
 
     ph_mgr_init();          /* Initiates PH manager, no cloud connections are made */
 
@@ -110,6 +119,7 @@ int main(int argc, char* argv[]) {
     ph_mgr_destroy();       /* Close all existing connections, deinit PH manager */
 /* Logger stop */
     pu_stop_logger();
+    fprintf(stdout, "Proxy exiting]n");
     exit(0);
 }
 
@@ -124,6 +134,7 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tProxy-WUD communication port: %d", pc_getWUDPort());
     pu_log(LL_INFO, "\tProxy name: %s", pc_getProxyName());
     pu_log(LL_INFO, "\tProxy watchdog sending interval in seconds: %d", pc_getProxyWDTO());
+
     pc_getMainCloudURL(buf, sizeof(buf));
     pu_log(LL_INFO, "\tMain cloud URL: %s", buf);
 
@@ -139,4 +150,6 @@ static void print_Proxy_start_params() {
 
     pu_log(LL_INFO, "\tCloud POST connection timeout sec: %d", pc_getCloudConnTimeout());
     pu_log(LL_INFO, "\tPost attempts amount: %d", pc_getCloudPostAttempts());
+    pu_log(LL_INFO, "\tLong GET keepalive interval sec: %d", pc_getLongGetKeepaliveTO());
+    pu_log(LL_INFO, "\tLong GET timeout sec: %d", pc_getLongGetTO());
 }

@@ -146,6 +146,7 @@ void pt_main_thread() { /* Starts the main thread. */
         }
     }
     main_thread_shutdown();
+    pu_log(LL_INFO, "%s: Exiting. Proxy stops", __FUNCTION__);
 }
 
 /***************************************************************************************************

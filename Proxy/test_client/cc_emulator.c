@@ -19,12 +19,14 @@
  Created by gsg on 19/05/19.
 */
 #include <string.h>
+#include <pf_traffic_proc.h>
 
 #include "cJSON.h"
 #include "pu_logger.h"
 #include "pc_settings.h"
 
 #include "pc_defaults.h"
+#include "pr_commands.h"
 #include "cc_emulator.h"
 
 typedef enum {CC_UNDEF = 0, CC_PERMIT1 = 1, CC_PERMIT2 = 2, CC_MAX_SIZE} cc_command_type_t;
@@ -81,6 +83,18 @@ static cc_command_type_t wtf(cJSON* in) {
     return CC_UNDEF;
 }
 
+int is_command(const char* in_msg) {
+    int ret = 0;
+    cJSON* obj = cJSON_Parse(in_msg);
+    if(!obj) {
+        pu_log(LL_ERROR, "%s: Incoming message %s ignored", __FUNCTION__, in_msg);
+        return ret;
+    }
+    ret = (pr_get_message_type(obj) == PR_COMMANDS_MSG);
+    cJSON_Delete(obj);
+    return ret;
+}
+
 int is_eateable(const char* in_msg) {
     int ret = 0;
     cJSON* obj = cJSON_Parse(in_msg);
@@ -112,6 +126,23 @@ const char* make_answer(const char* in_msg, char* out_msg, size_t max_len) {
     }
     cJSON_Delete(msg);
     return out_msg;
+}
+
+const char* make_0_answer(const char* in_buf, char* out_buf, size_t max_len) {
+    out_buf[0] = '\0';
+    cJSON* obj = cJSON_Parse(in_buf);
+    if(!obj) {
+        pu_log(LL_ERROR, "%s: Incoming message %s ignored", __FUNCTION__, in_buf);
+        snprintf(out_buf, max_len, "Bad message!");
+        return out_buf;
+    }
+    pf_answer_to_command(obj, out_buf, max_len-1, PF_RC_ACK);
+    if(strlen(out_buf)) {
+        char device_id[LIB_HTTP_DEVICE_ID_SIZE];
+        pc_getProxyDeviceID(device_id, sizeof(device_id));
+        pf_add_proxy_head(out_buf, max_len, device_id);
+    }
+    return out_buf;
 }
 
 const char* get_mesure(char* out_buf, size_t max_len) {
