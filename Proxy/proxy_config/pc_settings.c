@@ -136,7 +136,7 @@ static void initiate_defaults();
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting);
 
 /***************************************************************************************/
-#define PCS_ERR fprintf(stderr, "PROXY: Default value will be used instead. %s line %d\n", __FUNCTION__, __LINE__)
+#define PCS_ERR fprintf(stderr, "PROXY: Default value will be used instead.\n")
 
 /* Set of "get" functions to make an access to settings for Presto modules */
 

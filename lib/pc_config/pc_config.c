@@ -111,6 +111,7 @@ Return 1 if OK 0 if error
 int getStrValue(cJSON* cfg, const char* field_name, char* str_setting, size_t max_size) {
     cJSON* obj;
     if(obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
+        fprintf(stderr, "Setting %s is not found ", field_name);
         return 0;
     }
     if(obj->type!= cJSON_String) {
@@ -134,6 +135,7 @@ Return 1 if OK 0 if error
 int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting) {
     cJSON *obj;
     if (obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
+        fprintf(stderr, "Setting %s is not found ", field_name);
         return 0;
     }
     if(obj->type!= cJSON_Number) {
@@ -158,6 +160,7 @@ int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {
     *carr_setting = NULL;
 
     if (obj = cJSON_GetObjectItem(cfg, field_name), obj == NULL) {
+        fprintf(stderr, "Setting %s is not found ", field_name);
         return 0;
     }
     if(obj->type != cJSON_Array) {

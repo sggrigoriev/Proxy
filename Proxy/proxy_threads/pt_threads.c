@@ -135,6 +135,20 @@ void pt_main_thread() { /* Starts the main thread. */
             pu_log(LL_INFO, "%s going to update the contact cloud URL...", PT_THREAD_NAME);
             proxy_is_online = 0;
             report_cloud_conn_status(proxy_is_online);
+            switch (ph_update_contact_url()) {
+                case -1:
+                    if(pc_rebootIfCloudRejects()) send_reboot();
+                case 0:
+                    pu_log(LL_WARNING, "%s: Contact URL wasn't updated due to errors", __FUNCTION__);
+                case 1:
+                    proxy_is_online = 1; /* If we could not get the new one we still got the old one! */
+                    report_cloud_conn_status(proxy_is_online);
+
+                    lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs() * 3600);
+                    break;
+                default:
+                    break;
+            }
             if((ph_update_contact_url() == -1) && (pc_rebootIfCloudRejects()))
                 send_reboot();
             else {

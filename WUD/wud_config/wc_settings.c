@@ -311,7 +311,7 @@ int wc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, WUD_LOG_REC_AMT, &log_rec_amt))                                                           WC_ERR();
     if(!getUintValue(cfg, WUD_QUEUES_REC_AMT, &queues_rec_amt))                                                     WC_ERR();
 
-    getUintValue(cfg, WUD_REBOOT_BY_REQUEST, &reboot_by_request);
+    if(!getUintValue(cfg, WUD_REBOOT_BY_REQUEST, &reboot_by_request))                                               WC_ERR();
 
     if(!getStrValue(cfg, WUD_WORKING_DIRECTORY, working_dir, sizeof(working_dir)))                                  WC_ERR();
     if(!getUintValue(cfg, WUD_COMM_PORT, &wud_port))                                                                WC_ERR();
