@@ -276,10 +276,12 @@ static void* brain_proc(void* dummy) {
                 while (pu_queue_pop(from_reader, in_buf, &len)) {
                     const char* ret;
                     char out_buf[PROXY_MAX_MSG_LEN] = {'\0'};
+/*
                     if(is_command(in_buf)) {
                         ret = make_0_answer(in_buf, out_buf, sizeof(out_buf));
                         pu_queue_push(to_writer, ret, strlen(ret)+1);
                     }
+*/
                     if(is_eateable(in_buf)) {
                         ret = make_answer(in_buf, out_buf, sizeof(out_buf));
                         pu_queue_push(to_writer, ret, strlen(ret) + 1);

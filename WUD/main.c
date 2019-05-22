@@ -110,8 +110,8 @@ int main(int argc, char* argv[]) {
     }
 /* create pid file (var/run/wud.pid */
     if(!wu_create_pid_file(WC_DEFAULT_WUD_NAME, getpid())) {
-        pu_log(LL_ERROR, "Can\'t create PID file for %s: %d %s. Abort", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
-        fprintf(stdout, "Can\'t create PID file for %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, errno, strerror(errno));
+        pu_log(LL_ERROR, "Can\'t create PID file for %s in %s: %d %s. Abort", WC_DEFAULT_WUD_NAME, WC_DEFAULT_PID_DIRECTORY, errno, strerror(errno));
+        fprintf(stdout, "Can\'t create PID file for %s in %s: %d %s. Abort\n", WC_DEFAULT_WUD_NAME, WC_DEFAULT_PID_DIRECTORY, errno, strerror(errno));
         exit(1);
     }
 
