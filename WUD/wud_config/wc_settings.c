@@ -76,16 +76,18 @@
 
 #define WUD_CLOUD_CONN_TIMEOUT      "CLOUD_CONN_TIMEOUT"
 #define WUD_CLOUD_POST_ATTEMPTS     "CLOUD_POST_ATTEMPTS"
+#define WUD_CLOUD_FILE_GET_CONN_TO  "CLOUD_FILE_GET_CONN_TO"
+#define WUD_CLOUD_KEEP_ALIVE_INTERVAL "CLOUD_KEEP_ALIVE_INTERVAL"
 
 /****************************************************************************************
  Config values in memory. Loaded from the configuration file or taken from defaults if the file does not contain the setting
 */
-static char             log_name[WC_MAX_PATH];
-static unsigned int     log_rec_amt;
-static log_level_t      log_level;
+static char             log_name[WC_MAX_PATH] = {0};
+static unsigned int     log_rec_amt = 0;
+static log_level_t      log_level = 0;
 
-static unsigned int     queues_rec_amt;
-static unsigned int     reboot_by_request;
+static unsigned int     queues_rec_amt = 0;
+static unsigned int     reboot_by_request = 0;
 
 static char working_dir[WC_MAX_PATH];
 static unsigned int wud_port;
@@ -113,8 +115,10 @@ static unsigned int wud_delay_before_start_sec;
 static int          curlopt_ssl_verify_peer;
 static char         curlopt_ca_info[WC_MAX_PATH];
 
-unsigned int        cloud_conn_timeout;
-unsigned int        cloud_post_attempts;
+unsigned int        cloud_conn_timeout = 0;
+unsigned int        cloud_post_attempts = 0;
+unsigned int        cloud_file_get_conn_timeout = 0;
+unsigned int        cloud_keep_alive_interval = 0;
 
 static char conf_fname[WC_MAX_PATH];
 
@@ -276,6 +280,12 @@ unsigned int    wc_getCloudConnTimeout() {
 unsigned int    wc_getCloudPostAttempts() {
     WC_RET(LIB_HTTP_MAX_POST_RETRIES, cloud_post_attempts);
 }
+unsigned int    wc_getCloudFileGetConnTimeout() {
+    return cloud_file_get_conn_timeout;
+}
+unsigned int    wc_getKeepAliveInterval() {
+    return cloud_keep_alive_interval;
+}
 
 /*********************************************************************************
     Thread-protected functions
@@ -327,6 +337,8 @@ int wc_load_config(const char* cfg_file_name) {
 
     if(!getUintValue(cfg, WUD_CLOUD_CONN_TIMEOUT, &cloud_conn_timeout))                                             WC_ERR();
     if(!getUintValue(cfg, WUD_CLOUD_POST_ATTEMPTS, &cloud_post_attempts))                                           WC_ERR();
+    if(!getUintValue(cfg, WUD_CLOUD_FILE_GET_CONN_TO, &cloud_file_get_conn_timeout))                                WC_ERR();
+    if(!getUintValue(cfg, WUD_CLOUD_KEEP_ALIVE_INTERVAL, &cloud_keep_alive_interval))                               WC_ERR();
 
     getLLTValue(cfg, WUD_LOG_LEVEL, &log_level);
     getParTValue(cfg, WUD_AGENT_RUN_PARAMETERS, &agent_run_parameters);
@@ -425,6 +437,8 @@ static void initiate_defaults() {
 
     cloud_conn_timeout = LIB_HTTP_DEFAULT_CONNECT_TIMEOUT_SEC;
     cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
+    cloud_file_get_conn_timeout = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
+    cloud_keep_alive_interval = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
 }
 
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {

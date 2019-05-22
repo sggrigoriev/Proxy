@@ -65,6 +65,9 @@ int wc_getCurloptSSLVerifyPeer();
 
 unsigned int    wc_getCloudConnTimeout();   /* Return connection to cloud timeout for POST */
 unsigned int    wc_getCloudPostAttempts();  /* Times to repeat post attempts to cloud */
+unsigned int    wc_getCloudFileGetConnTimeout();    /* Connetction TO fot File GET */
+unsigned int    wc_getKeepAliveInterval();   /* Period in seconds between keep idle messages during the file get */
+
 
 
 /* Thread-protected functions */

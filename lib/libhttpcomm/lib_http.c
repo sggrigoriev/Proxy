@@ -260,9 +260,10 @@ lib_http_conn_t lib_http_createConn(lib_http_conn_type_t conn_type, const char *
         case LIB_HTTP_CONN_POST:
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POST, 1L), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_POSTFIELDS, 0L), curlResult != CURLE_OK) goto out;
-            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC), curlResult != CURLE_OK) goto out;
+            if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
             break;
         case LIB_HTTP_CONN_GET:
+        case LIB_HTTP_FILE_GET:
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TIMEOUT, conn_to), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPALIVE, 1L), curlResult != CURLE_OK) goto out;
             if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPIDLE, (long)conn_to+1), curlResult != CURLE_OK) goto out;
@@ -288,7 +289,7 @@ void lib_http_eraseConn(lib_http_conn_t* conn) {
     *conn = -1;
 }
 
-int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, long keepalive_interval) {
+int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval) {
     long httpResponseCode = 0;
     long httpConnectCode = 0;
     long curlErrno = 0;
@@ -453,7 +454,7 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
     }
 }
 
-int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
+int lib_http_get_file(lib_http_conn_t gf_conn, unsigned long keepalive_interval, FILE* rx_file) {
     CURLcode curlResult;
     long httpResponseCode = 0;
     long httpConnectCode = 0;
@@ -471,6 +472,7 @@ int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file) {
     if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_DNS_CACHE_TIMEOUT, 0L), curlResult != CURLE_OK) goto out;
     if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEFUNCTION, file_writer), curlResult != CURLE_OK) goto out;
     if (curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_WRITEDATA, &rx_file), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, keepalive_interval), curlResult != CURLE_OK) goto out;
 
     curlResult = curl_easy_perform(handler->hndlr);
 

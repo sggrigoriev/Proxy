@@ -110,7 +110,7 @@ void lib_http_eraseConn(lib_http_conn_t* conn);
  * @param keepalive_interval - period in seconds of keepalive sendings
  * @return  - see lib_http_io_result_t; Logged inside
  */
-lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, long keepalive_interval);
+lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval);
 
 /***************************************************
  * Perform POST request
@@ -129,7 +129,7 @@ lib_http_io_result_t lib_http_post(lib_http_conn_t post_conn, const char* msg, c
  * @param rx_file   - open file descriptor ("wb" mode expected)
  * @return  - 1 if OK, 0 if timeout, -1 if error.
  */
-int lib_http_get_file(lib_http_conn_t gf_conn, FILE* rx_file);
+int lib_http_get_file(lib_http_conn_t gf_conn, unsigned long keepalive_interval, FILE* rx_file);
 
 /**
  * @brief   Called when a message has to be sent to the server. this is a standard streamer

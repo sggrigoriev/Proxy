@@ -121,12 +121,12 @@ int wh_read_file(const char* file_with_path,  const char* url, unsigned int atte
             goto on_finish;
         }
 
-        conn = lib_http_createConn(LIB_HTTP_FILE_GET, url, NULL, NULL, LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC);
+        conn = lib_http_createConn(LIB_HTTP_FILE_GET, url, NULL, NULL, wc_getCloudFileGetConnTimeout());
         if(conn < 0) {
             pu_log(LL_ERROR, "wh_read_file: can't create HTTP connection to receive firmware");
             goto on_finish;
         }
-        switch(lib_http_get_file(conn, rx_fd)) {
+        switch(lib_http_get_file(conn, wc_getKeepAliveInterval(), rx_fd)) {
             case 1:             /* Got it! */
                 pu_log(LL_INFO, "wh_read_file: download of %s succeed.", file_with_path);
                 ret = 1;

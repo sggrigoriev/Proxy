@@ -198,6 +198,9 @@ static void print_WUD_start_params() {
 
     pu_log(LL_INFO, "\tCloud POST connection timeout sec: %d", wc_getCloudConnTimeout());
     pu_log(LL_INFO, "\tPost attempts amount: %d", wc_getCloudPostAttempts());
+    pu_log(LL_INFO, "\tFile GET connection timeout sec: %d", wc_getCloudFileGetConnTimeout());
+    pu_log(LL_INFO, "\tFile GET keepalive interval sec: %d", wc_getKeepAliveInterval());
+
 
     pu_log(LL_INFO, "Agent settings:");
     pu_log(LL_INFO, "\tAgent name: %s", wc_getAgentProcessName());
