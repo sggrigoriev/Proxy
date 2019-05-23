@@ -117,3 +117,20 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_r
 
     return buf;
 }
+
+char* pf_make_cmds_list(cJSON* root) {
+    cJSON* arr = cJSON_GetObjectItem(root, CLOUD_COMMANDS);
+    if(!arr) return NULL;
+    int size = cJSON_GetArraySize(arr);
+    int buf_size = (strlen("&cmdId=")+20)*size+1;
+    if(!buf_size) return NULL;
+    char* ret = calloc(buf_size, 1);
+    int i;
+    for(i = 0; i < size; i++) {
+        cJSON* elem = cJSON_GetArrayItem(arr, i);
+        char buf[100]={0};
+        snprintf(buf, sizeof(buf), "%s%lu", "&cmdId=", (unsigned long)cJSON_GetObjectItem(elem, CMD_CMD_ID)->valuedouble);
+        strncat(ret, buf, buf_size-1);
+    }
+    return ret;
+}

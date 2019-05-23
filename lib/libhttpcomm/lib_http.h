@@ -104,13 +104,14 @@ void lib_http_eraseConn(lib_http_conn_t* conn);
 /***************************************************
  * Perform "long GET" request
  * @param get_conn      - connection handler LIB_HTTP_CONN_GET or LIB_HTTP_CONN_INIT_MAIN type
+ * @param answers       - list of commandsId from commands received during previous call or "" if were no commands
  * @param msg           - buffer for received message
  * @param msg_size      - buffer size
  * @param no_json       - 0 if no JSON expected in answer
  * @param keepalive_interval - period in seconds of keepalive sendings
  * @return  - see lib_http_io_result_t; Logged inside
  */
-lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval);
+lib_http_io_result_t lib_http_get(lib_http_conn_t get_conn, const char* answers, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval);
 
 /***************************************************
  * Perform POST request

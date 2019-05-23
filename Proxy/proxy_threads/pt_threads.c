@@ -242,18 +242,6 @@ static void send_reboot_status(pr_reboot_param_t status) {
     pu_log(LL_INFO, "%s: reboot status was sent to the Cloud: %s", PT_THREAD_NAME, msg);
 }
 
-static void send_answers_if_command(const char* device_id, msg_obj_t* msg) {
-    char answers[LIB_HTTP_MAX_MSG_SIZE]={0};
-
-/* Sending answers to the cloud */
-    pf_answer_to_command(msg, answers, sizeof(answers), PF_RC_ACK);
-    if(strlen(answers)) {
-        pf_add_proxy_head(answers, sizeof(answers), device_id);
-        pu_log(LL_DEBUG, "%s: rc=0 tp cloud %s", __FUNCTION__, answers);
-        pu_queue_push(to_server, answers, strlen(answers)+1);
-    }
- }
-
 static void process_cloud_message(char* cloud_msg) {
     msg_obj_t* obj = pr_parse_msg(cloud_msg);
     if(!obj) {
@@ -273,8 +261,6 @@ static void process_cloud_message(char* cloud_msg) {
         char device_id[LIB_HTTP_DEVICE_ID_SIZE];
 
         pc_getProxyDeviceID(device_id, sizeof(device_id));
-
-        send_answers_if_command(device_id, obj);
 /* Separate the info berween Proxy & Agent */
 /* NB! Currently the Proxy eats commands only! */
         pr_split_msg(obj, device_id, for_proxy, sizeof(for_proxy), for_agent, sizeof(for_agent));

@@ -73,11 +73,12 @@ int ph_update_contact_url();
 /* Communication functions */
 
 /* Read into in_buf the message from the cloud (GET). Answer ACK(s) id command(s) came
+ *      answers - string with commands Id list made from commands received on previous call
  *      in_buf  - buffer for data received
  *      size    - buffer size
  *  Return  0 if timeout, 1 if OK, -1 if error - reconnect required
 */
-int ph_read(char* in_buf, size_t size);
+int ph_read(const char* answers, char* in_buf, size_t size);
 
 /* POST the data to cloud; receive (possibly) the answer
  *      buf         - message to be sent (0-terminated string)

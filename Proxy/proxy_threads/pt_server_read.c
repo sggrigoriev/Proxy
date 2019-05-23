@@ -53,17 +53,33 @@ static pu_queue_t* to_main;     /* Transport to main proxy thread */
 /*****************************************************************************************
  * Local functions
  */
+ /*
+  * If in_msg contains commands - make string "&cmdId=<commandIs1>&...&cmdId=<commandIdN> oe empty string if no commands
+  */
+static const char* make_answers(const char* in_msg, char* ans, size_t size) {
+    ans[0] = '\0';
+    cJSON* obj = cJSON_Parse(in_msg);
+    if(!obj) return ans;
+
+    char* lst = pf_make_cmds_list(obj);
+    if(lst) {
+        strncpy(ans, lst, size - 1);
+        free(lst);
+    }
+    cJSON_Delete(obj);
+    return ans;
+}
 /*
  * Get the message from the cloud
  *  buf     - buffer for message received
  *  size    - buffer size
  */
-static void read_from_cloud(char* buf, size_t size) {
+static void read_from_cloud(const char* answers, char* buf, size_t size) {
     int out = 0;
     int to_counter = 0;
     while(!out && !stop) {
         pu_log(LL_DEBUG, "%s: set long read", __FUNCTION__);
-        switch(ph_read(buf, size)) {
+        switch(ph_read(answers, buf, size)) {
             case -1:        /*error*/
                 pu_log(LL_ERROR, "%s: Error reading. Reconnect", PT_THREAD_NAME);
                 pf_reconnect(to_main);    /* loop again the succ inside */
@@ -93,12 +109,14 @@ static void* read_proc(void* params) {
     stop = 0;
 
     char buf[LIB_HTTP_MAX_MSG_SIZE];
+    char answers[LIB_HTTP_MAX_URL_SIZE] = {0};
 
 /* Main read loop */
     while(!stop) {
-        read_from_cloud(buf, sizeof(buf));
+        read_from_cloud(answers, buf, sizeof(buf));
         pu_log(LL_DEBUG, "%s: received from cloud: %s", PT_THREAD_NAME, buf);
         pu_queue_push(to_main, buf, strlen(buf)+1); /* Forward the message to the proxy_main */
+        make_answers(buf, answers, sizeof(answers));
     }
     pu_log(LL_INFO, "%s: STOP. Terminated", PT_THREAD_NAME);
     pthread_exit(NULL);

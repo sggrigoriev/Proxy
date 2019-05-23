@@ -289,11 +289,11 @@ int ph_update_contact_url() {
     return 1;
 }
 
-int ph_read(char* in_buf, size_t size) {
+int ph_read(const char* answers, char* in_buf, size_t size) {
     int ret;
     start_io();
     lib_http_io_result_t rc;
-    switch(rc = lib_http_get(get_conn, in_buf, size, 0, pc_getLongGetKeepaliveTO())) {
+    switch(rc = lib_http_get(get_conn, answers, in_buf, size, 0, pc_getLongGetKeepaliveTO())) {
         case LIB_HTTP_IO_ERROR:
         case LIB_HTTP_IO_UNKNOWN:
         case LIB_HTTP_IO_UNAUTH:
@@ -475,7 +475,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
         lib_http_eraseConn(&get_conn);
         return 0;
     }
-    lib_http_io_result_t rc = lib_http_get(get_conn, resp, sizeof(resp), 1, pc_getLongGetKeepaliveTO());
+    lib_http_io_result_t rc = lib_http_get(get_conn, "", resp, sizeof(resp), 1, pc_getLongGetKeepaliveTO());
 
     int ret = 0;
     switch(rc) {

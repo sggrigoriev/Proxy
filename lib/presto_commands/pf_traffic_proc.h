@@ -36,8 +36,14 @@ typedef enum {PF_RC_ACK = 0, PF_RC_OK = 1, PF_RC_UNSUPPORTED = 5, PF_RC_EXEC_ERR
 /*
  * Make answer from the message and put into buf. Returns buf addess
 */
-
 const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc);
+
+/*
+ * Make list as &cmdId=<commandId>&...&cmdId=<commandId>
+ * Return NULL if no commands in JSON
+ * NB! returned buffer must be freed!
+ */
+char* pf_make_cmds_list(cJSON* root);
 
 
 /*Add head required by cloud protocol The sequential number will be assigned inside

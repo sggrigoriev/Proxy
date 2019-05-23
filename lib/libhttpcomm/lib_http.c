@@ -74,7 +74,14 @@ static char ca_info[LIB_HTTP_MAX_URL_SIZE] = {0};
 /******************************************
     Static functions declaration
 */
-
+/******************************************
+ * Append/replace the comdId list to URL
+ * @param url           GET URL
+ * @param size          buff size
+ * @param cmd_list      list to add/replace (maybe empty)
+ * @return              pointer to updated URL
+ */
+const char* add_answers_to_get(char* url, size_t size, const char* cmd_list);
 /******************************************
  * Allocate space for connections pool
  * @param connections_max   - max sumultaneous connections amount
@@ -289,7 +296,7 @@ void lib_http_eraseConn(lib_http_conn_t* conn) {
     *conn = -1;
 }
 
-int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval) {
+int lib_http_get(lib_http_conn_t get_conn, const char* answers, char* msg, size_t msg_size, int no_json, unsigned long keepalive_interval) {
     long httpResponseCode = 0;
     long httpConnectCode = 0;
     long curlErrno = 0;
@@ -307,6 +314,8 @@ int lib_http_get(lib_http_conn_t get_conn, char* msg, size_t msg_size, int no_js
     msg[0] = '\0';  /* in case we got nothing */
 
     if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_TCP_KEEPINTVL, keepalive_interval), curlResult != CURLE_OK) goto out;
+    if(curlResult = curl_easy_setopt(handler->hndlr, CURLOPT_URL, add_answers_to_get(handler->url, sizeof(handler->url), answers)), curlResult != CURLE_OK) goto out;
+    pu_log(LL_DEBUG, "%s: URL = %s", __FUNCTION__, handler->url);
 
     curlResult = curl_easy_perform(handler->hndlr);
 
@@ -518,6 +527,12 @@ out:
 /******************************************
     Local functions implementation
 */
+const char* add_answers_to_get(char* url, size_t size, const char* cmd_list) {
+    char *result = strstr(url, "&cmdId");
+    if(result) *result = '\0';
+    strncat(url, cmd_list, size-1);
+    return url;
+}
 
 static http_handler_t** alloc_conn_pull(unsigned connections_max) {
     http_handler_t** ret = malloc(connections_max*sizeof(http_handler_t*));
