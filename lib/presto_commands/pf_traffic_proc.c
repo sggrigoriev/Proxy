@@ -81,33 +81,35 @@ static const char* CMD_RESP_HD = "responses";
 static const char* CMD_CMD_ID = "commandId";
 static const char* CMD_RC = "result";
 
-/* Make answer from the message and put into buf. Returns buf addess */
-const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc) {
-/* json_answer: "{"responses": [{"commandId": <command_id>, "result": <RC>}]}"; */
-    assert(root); assert(buf); assert(buf_size);
-    cJSON* arr = cJSON_GetObjectItem(root, CLOUD_COMMANDS);
-    buf[0] = '\0';
-    if(!arr) {
-        return buf;
+unsigned long pf_get_command_id(cJSON* cmd) {
+    cJSON* cmd_id = cJSON_GetObjectItem(cmd, CMD_CMD_ID);
+    if(!cmd_id) {
+        pu_log(LL_ERROR, "%s: %s item is not found", __FUNCTION__, CMD_CMD_ID);
+        return 0L;
     }
+
+    return (unsigned long)cmd_id->valuedouble;
+}
+/* Make answer from the command and put into buf. Returns buf addess */
+const char* pf_answer_to_command(cJSON* cmd, char* buf, size_t buf_size, t_pf_rc rc) {
+/* json_answer: "{"responses": [{"commandId": <command_id>, "result": <RC>}]}"; */
+    assert(cmd); assert(buf); assert(buf_size);
+    buf[0] = '\0';
+
     cJSON* resp_obj = cJSON_CreateObject();
     cJSON* resp_arr = cJSON_CreateArray();
     cJSON_AddItemToObject(resp_obj, CMD_RESP_HD, resp_arr);
 
-    unsigned int i;
-    for(i = 0; i < cJSON_GetArraySize(arr); i++) {
-        cJSON* arr_item = cJSON_GetArrayItem(arr, i);
-        cJSON* cmd_id = cJSON_GetObjectItem(arr_item, CMD_CMD_ID);
-        if(!cmd_id) {
-            pu_log(LL_ERROR, "%s item is not found in %d command item", CMD_CMD_ID, i);
-            return buf;
-        }
-        cJSON* el = cJSON_CreateObject();
-
-        cJSON_AddItemReferenceToObject(el, CMD_CMD_ID, cmd_id);
-        cJSON_AddItemToObject(el, CMD_RC, cJSON_CreateNumber(rc));
-        cJSON_AddItemToArray(resp_arr, el);
+    cJSON* cmd_id = cJSON_GetObjectItem(cmd, CMD_CMD_ID);
+    if(!cmd_id) {
+        pu_log(LL_ERROR, "%s: %s item is not found", __FUNCTION__, CMD_CMD_ID);
+        return buf;
     }
+    cJSON* el = cJSON_CreateObject();
+
+    cJSON_AddItemReferenceToObject(el, CMD_CMD_ID, cmd_id);
+    cJSON_AddItemToObject(el, CMD_RC, cJSON_CreateNumber(rc));
+    cJSON_AddItemToArray(resp_arr, el);
 
     char* res = cJSON_PrintUnformatted(resp_obj); /* Encoding responses array into string */
 
@@ -116,6 +118,16 @@ const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_r
     cJSON_Delete(resp_obj);
 
     return buf;
+}
+const char* pf_make_answer_to_command(unsigned long cmd_id, char* buf, size_t buf_size, t_pf_rc rc) {
+    buf[0] = '\0';
+
+    cJSON* el = cJSON_CreateObject();
+    cJSON_AddItemToObject(el, CMD_CMD_ID, cJSON_CreateNumber(cmd_id));
+
+    const char* ret = pf_answer_to_command(el, buf, buf_size, rc);
+    cJSON_Delete(el);
+    return ret;
 }
 
 char* pf_make_cmds_list(cJSON* root) {

@@ -140,7 +140,7 @@ static void print_Proxy_start_params() {
 
     pu_log(LL_INFO, "\tRequest for update the Contact URL interval in hours: %d", pc_getCloudURLTOHrs());
     pu_log(LL_INFO, "\tFirmware version info to Cloud interval in hours: %d", pc_getFWVerSendToHrs());
-    pu_log(LL_INFO, "\tSSL request for contact URL request: %d", pc_setSSLForCloudURLRequest());
+    pu_log(LL_INFO, "\tSSL request for contact URL request: %d", pc_getSetSSLForCloudURLRequest());
 
     pu_log(LL_INFO, "\tCurlopt SSP Verify Peer: %d", pc_getCurloptSSPVerifyPeer());
     pu_log(LL_INFO, "\tCurlopt CA Info: %s", pc_getCurloptCAInfo());

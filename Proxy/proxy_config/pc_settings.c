@@ -196,7 +196,7 @@ unsigned int pc_getFWVerSendToHrs() {
     return fw_ver_sending_to_hrs;
 }
 
-int pc_setSSLForCloudURLRequest() {
+int pc_getSetSSLForCloudURLRequest() {
     return set_ssl_for_url_request;
 }
 
@@ -463,6 +463,7 @@ static void initiate_defaults() {
     auth_token[0] = '\0';
     strncpy(auth_token_file_name, DEFAULT_AUTH_TOKEN_FILE_NAME, sizeof(auth_token_file_name)-1);
     device_id[0] = '\0';
+    device_type = DEFAULT_PROXY_DEV_TYPE;
     cloud_url[0] = '\0';
     strncpy(main_cloud_url_file_name, DEFAULT_MAIN_CLOUD_URL_FILE_NAME, sizeof(main_cloud_url_file_name)-1);
     strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);

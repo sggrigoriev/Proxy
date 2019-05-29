@@ -20,13 +20,14 @@
 */
 #include <pthread.h>
 #include <string.h>
-#include <proxy_functions/pf_proxy_commands.h>
 
 #include "pu_logger.h"
 #include "pt_queues.h"
+#include "pf_proxy_commands.h"
+#include "pf_traffic_proc.h"
+
 #include "pc_defaults.h"
 #include "pc_settings.h"
-#include "pf_traffic_proc.h"
 #include "ph_manager.h"
 #include "pt_server_write.h"
 

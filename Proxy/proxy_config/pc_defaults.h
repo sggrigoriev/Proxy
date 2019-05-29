@@ -55,6 +55,9 @@
 #define PROXY_DEVICE_ID_SIZE            LIB_HTTP_DEVICE_ID_SIZE                 /* Max len of defice id */
 #define PROXY_MAX_PATH                  LIB_HTTP_MAX_URL_SIZE                   /* Max len of path allowed */
 #define PROXY_MAX_PROC_NAME             PR_MAX_PROC_NAME_SIZE                   /* Max len of child process name allowed */
+#define PROXY_M3_DEVICE_TYPE            31                                      /* M3 proxy device type */
+#define PROXY_C1_DEVICE_TYPE            7000                                    /* C1 indoor cam device type */
+
 
 #define DEFAULT_PROXY_PROCESS_NAME  "Proxy"                         /* Proxy process name. Configured */
 #define DEFAULT_PROXY_WATCHDOG_TO_SEC   600                         /* Proxy watchdog preiod in seconds. Configured */
@@ -67,9 +70,10 @@
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24                          /* Preiod of cloud conection URL request in hours. Configured */
 #define DEFAULT_FW_VER_SENDING_TO_HRS   24                          /* Period of firmware version sending to the cloud in hours. Configured */
 
-#define DEFAULT_LONG_GET_TO_SEC         120         /* Log get timeout. Configfured */
-#define DEFAULT_KEEPALIVE_INTERVAL_SEC  20      /* Keep alive TCP signals intervals during the long GET. Configured */
-#define DEFAULT_PROXY_DEV_TYPE      31          /* Obsolete. The Agent sends it by itself Anyway, configured */
+#define DEFAULT_LONG_GET_TO_SEC         120                         /* Log get timeout. Configfured */
+#define DEFAULT_KEEPALIVE_INTERVAL_SEC  20                          /* Keep alive TCP signals intervals during the long GET. Configured */
+#define DEFAULT_PROXY_DEV_TYPE          PROXY_M3_DEVICE_TYPE        /* M3 device type by default. Configured */
+
 
 
 #define DEFAULT_HTTP_CONNECT_TIMEOUT_SEC    HTTPCOMM_DEFAULT_CONNECT_TIMEOUT_SEC    /* HTTP connection timeout in seconds */

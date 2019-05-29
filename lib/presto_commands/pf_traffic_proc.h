@@ -33,10 +33,12 @@ Add the head to the message sent to the cloud:
 */
 typedef enum {PF_RC_ACK = 0, PF_RC_OK = 1, PF_RC_UNSUPPORTED = 5, PF_RC_EXEC_ERR = 7, PF_RC_FMT_ERR = 8} t_pf_rc;
 
+unsigned long pf_get_command_id(cJSON* cmd);
 /*
- * Make answer from the message and put into buf. Returns buf addess
+ * Make answer from the command and put into buf. Returns buf addess
 */
-const char* pf_answer_to_command(cJSON* root, char* buf, size_t buf_size, t_pf_rc rc);
+const char* pf_answer_to_command(cJSON* cmd, char* buf, size_t buf_size, t_pf_rc rc);
+const char* pf_make_answer_to_command(unsigned long cmd_id, char* buf, size_t buf_size, t_pf_rc rc);
 
 /*
  * Make list as &cmdId=<commandId>&...&cmdId=<commandId>

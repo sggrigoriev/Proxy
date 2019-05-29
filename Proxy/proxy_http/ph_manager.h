@@ -49,6 +49,7 @@ int ph_update_main_url(const char* new_main);
 
 /*
     Case of connection error
+0. Check if new_main in the list of allowed domains
 1. Get contact url
 2. Reopen connections
 3. if error start from 1

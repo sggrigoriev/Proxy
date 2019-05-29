@@ -193,6 +193,8 @@ int ph_update_main_url(const char* new_main) {
     char auth_token[LIB_HTTP_AUTHENTICATION_STRING_SIZE];
 
     assert(new_main);
+
+
     pthread_mutex_lock(&reconnect_mutex);
     block_io();
 
@@ -467,7 +469,7 @@ static int get_contact(const char* main, const char* device_id, char* conn, size
     char resp[LIB_HTTP_MAX_MSG_SIZE];
     lib_http_conn_t get_conn;
 
-    lib_http_conn_type_t conn_type = (pc_setSSLForCloudURLRequest())?LIB_HTTP_CONN_INIT_MAIN:LIB_HTTP_CONN_INIT_MAIN_NOSSL;
+    lib_http_conn_type_t conn_type = (pc_getSetSSLForCloudURLRequest())?LIB_HTTP_CONN_INIT_MAIN:LIB_HTTP_CONN_INIT_MAIN_NOSSL;
 
 
     if(get_conn = lib_http_createConn(conn_type, main, "", device_id, pc_getCloudConnTimeout()), get_conn < 0) {

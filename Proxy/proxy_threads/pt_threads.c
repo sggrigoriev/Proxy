@@ -37,6 +37,7 @@
 #include "pt_server_write.h"
 #include "pt_main_agent.h"
 #include "pt_wud_write.h"
+#include "pt_reconnect.h"
 
 #include "pt_threads.h"
 
@@ -55,6 +56,7 @@ static void process_proxy_commands(char* msg);              /* Process Proxy com
 static void report_cloud_conn_status(int online);           /* send off/on line status notification to the Agent, sent conn info to the WUD if online */
 static void send_wd();                                      /* Send Watchdog to thw WUD */
 static void send_reboot();                                  /* Send reboot request to WUD */
+
 /***********************************************************************************************
  * Main Proxy thread data
  */
@@ -62,6 +64,7 @@ static pu_queue_msg_t mt_msg[PROXY_MAX_MSG_LEN];    /* The only main thread's bu
 
 static pu_queue_t* from_server;     /* server_read -> main_thread */
 static pu_queue_t* from_agent;      /* agent_read -> main_thread */
+static pu_queue_t* from_reconnect;  /* Change main URL thread -> main thread */
 
 static pu_queue_t* to_server;       /* main_thread -> server_write */
 static pu_queue_t* to_agent;        /* main_thread -> agent_write */
@@ -88,8 +91,10 @@ void pt_main_thread() { /* Starts the main thread. */
         pu_log(LL_ERROR, "%s: Initialization failed. Abort", PT_THREAD_NAME);
         main_finish = 1;
     }
+
     lib_timer_init(&wd_clock, pc_getProxyWDTO());   /* Initiating the timer for watchdog sendings */
     lib_timer_init(&cloud_url_update_clock, pc_getCloudURLTOHrs()*3600);        /* Initiating the tomer for cloud URL request TO */
+
 
     report_cloud_conn_status(0);  /* sending to the agent offline status - no connection with the cloud */
     send_reboot_status(PR_AFTER_REBOOT);        /* sending the reboot status to the cloud */
@@ -104,17 +109,26 @@ void pt_main_thread() { /* Starts the main thread. */
                 break;
             case PS_FromServerQueue:
                 while(pu_queue_pop(from_server, mt_msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: got message from the cloud %s", PT_THREAD_NAME, mt_msg);
+                    pu_log(LL_DEBUG, "%s: got message from the cloud: %s", PT_THREAD_NAME, mt_msg);
                     process_cloud_message(mt_msg);
                     len = sizeof(mt_msg);
                 }
                 break;
             case PS_FromAgentQueue:
                 while(pu_queue_pop(from_agent, mt_msg, &len)) {
-                    pu_log(LL_DEBUG, "%s: got message from the Agent %s", PT_THREAD_NAME, mt_msg);
+                    pu_log(LL_DEBUG, "%s: got message from the Agent: %s", PT_THREAD_NAME, mt_msg);
                     process_agent_message(mt_msg);
                     len = sizeof(mt_msg);
                 }
+                break;
+            case PS_FromReconnectQueue:
+                while(pu_queue_pop(from_reconnect, mt_msg, &len)) {
+                    pu_log(LL_DEBUG, "%s: got message from Reconnect: %s", PT_THREAD_NAME, mt_msg);
+                    len = sizeof(mt_msg);
+                }
+                proxy_is_online = 1;
+                report_cloud_conn_status(proxy_is_online);
+                kill_reconnect();
                 break;
             case PS_STOP:
                 main_finish = 1;
@@ -171,12 +185,14 @@ static int main_thread_startup() {
 
     from_server = pt_get_gueue(PS_FromServerQueue);
     from_agent = pt_get_gueue(PS_FromAgentQueue);
+    from_reconnect = pt_get_gueue(PS_FromReconnectQueue);
     to_server = pt_get_gueue(PS_ToServerQueue);
     to_agent = pt_get_gueue(PS_ToAgentQueue);
     to_wud = pt_get_gueue(PS_ToWUDQueue);
 
     events = pu_add_queue_event(pu_create_event_set(), PS_FromAgentQueue);
     events = pu_add_queue_event(events, PS_FromServerQueue);
+    events = pu_add_queue_event(events, PS_FromReconnectQueue);
 
     if(!start_server_read()) {
         pu_log(LL_ERROR, "%s: Creating %s failed: %s", PT_THREAD_NAME, "SERVER_READ", strerror(errno));
@@ -206,6 +222,7 @@ static int main_thread_startup() {
 }
 
 static void main_thread_shutdown() {
+    kill_reconnect();           /* If it is running */
     set_stop_server_read();
     set_stop_server_write();
     set_stop_agent_main();
@@ -301,18 +318,6 @@ static void process_agent_message(char* msg) {
     pr_erase_msg(obj);
 }
 
-static void send_rc_to_cloud(msg_obj_t* cmd, t_pf_rc rc) {
-    char buf[LIB_HTTP_MAX_MSG_SIZE]={0};
-    char device_id[LIB_HTTP_DEVICE_ID_SIZE];
-
-    pc_getProxyDeviceID(device_id, sizeof(device_id));
-    pf_answer_to_command(cmd, buf, sizeof(buf), rc);
-    pf_add_proxy_head(buf, sizeof(buf), device_id);
-    pu_queue_push(to_server, buf, strlen(buf)+1);
-}
-/*
- * Responce to the command; Process the command;
- */
 static void process_proxy_commands(char* msg) {
     msg_obj_t* cmd_array = pr_parse_msg(msg);
 
@@ -347,19 +352,12 @@ static void process_proxy_commands(char* msg) {
             case PR_CMD_UPDATE_MAIN_URL:
                 proxy_is_online = 0;
                 report_cloud_conn_status(proxy_is_online);
-                switch(ph_update_main_url(cmd_item.update_main_url.main_url)) {
-                    case 1:
-                        break;
-                    case -1:
-                        if(pc_rebootIfCloudRejects()) send_reboot();
-                    default: /* -1, 0 */
-                        pu_log(LL_ERROR, "%s: Main URL update failed", PT_THREAD_NAME);
-                        send_rc_to_cloud(cmd_arr_elem, PF_RC_EXEC_ERR);
-                        break;
+
+                if(!start_reconnect(cmd_item.update_main_url.main_url, pf_get_command_id(cmd_arr_elem))) {
+                    pu_log(LL_ERROR, "%s: Command for Main URL change failed. Source: %s", PT_THREAD_NAME, msg);
+                    proxy_is_online = 1;
+                    report_cloud_conn_status(proxy_is_online);
                 }
-                proxy_is_online = 1;
-                report_cloud_conn_status(proxy_is_online);
-                send_rc_to_cloud(cmd_arr_elem, PF_RC_OK);
                 break;
             case PR_CMD_REBOOT: {    /* The cloud kindly asks to shut up & reboot */
                 pu_log(LL_INFO, "%s: CLoud command REBOOT received", PT_THREAD_NAME);

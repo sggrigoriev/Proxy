@@ -128,23 +128,6 @@ const char* make_answer(const char* in_msg, char* out_msg, size_t max_len) {
     return out_msg;
 }
 
-const char* make_0_answer(const char* in_buf, char* out_buf, size_t max_len) {
-    out_buf[0] = '\0';
-    cJSON* obj = cJSON_Parse(in_buf);
-    if(!obj) {
-        pu_log(LL_ERROR, "%s: Incoming message %s ignored", __FUNCTION__, in_buf);
-        snprintf(out_buf, max_len, "Bad message!");
-        return out_buf;
-    }
-    pf_answer_to_command(obj, out_buf, max_len-1, PF_RC_ACK);
-    if(strlen(out_buf)) {
-        char device_id[LIB_HTTP_DEVICE_ID_SIZE];
-        pc_getProxyDeviceID(device_id, sizeof(device_id));
-        pf_add_proxy_head(out_buf, max_len, device_id);
-    }
-    return out_buf;
-}
-
 const char* get_mesure(char* out_buf, size_t max_len) {
     const char* ans = "{\"measures\":[{\"deviceId\":\"%s\",\"paramsMap\":{\"permitJoining\":\"1\"}}],\"proxyId\":\"%s\",\"sequenceNumber\":100051}";
     char proxy_id[PROXY_DEVICE_ID_SIZE+1];
