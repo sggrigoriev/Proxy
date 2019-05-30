@@ -72,8 +72,7 @@ static void send_rc_to_cloud(unsigned long cmd_id, t_pf_rc rc) {
 static void* thread_proc(void* params) {
     stop = 0;
     pu_log(LL_INFO, "%s: started", PT_THREAD_NAME);
-    to_cloud = pt_get_gueue(PS_ToServerQueue);
-    to_main = pt_get_gueue(PS_FromReconnectQueue);
+
     const char* answer;
 
     switch(ph_update_main_url(new_url)) {
@@ -96,12 +95,26 @@ static void* thread_proc(void* params) {
 }
 
 int start_reconnect(const char* main_url, unsigned long cmd_id) {
+    to_cloud = pt_get_gueue(PS_ToServerQueue);
+    to_main = pt_get_gueue(PS_FromReconnectQueue);
+
+    t_pf_rc rc = PF_RC_EXEC_ERR;
+
+    if(!pc_isAllowedURL(main_url)) {
+        pu_log(LL_ERROR, "%s: New main URL %s out of allowed domains list. Command ignored", PT_THREAD_NAME, main_url);
+        rc = PF_RC_FMT_ERR;
+        goto on_err;
+    }
+
     strncpy(new_url, main_url, sizeof(new_url)-1);
     commandID =  cmd_id;
 
-    if(pthread_attr_init(&attr)) return 0;
-    if(pthread_create(&id, &attr, &thread_proc, NULL)) return 0;
+    if(pthread_attr_init(&attr)) goto on_err;
+    if(pthread_create(&id, &attr, &thread_proc, NULL)) goto on_err;
     return 1;
+on_err:
+    send_rc_to_cloud(cmd_id, rc);
+    return 0;
 }
 void kill_reconnect() {
     void *ret;

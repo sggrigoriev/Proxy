@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <signal.h>
+#include <pr_ptr_list.h>
 
 #include "presto_release_version.h"
 
@@ -152,4 +153,6 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\tPost attempts amount: %d", pc_getCloudPostAttempts());
     pu_log(LL_INFO, "\tLong GET keepalive interval sec: %d", pc_getLongGetKeepaliveTO());
     pu_log(LL_INFO, "\tLong GET timeout sec: %d", pc_getLongGetTO());
+
+    pu_log(LL_INFO, "\tAllowed domais list: %s", pr_ptr_list2string(buf, sizeof(buf), pc_getAllowedDomainsList()));
 }

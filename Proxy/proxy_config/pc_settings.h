@@ -62,7 +62,10 @@ int pc_rebootIfCloudRejects();
 const char* pc_getCurloptCAInfo();
 int pc_getCurloptSSPVerifyPeer();
 /* Used in Contact URL request */
-int pc_getSetSSLForCloudURLRequest();          /* Return 1 if "SET_SSL_FOR_URL_REQUEST" set to 1 or not found. 0 otherwize */
+int pc_getSetSSLForCloudURLRequest();       /* Return 1 if "SET_SSL_FOR_URL_REQUEST" set to 1 or not found. 0 otherwize */
+
+int pc_isAllowedURL(const char* url);       /* Return 1 if url is in allowed domains list */
+char* const* pc_getAllowedDomainsList();    /* Return NULL-terminated char* list */
 
 
 

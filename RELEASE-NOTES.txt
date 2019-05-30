@@ -1,3 +1,19 @@
+VERSION 1.2.8 30-MAY-2018
+=================================================================================================
+1. Settings to ProxyJSON.conf added:
+	"CLOUD_CONN_TIMEOUT":       180,    --POST connection timeout
+	"CLOUD_POST_ATTEMPTS":      3,      -- POST attempts before error
+	"LONG_GET_KEEPALIVE_TO":    30,     -- keepalive interval for POST and GET
+	"LONG_GET_TO":              120,    -- GET timeout
+    "ALLOWED_DOMAINS":          [".peoplepowerco.com", ".presencepro.com"] -- list of allowed domains.
+        NB! Empty list as [""] means any domain allowed
+2. Settings to wud.conf added
+    "CLOUD_CONN_TIMEOUT":   180,
+    "CLOUD_POST_ATTEMPTS":  3,
+    "CLOUD_FILE_GET_CONN_TO": 300,
+    "CLOUD_KEEP_ALIVE_INTERVAL": 30
+3. Cloud command for Main URL change fixed and implemeted as separate thread
+
 VERSION 1.2.6 20-NOV-2018
 =================================================================================================
 1. lib_tcp changed

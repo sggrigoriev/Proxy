@@ -149,8 +149,7 @@ int getUintValue(cJSON* cfg, const char* field_name, unsigned int* uint_setting)
 /*getCharArray()    -Allocate memory and copy into it string array. arr_len contains amount of strings in array
 cfg           - poiner to cJSON object containgng configuration
 field_name    - JSON fileld name
-carr_setting  - returned value of field_name
-arr_len       - returned length of array
+carr_setting  - NULL-terminated list of char*
 Return 1 if OK 0 if error
 */
 int getCharArray(cJSON* cfg, const char* field_name, char*** carr_setting) {

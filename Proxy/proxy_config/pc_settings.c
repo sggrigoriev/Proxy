@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <pr_ptr_list.h>
 
 #include "cJSON.h"
 #include "pc_config.h"
@@ -75,6 +76,7 @@
 #define PROXY_CLOUD_POST_ATTEMPTS       "CLOUD_POST_ATTEMPTS"
 #define PROXY_LONG_GET_KEEPALIVE_TO     "LONG_GET_KEEPALIVE_TO"
 #define PROXY_LONG_GET_TO               "LONG_GET_TO"
+#define PROXY_ALLOWED_DOMAINS           "ALLOWED_DOMAINS"
 
 
 /********************************************************************
@@ -116,6 +118,8 @@ static unsigned int     long_get_to = 0;
 static char             fw_version[DEFAULT_FW_VERSION_SIZE] = {0};
 
 static char conf_fname[PROXY_MAX_PATH] = {0};
+
+static char** allowed_domains = NULL;
 
 
 /*****************************************************************************************************
@@ -229,7 +233,28 @@ unsigned int    pc_getLongGetTO() {
     return long_get_to;
 }
 
-
+static int ends_by(const char* str, const char* end) {
+    if(!str || !end) return 1;
+    int i=0;
+    const char* p_str = str + strlen(str);
+    const char* p_end = end + strlen(end);
+    while(i < strlen(str)&&(i < strlen(end))) {
+        if(*p_str != *p_end) return 0;
+        p_str--; p_end--; i++;
+    }
+    return 1;
+}
+int pc_isAllowedURL(const char* url) {
+    char** ptr = allowed_domains;
+    while (*ptr) {
+        if(ends_by(url, *ptr)) return 1;
+        ptr++;
+    }
+    return 0;
+}
+char* const* pc_getAllowedDomainsList() {
+    return allowed_domains;
+}
 
 /***********************************************************************
     Thread-protected functions
@@ -292,6 +317,13 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_CLOUD_POST_ATTEMPTS, (unsigned int *)(&cloud_post_attempts)))   PCS_ERR;
     if(!getUintValue(cfg, PROXY_LONG_GET_KEEPALIVE_TO, &long_get_keepalive_to))                 PCS_ERR;
     if(!getUintValue(cfg, PROXY_LONG_GET_TO, &long_get_to))                                     PCS_ERR;
+
+    char** tmp;
+    if(!getCharArray(cfg, PROXY_ALLOWED_DOMAINS, &tmp))                                         PCS_ERR;
+    else {
+        if(allowed_domains) free(allowed_domains);
+        allowed_domains = tmp;
+    }
 
     cJSON_Delete(cfg);
 
@@ -483,6 +515,8 @@ static void initiate_defaults() {
     cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
     long_get_keepalive_to = DEFAULT_KEEPALIVE_INTERVAL_SEC;
     long_get_to = DEFAULT_LONG_GET_TO_SEC;
+    const char*tmp[] = DEFAULT_ALLOWED_DOMAINS;
+    allowed_domains = pr_duplicate_ptr_list(allowed_domains, (char* const*)tmp);
 }
 
 /*
