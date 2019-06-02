@@ -495,28 +495,26 @@ const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, cons
     return buf;
 }
 
-/* {"gw_cloudConnection": [{"deviceId":"<gateway device id>", "paramsMap": {"cloudConnection": "<connected/disconnected>", "deviceAuthToken":"<auth_token>","connString":"<mainURL>}}]}*/
+/* {"commands": [
+        {"deviceId":"aioxGW-0000B0C8AD000654", "type":0, parameters": [
+		    {"name": cloudConnection","value":connected"},
+            {"name":"deviceAuthToken","value":r0oHxX/OAx0QpgS/Rei9Hh4H7PpFO45NobBL0iz8bs="},
+			{"name":"connString","value":"https://sboxall.presencepro.com"}
+        ]}
+    ]}
+*/
 const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect, const char* auth_token, const char* conn_string) {
-    char* conn_msg_1 = "{\"gw_cloudConnection\":[{\"deviceId\":\"";
-    char* conn_msg_2 = "\",\"paramsMap\":{\"cloudConnection\":\"";
-    char* conn_yes = "connected";
-    char* conn_no = "disconnected";
-    char* conn_msg_3 = "\", \"deviceAuthToken\":\"";
-    char* conn_msg_4 = "\", \"connString\":\"";
-    char* conn_msg_5 = "\"}}]}";
+    const char *conn_msg = "{\"commands\": ["
+                           "{\"deviceId\":\"%s, \"type\":0, parameters\": ["    /* device_id */
+                           "{\"name\": cloudConnection\",\"value\":%s\"},"      /* connected/disconnected */
+                           "{\"name\":\"deviceAuthToken\",\"value\"%s\"},"      /* auth_token */
+                           "{\"name\":\"connString\",\"value\":\"%s\"}"         /* conn_string */
+                           "]}"
+                           "]}";
+    const char* conn_yes = "connected";
+    const char* conn_no = "disconnected";
 
-    strncpy(buf, conn_msg_1, size-1); buf[size-1] = '\0';
-    strncat(buf, device_id, size-strlen(buf)-1);
-    strncat(buf, conn_msg_2, size-strlen(buf)-1);
-    if(connect)
-        strncat(buf, conn_yes, size-strlen(buf)-1);
-    else
-        strncat(buf, conn_no, size-strlen(buf)-1);
-    strncat(buf, conn_msg_3, size-strlen(buf)-1);
-    strncat(buf, auth_token, size-strlen(buf)-1);
-    strncat(buf, conn_msg_4, size-strlen(buf)-1);
-    strncat(buf, conn_string, size-strlen(buf)-1);
-    strncat(buf, conn_msg_5, size-strlen(buf)-1);
+    snprintf(buf, size-1, conn_msg, device_id, (connect)?conn_yes:conn_no, auth_token, conn_string);
 
     buf[size-1] = '\0';
     return buf;
