@@ -16,5 +16,12 @@
 	"UPLOAD_TO_SEC":	120,
 	"WATCHDOG_TO_SEC":	30,
 	"DEVICE_ID_PREFIX": "aioxGW-",
-	"SET_SSL_FOR_URL_REQUEST" : 1
+	"SET_SSL_FOR_URL_REQUEST" : 1,
+
+	"CLOUD_CONN_TIMEOUT":       180,
+	"CLOUD_POST_ATTEMPTS":      3,
+	"LONG_GET_KEEPALIVE_TO":    30,
+	"LONG_GET_TO":              120,
+
+	"ALLOWED_DOMAINS": [".peoplepowerco.com", ".presencepro.com"]
 }
