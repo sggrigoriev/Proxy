@@ -495,20 +495,20 @@ const char* pr_make_send_files4WUD(char* buf, size_t size, char files_type, cons
     return buf;
 }
 
-/* {"commands": [
-        {"deviceId":"aioxGW-0000B0C8AD000654", "type":0, parameters": [
-		    {"name": cloudConnection","value":connected"},
-            {"name":"deviceAuthToken","value":r0oHxX/OAx0QpgS/Rei9Hh4H7PpFO45NobBL0iz8bs="},
-			{"name":"connString","value":"https://sboxall.presencepro.com"}
-        ]}
-    ]}
+/* 			{"commands": [
+				{"deviceId":"<deviceID>", "type":0, "parameters": [
+					{"name":"cloudConnection","value":"<connected/disconnected>"},
+					{"name":"deviceAuthToken","value":"<auth_token>"},
+					{"name":"connString","value":"<Main_Cloud_URL>"}
+				]}
+		   ]}
 */
 const char* pr_conn_state_notf_to_agent(char* buf, size_t size, const char* device_id, int connect, const char* auth_token, const char* conn_string) {
     const char *conn_msg = "{\"commands\": ["
-                           "{\"deviceId\":\"%s, \"type\":0, parameters\": ["    /* device_id */
-                           "{\"name\": cloudConnection\",\"value\":%s\"},"      /* connected/disconnected */
-                           "{\"name\":\"deviceAuthToken\",\"value\"%s\"},"      /* auth_token */
-                           "{\"name\":\"connString\",\"value\":\"%s\"}"         /* conn_string */
+                           "{\"deviceId\":\"%s\", \"type\":0, \"parameters\": ["
+                           "{\"name\":\"cloudConnection\",\"value\":\"%s\"},"
+                           "{\"name\":\"deviceAuthToken\",\"value\":\"%s\"},"
+                           "{\"name\":\"connString\",\"value\":\"%s\"}"
                            "]}"
                            "]}";
     const char* conn_yes = "connected";
