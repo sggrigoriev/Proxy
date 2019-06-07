@@ -77,4 +77,9 @@
 
 #define WUD_DEFAULT_CURLOPT_SSL_VERIFYPEER    1
 
+#define WUD_DEFAULT_EXIT_ON_FW_UPGRADE          2                       /* exit rc if no reboot */
+#define WUD_DEFAULT_EXIT_ON_CHILD_HANGS         1                       /* exit rc if no reboot */
+#define WUD_DEFAULT_EXIT_ON_ERROR               3
+#define WUD_DEFAULT_EXIT_JUST_BECAUSE           0
+
 #endif /* PRESTO_WC_DEFAULTS_H */

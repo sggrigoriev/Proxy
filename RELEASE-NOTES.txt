@@ -1,4 +1,22 @@
-VERSION 1.2.8 30-MAY-2018
+VERSION 1.2.9 07-JUN-2019
+=================================================================================================
+1. Change cloud connection internal command. (Sent to WUD and to Agent on cloud connect/disconnect event).
+    Now it is:
+   			{"commands": [
+   				{"deviceId":"<deviceID>", "type":0, "parameters": [
+   					{"name":"cloudConnection","value":"<connected/disconnected>"},
+   					{"name":"deviceAuthToken","value":"<auth_token>"},
+   					{"name":"connString","value":"<Main_Cloud_URL>"}
+   				]}
+   		   ]}
+2. Added rc codes on WUD exit by reasons:
+		RC = 0 exit by external command from Agent or Proxy
+		RC = 1 exit if WD timeout from Agent or Proxy
+		RC = 2 exit if FW Upgrade finished and requires reboot
+		RC = 3 exit if hard error on startup
+3. Warnings frpom cJSON library are suppressed by pragmas
+
+VERSION 1.2.8 30-MAY-2019
 =================================================================================================
 1. Settings to ProxyJSON.conf added:
 	"CLOUD_CONN_TIMEOUT":       180,    --POST connection timeout

@@ -160,23 +160,23 @@ int main(int argc, char* argv[]) {
   if(!wa_start_child(agent_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getAgentProcessName());
         fprintf(stdout, "WUD startup: error. %s process start failed. Reboot.\n", wc_getAgentProcessName());
-        wa_reboot();
+        wa_reboot(WUD_DEFAULT_EXIT_ON_ERROR);
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getAgentProcessName());
 #endif
     if(!wa_start_child(proxy_cd)) {
         pu_log(LL_ERROR, "WUD startup: error. %s process start failed. Reboot.", wc_getProxyProcessName());
         fprintf(stdout, "WUD startup: error. %s process start failed. Reboot.\n", wc_getProxyProcessName());
-        wa_reboot();
+        wa_reboot(WUD_DEFAULT_EXIT_ON_ERROR);
     }
     pu_log(LL_INFO, "WUD startup: %s start", wc_getProxyProcessName());
     print_WUD_start_params();
 
     wh_mgr_init();
-    wt_request_processor();
+    int exit_rc = wt_request_processor();
     wh_mgr_destroy();
-    fprintf(stdout, "WUD stop\n");
-    wa_reboot();
+    fprintf(stdout, "WUD stop with rc = %d\n", exit_rc);
+    wa_reboot(exit_rc);
 
     return 0;
 }

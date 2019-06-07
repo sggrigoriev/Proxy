@@ -33,13 +33,13 @@
 #include "wa_reboot.h"
 
 
-void wa_reboot() {
+void wa_reboot(int exit_rc) {
     if(wc_getRebootByRequest()) {
 #ifdef WUD_ON_HOST
         pu_log(LL_INFO, "wa_reboot: EXIT on host case");
         wa_stop_children();
         fprintf(stdout, "wa_reboot: EXIT on host case\n");
-        exit(1);
+        exit(exit_rc);
 #else
         pu_log(LL_INFO, "wa_reboot: reboot!");
         fprintf(stdout, "wa_reboot: reboot!");
@@ -56,6 +56,6 @@ void wa_reboot() {
         wa_stop_children();
         wait(NULL);
         fprintf(stdout, "%s: Reboot disabled by WUD configuration. Exiting. Refer to the \"REBOOT_BY_REQUEST\" setting.\n", __FUNCTION__);
-        exit(1);
+        exit(exit_rc);
     }
 }

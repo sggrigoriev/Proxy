@@ -26,6 +26,7 @@
 #include "lib_http.h"
 #include "pu_logger.h"
 
+#include "wc_defaults.h"
 #include "wc_settings.h"
 #include "wa_reboot.h"
 #include "wh_manager.h"
@@ -68,7 +69,7 @@ void wh_mgr_init(){
     if(!lib_http_init(CONNECTIONS_TOTAL, wc_getCurloptSSLVerifyPeer(), wc_getCurloptCAInfo())) {
         lib_http_close();
         fprintf(stdout, "%s: Error on lib_http_init\n", __FUNCTION__);
-        wa_reboot();
+        wa_reboot(WUD_DEFAULT_EXIT_ON_ERROR);
     }
 }
 void wh_mgr_destroy(){
@@ -94,7 +95,7 @@ void wh_reconnect() {
     pthread_mutex_unlock(&frd_mutex);
     lib_http_close();
     fprintf(stdout, "%s: Hard error\n", __FUNCTION__);
-    wa_reboot();
+    wa_reboot(WUD_DEFAULT_EXIT_ON_ERROR);
 }
 
 int wh_write(char* buf, char* resp, size_t resp_size) {

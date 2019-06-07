@@ -8,6 +8,6 @@
 #define PRESTO_WA_REBOOT_H
 
 /* Run systemr eboot for host - just exit */
-void wa_reboot();
+void wa_reboot(int exit_rc);
 
 #endif /* PRESTO_WA_REBOOT_H */

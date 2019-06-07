@@ -140,7 +140,8 @@ static int run_fw_upgrade(pr_cmd_fwu_start_t fwu_start) {
  * Send reboot alert to the cloud and reboot the gateway
  */
 static int reboot_was_sent = 0; /* Workaround for multiple child restarts */
-static void process_reboot() {
+static int exit_rc = WUD_DEFAULT_EXIT_JUST_BECAUSE; /* Should be set on process_reboot() function */
+static void process_reboot(int rc) {
     char json[LIB_HTTP_MAX_MSG_SIZE];
     char di[LIB_HTTP_DEVICE_ID_SIZE];
     if(reboot_was_sent) return;
@@ -151,6 +152,7 @@ static void process_reboot() {
     pf_add_proxy_head(json, sizeof(json), di);
     pu_queue_push(to_cloud, json, strlen(json)+1);  /* Notify cloud about the restart */
     sleep(5);   /* Just give time to send the reboot notification to the cloud */
+    exit_rc = rc;
     stop = 1;
 }
 
@@ -197,13 +199,13 @@ static void process_commands(msg_obj_t* cmds) {
                 if (!wa_restart_child(pr_string_2_chld(cmd_item.restart_child.component))) {
                     pu_log(LL_ERROR, "%s: restart of %s failed. Reboot.", PT_THREAD_NAME, cmd_item.restart_child.component);
                     fprintf(stdout, "%s: restart of %s failed. Reboot.\n", PT_THREAD_NAME, cmd_item.restart_child.component);
-                    process_reboot();
+                    process_reboot(WUD_DEFAULT_EXIT_ON_CHILD_HANGS);
                 }
                 break;
             case PR_CMD_REBOOT: {
                 pu_log(LL_WARNING, "%s: REBOOT requested", PT_THREAD_NAME);
                 fprintf(stdout, "%s: Reboot initiated by REBOOT command\n", PT_THREAD_NAME);
-                process_reboot();
+                process_reboot(WUD_DEFAULT_EXIT_JUST_BECAUSE);
             }
                 break;
             case PR_CMD_CLOUD_CONN:
@@ -259,7 +261,7 @@ static void process_alerts(msg_obj_t* alerts) {
                 pu_log(LL_INFO, "%s: fw upgrade: ready for install", PT_THREAD_NAME);
                 fw_upgrade_cancel();    /* just to clean-up after the process */
                 fprintf(stdout, "%s: Firmware is ready for installation. Reboot.\n", PT_THREAD_NAME);
-                process_reboot();
+                process_reboot(WUD_DEFAULT_EXIT_ON_FW_UPGRADE);
                 stop = 1;
                 break;
             default:
@@ -300,7 +302,7 @@ int wt_request_processor() {
 
     if(!routine_startup()) {
         pu_log(LL_ERROR, "%s: request processor initiation failed. Abort.", PT_THREAD_NAME);
-        return 0;
+        return WUD_DEFAULT_EXIT_ON_ERROR;
     }
 
     pu_queue_event_t events = pu_add_queue_event(pu_create_event_set(), WT_to_Main);
@@ -331,5 +333,5 @@ int wt_request_processor() {
     }
     routine_shutdown();
     pu_log(LL_INFO, "%s is finished", PT_THREAD_NAME);
-    return 0;
+    return exit_rc;
 }
