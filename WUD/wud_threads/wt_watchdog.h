@@ -17,24 +17,27 @@
  */
 /*
     Created by gsg on 08/12/16.
-    WUD watchdog  thread. Send alarm to request processor if one of children didn't send thr watchdog message on time
+
+    WUD watchdog  thread.
+    Send alarm to request processor if one of children didn't send the watchdog message on time
 */
 
 #ifndef WDU_WT_WATCHDOG_H
 #define WDU_WT_WATCHDOG_H
 
-/****************************
+/**
  * Start thread
+ *
  * @return  - 1if OK, 0 if not
  */
 int wt_start_watchdog();
 
-/****************************
+/**
  * Stop thread
  */
 void wt_stop_watchdog();
 
-/***************************
+/**
  * Set the flag for async thread stop
  */
 void wt_set_stop_watchdog();

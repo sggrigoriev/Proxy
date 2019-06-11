@@ -18,7 +18,7 @@
 /*
  Created by gsg on 29/10/16.
 
- Contains all functions and data related to Proxy logging
+ Contains all functions and data related to Proxy/WUD/IPCam,... logging
  NB! Logging utility is thread-protected!
  The log has fixed amount of records. After the max records size is riches it starts right from the beginning
 */
@@ -32,30 +32,38 @@ extern "C" {
 
 typedef enum {LL_TRACE_2 = 6, LL_TRACE_1 = 5, LL_DEBUG = 4, LL_INFO = 3, LL_WARNING = 2, LL_ERROR = 1, LL_SILENT = 0} log_level_t;
 
-/* Initiate logging utility. If there are some problems with file_name file opening, the logger will use stdout stream instead
- *  file_name   - log file name with path. Use NULL to have stdout
- *  rec_amount  - max records amount allowed in log file
- *  l_level     - log output level.
+/**
+ * Initiate logging utility. If there are some problems with file_name file opening, the logger will use stdout stream instead
+ *
+ * @param file_name - log file name with path. Use NULL to have stdout
+ * @param rec_amount- max records amount allowed in log file
+ * @param l_level   - log output level.
 */
 void pu_start_logger(const char* file_name, size_t rec_amount, log_level_t l_level);
 
-/* Close the lof file and stop logging
- *
+/**
+ * Close the log file and stop logging
 */
 void pu_stop_logger();
 
-/* Update the log level
- *  ll  - new log level
+/**
+ * Update the log level
+ *
+ * @param ll    - new log level
 */
 void pu_set_log_level(log_level_t ll);
 
-/* Print the info into the log file in standard printf-a like format
- *  lvl     - level of info (DEBUG, INFO,...)
- *  fmt     - formatted message
+/**
+ * Print the info into the log file in standard printf-alike format
+ *
+ * @param lvl   - level of info (DEBUG, INFO,...)
+ * @param fmt   - formatted message
 */
 void pu_log(log_level_t lvl, const char* fmt, ...);
-/*
- * ENUM tp CHAR*
+/**
+ * Make printable log level
+ *
+ * @param lvl   - log level
  */
 const char* getLogLevel(log_level_t lvl);
 

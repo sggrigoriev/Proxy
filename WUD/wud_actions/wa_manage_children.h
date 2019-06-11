@@ -18,8 +18,9 @@
 /*
     Created by gsg on 30/11/16.
 
-    Currently uses just for Proxy start. The rest is disabled.
+    Currently uses just for Proxy start. The Agent start is disabled.
     To use it each child process should create the file with own pid number...
+    Used in full strength with Agent emulator
 */
 
 #ifndef PRESTO_WA_MANAGE_CHILDREN_H
@@ -28,24 +29,32 @@
 
 #include <pr_commands.h>
 
-/* Start child process
- *      id  - child descriptor id
- * Return 1 if ok, 0 if not
+/**
+ * Start child process
+ *
+ * @param id    - child descriptor id
+ * @return  - 1 if ok, 0 if not
  */
 int wa_start_child(pr_child_t id);
 
-/* Stop and run child process again
- *      id  - child descriptor id
- * Return 1 if ok, 0 if not
+/**
+ * Restart child process
+ *
+ * @param id  - child descriptor id
+ * @return  - 1 if ok, 0 if not
  */
 int wa_restart_child(pr_child_t id);
 
-/* Stop child process
- *      id  - child descriptor id
+/**
+ * Stop child process
+ *
+ * @param id    - child descriptor id
  */
 void wa_stop_child(pr_child_t id);
 
-/* Stop all child processes registered */
+/**
+ * Stop all child processes registered
+*/
 void wa_stop_children();
 
 #endif /* PRESTO_WA_MANAGE_CHILDREN_H */

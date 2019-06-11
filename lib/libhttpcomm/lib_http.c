@@ -45,7 +45,7 @@ typedef struct {
 
 /*
 HTTP connection handler body definition
-  type            - connection type
+  h_type          - connection type
   hndlr           - cURL connection handler
   url             - URL to be connected with
   inBoundCommInfo - data transferred

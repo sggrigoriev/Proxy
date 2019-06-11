@@ -29,6 +29,8 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE
+ *
+ * Inherited from Aiox
  */
 
 #ifndef EUI64_H
@@ -40,8 +42,14 @@
 #define EUI64_STRING_SIZE LIB_HTTP_DEVICE_ID_SIZE /* store for new deviceID ${Preffix}-${MAC_ADDR} = 6+1+16(?) */
 
 /***************** Public Prototypes ****************/
-
-int eui64_toString(char *dest, size_t destLen); /* Return 0 if failed */
+/**
+ * Copy the EUI64 into a string
+ *
+ * @param dest      - buffer for result string
+ * @param destLen   - buffer size
+ * @return  - 1 if we are able to capture the EUI64 else return 0
+ */
+int eui64_toString(char *dest, size_t destLen);
 
 
 #endif

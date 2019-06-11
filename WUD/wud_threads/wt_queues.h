@@ -18,7 +18,7 @@
 /*
     Created by gsg on 07/12/16.
 
-    WUD queue manager
+    WUD queue manager. Should be shifted from wid_threads directory
 */
 
 #ifndef PRESTO_WT_QUEUES_H
@@ -34,20 +34,20 @@ typedef enum {WT_Timeout = PQ_TIMEOUT,
     WT_to_Main = 1, WT_to_Cloud = 2,
     WT_STOP = PQ_STOP} wt_queue_events_t;
 
-/****************************************************
+/**
  * Initiate WUD queue manager
  */
 void wt_init_queues();
 
-/*****************************************************
+/**
  * Stop WUD queue manager. It does not called because WUD is endless :-)
  */
 void wt_erase_queues();
 
-/*return queue ptr or null if no queue
-*****************************************************
- * Get the poinier to the queue by associated event number
- * @param que_number    - queue (event) number
+/**
+ * Get the pointer to the queue by associated event number
+ *
+ * @param que_number    - queue (event) number from WT_MIN_QUEUE to WT_MAX_QUEUE
  * @return              - queue pointer or NULL if no such an association
  */
 pu_queue_t* wt_get_gueue(int que_number);

@@ -17,19 +17,26 @@
 */
 /*
     Created by gsg on 06/12/16.
-    Read data from the cloud (long GET) separate it and send to main proxy and to the agent write threads.
+    Read data from the cloud (long GET) and send to main proxy and to the agent write threads.
+    Mainly the HTTP(s)-> queue wrapper
 */
 
 #ifndef PRESTO_PT_SERVER_READ_H
 #define PRESTO_PT_SERVER_READ_H
 
-/* Start the thread */
+/**
+ * Start the thread
+ */
 int start_server_read();
 
-/* Stop the thread */
+/**
+ * Stop the thread
+*/
 void stop_server_read();
 
-/* Switch on the stop flag - assync stop */
+/**
+ * Switch on the stop flag - async stop
+*/
 void set_stop_server_read();
 
 #endif /* PRESTO_PT_SERVER_READ_H */

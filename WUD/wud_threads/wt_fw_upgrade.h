@@ -31,19 +31,20 @@
 
 #include "pr_commands.h"
 
-/**********************************************************************
+/**
  * Start thread
+ *
  * @param fwu_start - file URL + check summ
  * @return  - 1 if OK, 0 if not
  */
 int wt_start_fw_upgrade(pr_cmd_fwu_start_t fwu_start);
 
-/**********************************************************************
+/**
  * Stop thread
  */
 void wt_stop_fw_upgrade();
 
-/**********************************************************************
+/**
  * Set stop flag: async stop
  */
 void wt_set_stop_fw_upgrade();

@@ -30,7 +30,8 @@
 void pf_reboot() {
 #ifdef PROXY_ON_HOST
     pu_log(LL_INFO, "pf_reboot: EXIT on host case");
-    exit(1);
+    fprintf(stdout, "%s: EXIT on host case\n", __FUNCTION__);
+    exit(3);        /* See WUD_DEFAULT_EXIT_ON_ERROR */
 #else
     pu_log(LL_INFO, "pf_reboot: true rebood for true gateway");
     sync();

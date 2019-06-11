@@ -18,15 +18,16 @@
 /*
     Created by gsg on 01/12/16.
 
-     Contains all WUD threads startup with queues & tcp
+    Main WUD loop. Contains all WUD threads startup with queues & tcp as well
 */
 
 #ifndef PRESTO_WT_THREADS_H
 #define PRESTO_WT_THREADS_H
 
 
-/***********************************
+/**
  * Run all WUD routines
+ *
  * @return  1 if OK, 0 if not
  */
 int wt_request_processor();

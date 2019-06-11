@@ -14,13 +14,14 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
+ *
+ *  Proxy CLI interface implementation
  */
 
 #ifndef PROXYCLI_H
 #define PROXYCLI_H
 
 /* pc_cli_process_params RC */
-
 typedef enum {PCLI_UNDEF, PCLI_VERSION, PCLI_DEVICE_ID} pc_cli_action_t;
 typedef struct {
     pc_cli_action_t action;
@@ -29,8 +30,12 @@ typedef struct {
 
 
 /***************** Public Prototypes ****************/
-/* Process the parameters passed on Proxy start
- *  Return actions requested array terminated by PCLI_SIZE
+/**
+ * Process the parameters passed on Proxy start
+ *
+ * @param argc  - amount of entry params +1
+ * @param argv  - parameters list
+ * @return  - actions requested array terminated by PCLI_SIZE
  */
 pc_cli_params_t pc_cli_process_params(int argc, char *argv[]);
 
@@ -44,6 +49,9 @@ void pc_cli_printUsage();
  */
 void pc_cli_printVersion();
 
+/**
+ * Print the device_id
+ */
 void pc_cli_printDeviceID();
 
 

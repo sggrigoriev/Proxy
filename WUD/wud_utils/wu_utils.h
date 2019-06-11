@@ -17,7 +17,8 @@
 */
 /*
     Created by gsg on 29/11/16.
-    Some interfaces for system functions If Proxy and Agent strt use it - would be shifted to lib
+    Some interfaces for system functions. Should be refactored, joined with other system functions from other places
+    and shifted to the common lib.
 */
 
 #ifndef PRESTO_WU_UTILS_H
@@ -25,38 +26,42 @@
 
 #include <sys/types.h>
 
-/*************************************************
+/**
  * Check the file <process_name>.<ext> in the directory specified
- * @param process_name      - process' name to chrck
+ *
+ * @param process_name      - process' name to check
  * @return  - 1 if exsists, 0 if not
  */
 int wu_process_exsists(const char* process_name);
 
-/*************************************************
+/**
  * Create the file with the process pid
+ *
  * @param process_name  - process name
  * @param process_pid   - process PID
  * @return  - 1 if OK, 0 if not
  */
 int wu_create_pid_file(const char* process_name, pid_t process_pid);
 
-/*************************************************
+/**
  * Check if the directory empty
+ *
  * @param dir_name  - checked directory name with path
  * @return  - 1 if empty, 0 if not
  */
 int wu_dir_empty(const char* dir_name);
 
-/*************************************************
+/**
  * Clean the directory contents (The favorite YC's function ;-)
+ *
  * @param dir_name  - directory name with path
  * @return  - 1 if OK, 0 if error
  */
 int wu_clear_dir(const char* dir_name);
 
-/*Fork launcher; return PID. Launcher change working dir and run process with the command string
-*************************************************
- * Start chilg process bu fork. Launcher change working dir and run process with the command string
+/**
+ * Start child process by fork. Launcher change working dir and run process with the command string
+ *
  * @param prg_name              - process to start
  * @param command_string        - process' start parameters
  * @param process_working_dir   - process' working directory
@@ -64,16 +69,19 @@ int wu_clear_dir(const char* dir_name);
  */
 pid_t wu_start_process(const char* prg_name, char* const* command_string, const char* process_working_dir);
 
-/*************************************************
- * Move all files found from src_folder to dst_folder
+/**
+ * Move all files found from src_folder to dst_folder. Obsolete. Changed to wu_move_n_rename.
+ *
  * @param dest_folder   - destination folder
  * @param src_folder    - source folder
  * @return  - 1 if OK, 0 if not
  */
 int wu_move_files(const char* dest_folder, const char* src_folder);
 
-/*************************************************
+/**
  * Move file by copy & delete the source one. Rename after that (For firmware upgrade procedure)
+ * More safe procedure than the wu_move_files
+ *
  * @param old_dir       - source directory
  * @param old_name      - source file name
  * @param new_dir       - destination directory
@@ -82,29 +90,32 @@ int wu_move_files(const char* dest_folder, const char* src_folder);
  */
 int wu_move_n_rename(const char* old_dir, const char* old_name, const char* new_dir, const char* new_name);
 
-/*************************************************
+/**
  * Extract the file name from the tail of string with path or URL (FOr firmware upgrade procedure)
+ *
  * @param path_or_url   - source string
  * @return  - poinetr to the first non-filename symbol from the tail or empty string
  */
 const char* wu_cut_off_file_name(const char* path_or_url);
 
-/*************************************************
+/**
  * Get the files list from directory
+ *
  * @param path  - path to the directory
  * @return  - NULL - terminated list
  */
 char** wu_get_flist(const char* path);
 
-/*************************************************
+/***
  * Free the NILL-terminated strings list
+ *
  * @param flist     - strings list
  */
 void wu_free_flist(char** flist);
 
-/*Creates file name with full path.
-*************************************************
+/**
  * Construct the file name with the path from path, name & extention
+ *
  * @param buf       - buffer to store the result string
  * @param buf_size  - buffer size
  * @param dir       - path

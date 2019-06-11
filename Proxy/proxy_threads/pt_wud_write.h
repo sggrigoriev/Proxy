@@ -17,18 +17,26 @@
  */
 /*
     Created by gsg on 12/12/16.
-    Write to WUD Proxy watchdogs, connection info, upgrade command...
+    Thread for Proxy -> WUD async communications
+    The wrapper for queue -> TCP
+    There is no WUD -> Proxy info channel yet
 */
 #ifndef PRESTO_PT_WUD_WRITE_H
 #define PRESTO_PT_WUD_WRITE_H
 
-/* Start thread */
+/**
+ * Start thread
+*/
 int start_wud_write();
 
-/* Stop the thread */
+/**
+ * Stop the thread
+*/
 void stop_wud_write();
 
-/* Set stip flag on for async stop */
+/**
+ * Set stop flag on for async stop
+*/
 void set_stop_wud_write();
 
 #endif /* PRESTO_PT_WUD_WRITE_H */

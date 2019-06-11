@@ -16,8 +16,7 @@
  *  limitations under the License.
  */
 /*
-    Created by gsg on 20/11/16.
--
+    Created by gsg on 20/11/16.-
      Contains defaults for Proxy process
 */
 
@@ -102,6 +101,6 @@
 
 #define DEFAULT_PROXY_DEVICE_ID_PREFIX          "aioxGW-"
 #define DEFAULT_REBOOT_IF_CLOUD_REJECTS         0
-#define DEFAULT_ALLOWED_DOMAINS                 {"", NULL};
+#define DEFAULT_ALLOWED_DOMAINS                 {"", NULL};                 /* All domains are not restricted */
 
 #endif /*PRESTO_PC_DEFAULTS_H */

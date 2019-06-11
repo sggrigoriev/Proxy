@@ -17,12 +17,15 @@
  */
 /*
     Created by gsg on 28/01/17.
+    Refactoring needed! Almost obsolete
 */
 
 #ifndef PRESTO_PF_REBOOT_H
 #define PRESTO_PF_REBOOT_H
 
-/* The function invokes total device reboot in case of hard non-compensated internal error*/
+/**
+ * Start total device reboot in case of hard non-compensated internal error.
+*/
 void pf_reboot();
 
 #endif /* PRESTO_PF_REBOOT_H */

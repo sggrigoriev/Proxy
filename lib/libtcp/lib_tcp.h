@@ -62,7 +62,7 @@ typedef struct{
 typedef struct {
     char* buf;
     size_t size;
-    int len;/*mlevitin ssize_t len; */
+    int len;        /* mlevitin ssize_t len; */
 } lib_tcp_in_t;
 
 /*Read descriptor */
@@ -96,79 +96,89 @@ const char* lib_tcp_get_conn_name(const lib_tcp_rd_t* conn);
  */
 int lib_tcp_set_conn_name(lib_tcp_rd_t* conn, const char* name);
 
-/*Create the connection pool
-  max_connections - size of connections pool
-  in_size         - max size of incoming data read for one time
-  ass_size        - size of assembling buffer (usually in_size*2
-Return NULL if allocation error or pointer to connections pool
+/**
+ * Create the connection pool
+ * @param max_connections   - size of connections pool
+ * @param in_size           - max size of incoming data read for one time
+ * @return  - NULL if allocation error or pointer to connections pool
 */
 lib_tcp_conn_t* lib_tcp_init_conns(unsigned int max_connections, size_t in_size);
 
-/*Create working connecion
-  rd_socket   - TCP socket open for read
-  all_conns   - pointer connection pool
-Return ptr for updated descriptor ot NULL if err
+/**
+ * Create working connecion
+ * @param rd_socket - TCP socket open for read
+ * @param all_conns - pointer connection pool
+ * @return  - ptr for updated descriptor ot NULL if err
 */
 lib_tcp_rd_t* lib_tcp_add_new_conn(int rd_socket, lib_tcp_conn_t* all_conns);
 
-/*Get the amount of working connections
-  all_conns   - pointer to connections pool
-Return amount of connected sockets
+/**
+ * Get the amount of working connections
+ * @param all_conns - pointer to connections pool
+ * @return  - amount of connected sockets
 */
 int lib_tcp_conn_amount(lib_tcp_conn_t* all_conns);
 
-/*Close all open connections and erase the connections pool
-  all_conns   - pointer to connections pool
+/**
+ * Close all open connections and erase the connections pool
+ * @param all_conns - pointer to connections pool
 */
 void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns);
 
-/*Create server socket connected to the port
-  port    - the port connected to
-Return binded socket or -1 if error
+/**
+ * Create server socket connected to the port
+ * @param port  - the port connected to
+ * @return  - binded socket or -1 if error
 */
 int lib_tcp_get_server_socket(int port);
 
-/*Listen for incoming connections
-  server_socket   - binded server socket
-  to_sec          - timeout in seconds waiting for new connections
-Return connected socket for R/W operations, 0 if timeout and -1 if error
+/**
+ * Listen for incoming connections
+ * @param server_socket - binded server socket
+ * @param to_sec        - timeout in seconds waiting for new connections
+ * @return  - connected socket for R/W operations, 0 if timeout and -1 if error
 */
 int lib_tcp_listen(int server_socket, int to_sec);
 
-/*Get the first of all ready to be red connections
-  all_conns   - pointer to connections pool
-  to_sec      - timeout to wait for ready for read connections
-Return connection desriptor or NULL if error or nothing to read
- NB! check rc: 0 if timeout, -1 if error
+/**
+ * Get the first of all ready to be red connections
+ * @param all_conns - pointer to connections pool
+ * @param to_sec    - timeout to wait for ready for read connections
+ * @outparam rc     - see LIB_TCP_READ_*
+ * @return  - connection desriptor or NULL if error or nothing to read
 */
 lib_tcp_rd_t* lib_tcp_read(lib_tcp_conn_t* all_conns, int to_sec, int* rc);
 
-/*Assemble the incoming chnks to the 0-termineted char string and move it into out buffer
-  conn    - connection descriptor
-  out     - buffer for incoming message
-  size    - size of incoming buffer
-Return the pointer to the out or NULL if no finished string
+/**
+ * Assemble the incoming chnks to the 0-termineted char string and move it into out buffer
+ * @param conn      - connection descriptor
+ * @param out       - buffer for incoming message
+ * @param out_size  - size of incoming buffer
+ * @return  - pointer to the out or NULL if no finished string
 */
 const char* lib_tcp_assemble(lib_tcp_rd_t* conn, char* out, size_t out_size);
 
-/*Create client socket connected to the port
-  port    - the port to connect to
-  to_sec  - timeout for connection establishment
-Return binded socket or -1 if error
+/**
+ * Create client socket connected to the port
+ * @param port      - the port to connect to
+ * @param to_sec    - timeout for connection establishment
+ * @return  - binded socket or -1 if error
 */
 int lib_tcp_get_client_socket(int port, int to_sec);
 
-/*Write the string to the socket
-  wr_socekt   - writable socket
-  out         - the data to be written (0-terminated string)
-  size        - string size (including 0-byte) -- some old ideas... Actually strlen(out) would be enough
-  to_sec      - timeout for write operation
-Return bytes sent amt, 0 if timeout, < 0 if error
+/**
+ * Write the string to the socket
+  @param wr_socekt  - writable socket
+  @param out        - the data to be written (0-terminated string)
+  @param size       - string size (including 0-byte) -- some old ideas... Actually strlen(out) would be enough
+  @param to_sec     - timeout for write operation
+  @return   - bytes sent amount, 0 if timeout, < 0 if error
 */
 int lib_tcp_write(int wr_socket, const char* out, size_t size, int to_sec);
 
-/*Close writable socket
-  write_socket    - writable socket to be closed
+/**
+ * Close writable socket
+ * @param write_socket  - writable socket to be closed
 */
 void lib_tcp_client_close(int write_socket);
 

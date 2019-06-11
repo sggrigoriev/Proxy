@@ -17,6 +17,7 @@
 */
 /*
     Created by gsg on 28/01/17.
+    Has to be shifted to appropriate place. Refactoring needed!
 */
 
 #ifndef PRESTO_PF_PROXY_COMMANDS_H
@@ -31,7 +32,9 @@
 
 
 /*********************************************************************
- * Make reconnect and send notification to the main proxy thread before  and after the reconnection
+ * Make reconnect to the cloud, update all cloud params and
+ * send notification to the main proxy thread before  and after the reconnection
+ *
  * @param to_proxy_main     - point to input queue for the main proxy queue
  */
 void pf_reconnect(pu_queue_t* to_proxy_main);

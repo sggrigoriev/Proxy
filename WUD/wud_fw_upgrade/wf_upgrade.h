@@ -26,33 +26,43 @@
 
 #define WF_STATE_BUZY 1
 
-/*return 1 if check_sum compared with calculated on file (SHA256)
-***********************************************************************************
+/**
  * Compute file check sum (SHA256) and compare in twith the given check sum (char representaion)
+ *
  * @param check_sum     - given check sum: hexadecimal as a string with two bytes ber each digit
  * @param path          - path to the checked file
  * @param file_name     - file name
- * @return - 1 if check_sum compared with calculated on file, 0 if not
+ * @return  - 1 if check_sum compared with calculated on file (SHA256), 0 if not
  */
 int wf_check_file(const char* check_sum, const char* path, const char* file_name);
-/***********************************************************************************
+
+/**
  * Set the download status
- * @param empty     - 0 if no download, 1 if downlowad in process
+ *
+ * @param empty     - 0 if no download
+ *                  - 1 if download in process
  */
 void wf_set_download_state(int empty);
-/***********************************************************************************
+
+/**
  * Set the upgrade status
- * @param empty     - 0 if no upgrade; 1 if upgrade in process
+ *
+ * @param empty     - 0 if no upgrade
+ *                  - 1 if upgrade in process
  */
 void wf_set_upgrade_state(int empty);
-/***********************************************************************************
- * Returns the download status
- * @return - 1 - on, 0 - off
+
+/**
+ * Get the download directory status
+ *
+ * @return - 1 - empty, 0 - not empty
  */
 int wf_was_download_empty();
-/***********************************************************************************
- * REturn the upgrade status
- * @return - 1 - on, 0 - off
+
+/**
+ * Get the upgrade directory status
+ *
+ * @return - 1 - empty, 0 - not empty
  */
 int wf_was_upgrade_empty();
 

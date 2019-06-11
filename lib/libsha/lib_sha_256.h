@@ -25,10 +25,11 @@ typedef uint8_t     LIB_SHA_BYTE;             /* 8-bit byte */
 typedef uint32_t    LIB_SHA_WORD;             /* 32-bit word, change to "long" for 16-bit machines */
 
 
-/*Compares the c_sum with check sum of binay_opened_file (open in "rb" mode)
-//  c_sum               - check sum (SHA256): hex in string presentation with two-bytes per byte (i.e 64 symbols for 32 bytes)
-//  binay_opened_file   - file descriptor of opened in "rb" mode file
-//Return 1 if compared, 0 if not
+/*
+ * Compares the c_sum with check sum of binay_opened_file (open in "rb" mode)
+ * @param c_sum             - check sum (SHA256): hex in string presentation with two-bytes per byte (i.e 64 symbols for 32 bytes)
+ * @param binay_opened_file - file descriptor of opened in "rb" mode file
+ * @return  - 1 if compared, 0 if not
 */
 int lib_sha_file_compare(const char* c_sum, FILE* binay_opened_file);
 

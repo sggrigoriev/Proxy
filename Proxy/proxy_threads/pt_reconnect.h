@@ -17,6 +17,7 @@
 */
 /*
  Created by gsg on 29/05/19.
+ Short live thread to fulfill cloud command to change main URL
 */
 
 #ifndef PRESTO_PT_RECONNECT_H
@@ -24,7 +25,19 @@
 
 #include "cJSON.h"
 
-int start_reconnect(const char* main_url, unsigned long cmd_id);      /* Start temp thread to proceed the main URL change */
+/**
+ * Start temp thread to proceed the main URL change
+ *
+ * @param main_url  - new main URL sent by cloud
+ * @param cmd_id    - command id of corresponding cloud's command
+ * @return  - 0 if error
+ *          - 1 if Ok
+ */
+int start_reconnect(const char* main_url, unsigned long cmd_id);
+
+/**
+ * Kill reconnect thread. The thread will wait for 1 hour to be killed externally. Architecture...
+ */
 void kill_reconnect();
 
 #endif /* PRESTO_PT_RECONNECT_H */

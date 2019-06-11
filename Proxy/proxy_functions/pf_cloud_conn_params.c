@@ -30,10 +30,6 @@
 #include "pf_cloud_conn_params.h"
 
 /*
-    Get contact point URL & activation token from the cloud
- Actions:
-1. Get ProxyDeviceID
-2. Get cloud connection parameters:
 Return 0 if error and 1 if OK
 */
 int pf_get_cloud_conn_params() {  /* return 0 if proxy was not activated */

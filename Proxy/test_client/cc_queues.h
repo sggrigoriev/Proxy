@@ -17,6 +17,7 @@
 */
 /*
  Created by gsg on 19/05/19.
+ Queue manager for test Agent
 */
 
 #ifndef PRESTO_CC_QUEUES_H
@@ -32,14 +33,21 @@ typedef enum {CC_Timeout = PQ_TIMEOUT,
     CC_FromReaderQueie = 1, CC_ToWriterQueie = 2,
     CC_STOP = PQ_STOP} queue_events_t;
 
-/* Init comm_client queues service */
+/**
+ * Init comm_client queues service
+*/
 void init_queues();
 
-/* Stop comm_client queues service */
+/**
+ * Stop comm_client queues service
+*/
 void erase_queues();
 
-/* Get the queue pointed by associated event number
- *  Return pointer to the queue or NULL if no queue associated
+/**
+ * Get the queue pointed by associated event number
+ *
+ * @param que_number    - from CC_MIN_QUEUE to CC_MAX_QUEUE
+ * @return  - pointer to the queue or NULL if no queue associated
  */
 pu_queue_t* cc_get_gueue(int que_number);
 

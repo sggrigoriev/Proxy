@@ -18,7 +18,8 @@
 /*
     Created by gsg on 03/11/16.
 
-    Small and silly Agent's emulator Used for debugging putposes
+    Small and silly Agent's emulator Used for debugging purposes
+    Currently it emulates the permit join in endless loop
 */
 #include <pthread.h>
 #include <stdio.h>

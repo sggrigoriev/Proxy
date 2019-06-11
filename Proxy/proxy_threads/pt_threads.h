@@ -18,12 +18,14 @@
 /*
     Created by gsg on 03/11/16.
 
-    Contains all Proxy thread funtions and init/close/run/stop for 'em
+    Contains main Proxy loop and init/close/run/stop for all Proxy threads
 */
 #ifndef PT_THREADS_H
 #define PT_THREADS_H
 
-/* Main Proxy thread */
+/**
+ * Main Proxy loop
+*/
 void pt_main_thread();
 
 #endif /* PT_THREADS_H */

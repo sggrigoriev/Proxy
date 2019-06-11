@@ -17,17 +17,23 @@
  */
 /*
     Created by gsg on 06/12/16.
+    Wrapper thread: wait for messages from Agent and passes it to the Proxy though queue
+    Mainly TCP -> queue forwarder
 */
 
 #ifndef PRESTO_PT_AGENT_READ_H
 #define PRESTO_PT_AGENT_READ_H
 
-/* Start the thread
- *      read_socket - the open socket to read
+/**
+ * Start the thread
+ *
+ * @param read_socket   - open socket to read from
 */
 int start_agent_read(int read_socket);
 
-/* stop the thread */
+/**
+ * Stop the thread
+*/
 void stop_agent_read();
 
 #endif /*PRESTO_PT_AGENT_READ_H */

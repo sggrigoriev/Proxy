@@ -17,7 +17,6 @@
 */
 /*
     Created by gsg on 15/01/17.
-
     WUD timer service oriented to registered child processes. Now it is Proxy & Agent
 */
 
@@ -26,16 +25,30 @@
 
 #include "pr_commands.h"
 
-/* Initiait alarm service */
+/**
+ * Initiaite alarm service
+ */
 void wa_alarms_init();
 
-/* Reset child's alarm - the imeout set in child's descriptor (see manage_children)*/
+/**
+ * Reset child's alarm - the imeout set in child's descriptor (see manage_children)
+ *
+ * @param proc  - child process index
+*/
 void wa_alarm_reset(pr_child_t proc);
 
-/* Update child's alarm - add same timeout as before*/
+/**
+ * Update child's alarm - add same timeout as before
+ *
+ * @param proc  - child process index
+*/
 void wa_alarm_update(pr_child_t proc);
 
-/* Return 1 if timeout, o if not */
+/**
+ * Check the timeout for the child
+ *
+ * @param child - process index
+ * @return  - 1 if timeout, o if not */
 int wa_alarm_wakeup(pr_child_t proc);
 
 #endif /* PRESTO_WA_ALARM_H */

@@ -17,7 +17,6 @@
 */
 /*
     Created by gsg on 29/10/16.
-
     contains all proxy settings and functions to acess it
 */
 
@@ -50,21 +49,21 @@ unsigned int    pc_getCloudPostAttempts();  /* Times to repeat post attempts to 
 unsigned int    pc_getLongGetKeepaliveTO(); /* Returns keepalive intervals during the long get TO */
 unsigned int    pc_getLongGetTO();          /* Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage */
 
-/*  For Agent emulator */
+/*  For Agent emulator (comm_client)*/
 unsigned int    pc_getAgentPort();         /* Return the port# for communications with the Agent */
 
 const char* pc_getProxyDeviceIDPrefix();
 /* Activation-related stuff */
 int pc_existsProxyDeviceID();                /* Return 1 if defice id exists and sohuld not be generated. Will be removed once upon a time... */
 
-int pc_rebootIfCloudRejects();
+int pc_rebootIfCloudRejects();              /* Return 1 if reboot in UNAUTH case */
 
 const char* pc_getCurloptCAInfo();
 int pc_getCurloptSSPVerifyPeer();
 /* Used in Contact URL request */
 int pc_getSetSSLForCloudURLRequest();       /* Return 1 if "SET_SSL_FOR_URL_REQUEST" set to 1 or not found. 0 otherwize */
 
-int pc_isAllowedURL(const char* url);       /* Return 1 if url is in allowed domains list */
+int pc_isAllowedURL(const char* url);       /* Return 1 if url is in allowed domains list or list is empty */
 char* const* pc_getAllowedDomainsList();    /* Return NULL-terminated char* list */
 
 

@@ -17,8 +17,7 @@
 */
 /*
     Created by gsg on 29/10/16.
-
-    Proxy process main function
+    Proxy main function
 */
 
 #include <stdio.h>
@@ -38,7 +37,9 @@
 #include "ph_manager.h"
 #include "pf_cloud_conn_params.h"
 
-/* Help for Proxy start parameters syntax */
+/**
+ * Print to the log all Proxy start parameters
+*/
 static void print_Proxy_start_params();
 
 /*
@@ -51,7 +52,9 @@ void signalHandler( int signum ) {
     exit(signum);
 }
 
-/* Main function */
+/**
+ * Main function
+ */
 int main(int argc, char* argv[]) {
     signal(SIGSEGV, signalHandler);
     signal(SIGBUS, signalHandler);

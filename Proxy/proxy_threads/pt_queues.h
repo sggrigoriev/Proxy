@@ -17,8 +17,7 @@
 */
 /*
     Created by gsg on 06/12/16.
-
-    Proxy queue manager. Better to move it to the separate folder...
+    Proxy queues manager. Better to move it to the separate folder.
 */
 
 #ifndef PRESTO_PT_QUEUES_H
@@ -35,14 +34,22 @@ typedef enum {PS_Timeout = PQ_TIMEOUT,
     PS_FromReconnectQueue = 6,
     PS_STOP = PQ_STOP} queue_events_t;
 
-/* Init Proxy queues service */
+/**
+ * Init Proxy queues service
+*/
 void init_queues();
 
-/* Stop Proxy queues service */
+/**
+ * Stop Proxy queues service
+*/
 void erase_queues();
 
-/* Get the queue pointed by associated event number
- *  Return pointer to the queue or NULL if no queue associated
+/**
+ * Get the queue pointed by associated event number
+ *
+ * @param que_number    - one of queue_events_t numbers from PS_MIN_QUEUE up to PS_MAX_QUEUE
+ *
+ * @return  - pointer to the queue or NULL if no queue associated
  */
 pu_queue_t* pt_get_gueue(int que_number);
 

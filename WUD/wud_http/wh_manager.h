@@ -28,16 +28,24 @@
 
 #include "lib_http.h"
 
-void wh_mgr_init();     /* Initiates httplib but not creates the connections */
-void wh_mgr_destroy();  /* Deletes connections (if any and deinit httplib */
+/**
+ * Initiates httplib but not creates the connections
+ */
+void wh_mgr_init();
 
-/********************************************************************************
+/**
+ * Deletes connections (if any and deinit httplib
+ */
+void wh_mgr_destroy();
+
+/**
  * (re)create post connection; update conn parameters
  */
 void wh_reconnect();
 
-/********************************************************************************
+/**
  * POST a message to the cloud; receive anser (if any) or error
+ *
  * @param buf           - buffer with the message to be sent
  * @param resp          - buffer to receive the response
  * @param resp_size     - response buffer size
@@ -45,9 +53,9 @@ void wh_reconnect();
  */
 int wh_write(char* buf, char* resp, size_t resp_size);
 
-/*Returns 0 if error, 1 if OK
-********************************************************************************
+/**
  * Download the file from the cloud
+ *
  * @param file_with_path    - the place to store the file downloaded
  * @param url               - file's URL
  * @param attempts_amount   - download attempts before total failure

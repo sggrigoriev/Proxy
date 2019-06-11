@@ -71,52 +71,68 @@ unsigned int    wc_getKeepAliveInterval();   /* Period in seconds between keep i
 
 
 /* Thread-protected functions */
-/******************************************************************
+/**
  * Load WUD configuration file; Save values in memory.
+ *
  * @param cfg_file_name - WUD configuration file name
- * @return - 1 if OK, 0 if error
+ * @return  - 1 if OK, 0 if error
  */
 int wc_load_config(const char* cfg_file_name);
-/******************************************************************
+
+/**
  * Get the gateway device id
+ *
  * @param di    - buffer for device id received
  * @param size  - buffer size
  */
 void wc_getDeviceID(char* di, size_t size);
-/******************************************************************
+
+/**
  * Store the gateway device id in memory
+ *
  * @param di    - the device id to be stored
  */
 void wc_setDeviceID(const char* di);
-/******************************************************************
+
+/**
  * Get cloud contact URL
+ *
  * @param url   - buffer for URL received
  * @param size  - buffer size
  */
 void wc_getURL(char* url, size_t size);
-/******************************************************************
+
+/**
  * Save the clud contact URL in memory
+ *
  * @param url   - URL to be saved
  */
 void wc_setURL(const char* url);
-/******************************************************************
+
+/**
  * Get the gateway authentication token
+ *
  * @param at    - buffer to save the token
  * @param size  - buffer size
  */
 void wc_getAuthToken(char* at, size_t size);
-/******************************************************************
+
+/**
  * Save the gateway auth token in memory
+ *
  * @param at    - auth token to be saved
  */
 void wc_setAuthToken(const char* at);
-/******************************************************************
+
+/**
  * Get the gateway firmware version
+ *
  * @param ver   - buffer to save firmware version
  * @param size  - buffer size
  */
 void wc_getFWVersion(char* ver, size_t size);
-/******************************************************************
+
+/**
  * Save the gateway firmware verion in memory
  * @param ver   - firmware version to save
  */

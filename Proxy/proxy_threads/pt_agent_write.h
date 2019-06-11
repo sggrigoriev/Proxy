@@ -17,17 +17,23 @@
  */
 /*
     Created by gsg on 06/12/16.
+    Wrapper thread: wait for messages for Agent and passes it to the Agent trough TCP
+    Mainly queue -> TCP forwarder
 */
 
 #ifndef PRESTO_PT_AGENT_WRITE_H
 #define PRESTO_PT_AGENT_WRITE_H
-/* Start agent write thread
- *      wrie_socket - socket for write
- *  Return 1
+/**
+ * Start agent write thread
+ *
+ * @param wrie_socket   - socket for writing
+ * @return  - 1
 */
 int start_agent_write(int write_socket);
 
-/* Stop agent write thread */
+/**
+ * Stop agent write thread
+*/
 void stop_agent_write();
 
 

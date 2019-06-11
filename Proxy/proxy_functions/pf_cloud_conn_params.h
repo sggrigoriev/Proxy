@@ -19,19 +19,17 @@
     Created by gsg on 22/11/16.
 
     Contains funcrions & data to make the proxy deviceID
-    and perform the proxy activation on the Cloud
-    should be removed sometime...
+    Should be refactored
 */
 #ifndef PF_CLOUD_CONN_PARAMETERS_H
 #define PF_CLOUD_CONN_PARAMETERS_H
 
-/*
-    Get contact point URL & activation token from the cloud
- Actions:
-1. Get ProxyDeviceID
-2. Get cloud connection parameters:
-Return 0 if error and 1 if OK
+/**
+ * Generates device_id if it is not set in configuration file and save it in separate file - startup action
+ * The name is wrong
+ *
+ * @return  - 0 if error and 1 if OK
 */
-int pf_get_cloud_conn_params();  /* return 0 if proxy was not activated */
+int pf_get_cloud_conn_params();  
 
 #endif /*PF_CLOUD_CONN_PARAMETERS_H */

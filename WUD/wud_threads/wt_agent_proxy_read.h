@@ -25,18 +25,19 @@
 #ifndef PRESTO_WT_AGENT_PROXY_READ_H
 #define PRESTO_WT_AGENT_PROXY_READ_H
 
-/*****************************************************
- * Start thread.
+/**
+ * Start thread
+ *
  * @return  - 1
  */
 int wt_start_agent_proxy_read();
 
-/*****************************************************
+/**
  * Stop thread.
  */
 void wt_stop_agent_proxy_read();
 
-/*****************************************************
+/**
  * Set flag to stop thread in async mode
  */
 void wt_set_stop_agent_proxy_read();

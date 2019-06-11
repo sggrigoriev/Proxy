@@ -19,24 +19,26 @@
     Created by gsg on 07/12/16.
 
     Receives messages from WUD threads and writes 'em to the cloud
+    queue -> HTTP wrapper
 */
 
 #ifndef PRESTO_WT_SERVER_WRITE_H
 #define PRESTO_WT_SERVER_WRITE_H
 
-/***********************************
+/**
  * Start thread function
+ *
  * @return  - 1 if OK, 0 if not
  */
 int wt_start_server_write();
 
-/***********************************
+/**
  * Stop thread function
  */
 void wt_stop_server_write();
 
-/***********************************
- * Set stop flag ON for assync stop
+/**
+ * Set stop flag ON for async stop
  */
 void wt_set_stop_server_write();
 
