@@ -18,7 +18,7 @@
 /*
     Created by gsg on 22/11/16.
 
-    Contains funcrions & data to make the proxy deviceID
+    Contains functions & data to make the proxy deviceID
     Should be refactored
 */
 #ifndef PF_CLOUD_CONN_PARAMETERS_H

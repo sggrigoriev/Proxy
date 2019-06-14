@@ -1,6 +1,8 @@
-The folder contains all the Proxy business functions as
-1. firmware upload
-2. reboot
-3. connect/reconnect
-4. startup
-All global objects got reffix pf_
+Release 1.2.9
+
+Proxy/proxy_functions
+    1. pf_cloud_conn_params - deviceID generation function
+    2. pf_proxy_commands    - Proxy - Cloud reconnection wrapper
+    3. pf_reboot            - Systen reboot invoked by Proxy. Almost obsolete. Should be removed.
+
+    Generally, one of the Proxy garbage can and has to be refactored

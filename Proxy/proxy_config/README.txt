@@ -1,13 +1,12 @@
-Presto/proxy_config
+Release 1.2.9
 
-1. Functions for read-write proxy configuration file
-2. Access to settings functions
-3. Global storage for all Presto defaults
+Proxy/proxy_config
 
-Presto/proxy_config_cli
+    1. proxy_config_cli/pc_cli -    Command string parsing and update Proxy settings by values from command string
+    2. pc_defaults -                Defaults for Proxy process
+    3. pc_settings -                All proxy settings and functions to access it
+    4. pc_test -                    Test bed
 
-Parse command string and updates Proxy settings by values from command string
 
-all global objects got preffix pc_
 
 

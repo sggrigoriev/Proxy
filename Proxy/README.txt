@@ -1,8 +1,9 @@
-Release 1.1.4
-The folder contains the Proxy part of Presto Gateway implementation
+Release 1.2.9
+The folder contains the Proxy part of Presto M3 Gateway and IPCam implementation.
+Proxy is the main communication Cloud <-> Presto point
 
 The Proxy communication scheme:
-		| <-> cloud	- receives commads for itself & for IoT agent; sends back to the cloud IoT agent's info and own info
+		| <-> cloud	- receives commads for itself & for Agent (IoT or IPCamera); sends back to the cloud Agent's info and own info
 Proxy 	| <-> Agent - forwards cloud info to the IoT agent and vice versa
 		| -> WUD - sends to the WUD cloud connection info and cloud's commands related to WUD
 
@@ -21,12 +22,14 @@ Proxy communications:
 		answer with authentication token
 		
 	Proxy -> IoT Agent
-		all commands from the cloud concerning the agent
+		all commands from the cloud regarding the agent
 		on/off line status regarding the cloud communications state
 		reports the own deviceID
+		answrers with online/offline status by IoT Agent request
 		
 	Iot Agent -> Proxy
 		forwards all agent's messages to the cloud
+		requests the Proxy connection status
 		
 	Proxy -> WUD
 		send connection information
@@ -61,12 +64,11 @@ Proxy threads:
 		
 Folders:
 	/proxy_config				interfaces for read/write from/to Proxy configuration file and common Proxy defaults
-	/proxy_eui64				3rd party function for gateway ID generation made by AIOX company.
 	/proxy_functions			small garbage can. Contains wrapper for deviceID generation, immediate answer for cloud command arrival, reboot fincion in case of hard error
 	/proxy_http					http connections manager for Proxy
 	/proxy_threads				all threads running under Proxy to implement assync interactions with Iot agent and WUD
 	/test_client				the IoT agent emulator for debugging purposes. Could be run in absence of real IoT agent.
 	/main.c						Proxy start function
-	/presto_release_version.h	define the relise version for Proxy and WUD
+	/presto_release_version.h	define the Proxy release version
 		
 

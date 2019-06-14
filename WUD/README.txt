@@ -1,10 +1,10 @@
-Release 1.1.4
+Release 1.2.9
 The folder contains the WUD part of Presto Gateway implementation.
 
 The WUD communication scheme:
 	| -> cloud - sends alerts and firmware upgrade statuses
 WUD	| <- Proxy - receives connection info, firmware upgrade command, reboot command, watchdog
-	| <- Agent - receives watchgogs
+	| <- Agent - receives watchdogs
 	
 WUD communications
 	WUD -> cloud	
@@ -40,13 +40,15 @@ WUD threads:
 						send to request_processor the timeout alarm if the timer exceeds
 						
 Folders:
-	/wud_actions		watchdog service for Proxy & Agent; Proxy & Agent run/restart/stop services; Gateway reboot function
-	/wud_config			interfaces for read from WUD configuration file and common WUD defaults
-	/wud_fw_upgrade		helpers for firmware upgrade process
-	/wud_http			http connections manager for WUD
-	/wud_threads		all threads running under WUD
-	/wud_utils			wrappers for some Linux system calls 
-	/main.c				WUD start function
+	/wud_actions		    watchdog service for Proxy & Agent; Proxy & Agent run/restart/stop services; Gateway reboot function
+	/wud_config			    interfaces for read from WUD configuration file and common WUD defaults
+	/wud_fw_upgrade		    helpers for firmware upgrade process
+	/wud_http			    http connections manager for WUD
+	/wud_monitor            Not in use. Planned to monitor the gateway resources.
+	/wud_threads		    all threads running under WUD
+	/wud_utils			    wrappers for some Linux system calls
+	/main.c				    WUD start function
+	/wud_release_version.h  define the WUD release version
 					
 
 
