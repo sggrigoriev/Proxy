@@ -296,6 +296,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!read_one_string_file(main_cloud_url_file_name, main_cloud_url, sizeof(main_cloud_url), PROXY_MAIN_CLOUD_URL_FILE_NAME)) {
         PCS_ERR;
         strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);  /* Set default value */
+        if(!save_one_string_file(main_cloud_url_file_name, main_cloud_url, PROXY_MAIN_CLOUD_URL_FILE_NAME)) return 0;  /* All diagnostics inside */
     }
 
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   PCS_ERR;

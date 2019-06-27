@@ -63,7 +63,7 @@
 #define DEFAULT_AGENT_PROCESS_NAME  "Agent"                         /* Agent process name (for emilator). Configured */
 
 #define DEFAULT_MAIN_CLOUD_URL_FILE_NAME "./cloud_url"         /* Default name for thr file with main cloud URL name. Configured */
-#define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com"   /* Default main cloud URL. Configured */
+#define DEFAULT_MAIN_CLOUD_URL      "https://app.presencepro.com"   /* Default main cloud URL. */
 #define DEFAULT_SET_SSL_FOR_URL_REQUEST 1                           /* Ask for contact URL from main URL with ssl=true */
 
 #define DEFAULT_CLOUD_URL_REQ_TO_HRS    24                          /* Preiod of cloud conection URL request in hours. Configured */

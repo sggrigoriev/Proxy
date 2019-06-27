@@ -20,6 +20,7 @@
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #ifndef PROXY_ON_HOST
     #include <sys/reboot.h>
 #endif

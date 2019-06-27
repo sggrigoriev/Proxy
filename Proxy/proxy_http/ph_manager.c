@@ -569,7 +569,7 @@ static int get_auth_token(const char* conn, const char* device_id, char* auth_to
         case 1:
             /* We have to send the empty post with the new token to cloud */
             if(test_auth_token(post_d, device_id, auth_token)>0) {
-                pu_log(LL_INFO, "get_auth_token: New auth token was approved by cloud");
+                pu_log(LL_INFO, "%s: New auth token '%s' was approved by cloud", __FUNCTION__, auth_token);
                 lib_http_eraseConn(&post_d);
                 return 1;
             }
@@ -595,11 +595,12 @@ static int get_new_token(lib_http_conn_t post_d, const char* device_id, char* ne
     char reply[LIB_HTTP_MAX_MSG_SIZE] ={0};
 
     pf_add_proxy_head(buf, sizeof(buf), device_id);
+    pu_log(LL_DEBUG, "%s: Requesting new token by %s", __FUNCTION__, buf);
     int i = 0;
 again:
     switch(_post(post_d, buf, reply, sizeof(reply), "")) {
          case LIB_HTTP_IO_RETRY:
-             pu_log(LL_WARNING, "get_new_token: Retry. Attampt #%d", i++);
+             pu_log(LL_WARNING, "get_new_token: Retry. Attempt #%d", i++);
              goto again;
          case LIB_HTTP_IO_UNAUTH: {     /* cloud could return the token - lets check it! */
             cJSON *obj = cJSON_Parse(reply);

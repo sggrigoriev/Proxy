@@ -352,8 +352,11 @@ static void process_proxy_commands(char* msg) {
             case PR_CMD_UPDATE_MAIN_URL:
                 proxy_is_online = 0;
                 report_cloud_conn_status(proxy_is_online);
-
-                if(!start_reconnect(cmd_item.update_main_url.main_url, pf_get_command_id(cmd_arr_elem))) {
+/* Adding "https://" to the URL name */
+                char new_url[LIB_HTTP_MAX_URL_SIZE+9] = {'0'};
+                snprintf(new_url, sizeof(new_url), "https://%s", cmd_item.update_main_url.main_url);
+/*                                   */
+                if(!start_reconnect(new_url, pf_get_command_id(cmd_arr_elem))) {
                     pu_log(LL_ERROR, "%s: Command for Main URL change failed. Source: %s", PT_THREAD_NAME, msg);
                     proxy_is_online = 1;
                     report_cloud_conn_status(proxy_is_online);
