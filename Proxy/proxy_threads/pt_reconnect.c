@@ -74,8 +74,13 @@ static void* thread_proc(void* params) {
     pu_log(LL_INFO, "%s: started", PT_THREAD_NAME);
 
     const char* answer;
-
-    switch(ph_update_main_url(new_url)) {
+    int attempts = pc_getCloudPostAttempts();
+    int rc = 0;
+    while (attempts-- && (rc = ph_update_main_url(new_url), rc != 1)) {
+        pu_log(LL_INFO, "%s: Attempt #%d of #d: %s", __FUNCTION__, pc_getCloudPostAttempts()-attempts, pc_getCloudPostAttempts(), (rc==1)?"success":"fail");
+        sleep(1);
+    }
+    switch (rc) {
         case 1:
             send_rc_to_cloud(commandID, PF_RC_OK);
             answer = good;
@@ -88,6 +93,7 @@ static void* thread_proc(void* params) {
             answer = bad;
             break;
     }
+
     pu_queue_push(to_main, answer, strlen(answer)+1);
     sleep(3600);        /* To wait external killer */
     stop = 1;

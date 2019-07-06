@@ -23,11 +23,23 @@
 #include <errno.h>
 #include <pthread.h>
 #include <unistd.h>
-#include "string.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #include "pc_config.h"
+/**
+ * Cut off the string until the first non-printable
+ * @param str   - changed string
+ * @return      - pointer to the str
+ */
+static char* cut_non_printables(char* s) {
+    char* b = s;
+    while(isprint(*b)) b++;
+    *b = '\0';
+    return s;
+}
 
 /*load_file()    - load configuration file into memory
 fname           - file name
@@ -271,9 +283,10 @@ int read_one_string_file(const char* file_name, char* value, size_t size, const 
         fprintf(stderr, "File %s read error %d, %s. %s got default value\n", file_name, errno, strerror(errno), value_name);
         goto on_err;
     }
+    cut_non_printables(value);
     fclose(f);
     return 1;
-    on_err:
+on_err:
     value[0] = '\0';
     if(f) fclose(f);
     return 0;
