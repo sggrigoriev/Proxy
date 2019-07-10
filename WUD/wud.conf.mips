@@ -24,6 +24,7 @@
 "PROXY_RUN_PARAMETERS":         [],
 "PROXY_WORKING_DIRECTORY":      "/root/presto/bin",
 "PROXY_WD_TIMEOUT_SEC":         600,
+"WUD_LISTEN_IP":		"127.0.0.1",
 
 "WUD_MONITORING_TO_SEC":        3600,
 "WUD_DELAY_BEFORE_START_SEC":    2,
