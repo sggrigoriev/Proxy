@@ -156,9 +156,15 @@ void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns) {
 /*All three return -1 if error, 0 if timeout, >0 if value
 return binded socket
 */
-int lib_tcp_get_server_socket(int port) {
+int lib_tcp_get_server_socket(int port, const char* listen_ip) {
     /*Create server socket */
     int server_socket;
+    in_addr_t inaddr;
+
+    if(!listen_ip)
+        inaddr = INADDR_ANY;
+    else
+        inet_pton(AF_INET, listen_ip, &inaddr);
 
     if (server_socket = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0), server_socket  < 0) {
         pu_log(LL_ERROR, "%s: Error socket creation: %d - %s", __FUNCTION__, errno, strerror(errno));
@@ -175,7 +181,7 @@ int lib_tcp_get_server_socket(int port) {
     struct sockaddr_in addr_struct;
     memset(&addr_struct, 0, sizeof(addr_struct));
     addr_struct.sin_family = AF_INET;
-    addr_struct.sin_addr.s_addr = INADDR_ANY;
+    addr_struct.sin_addr.s_addr = inaddr;
     addr_struct.sin_port = htons(port);
 
     /*bind socket on repeated mode */

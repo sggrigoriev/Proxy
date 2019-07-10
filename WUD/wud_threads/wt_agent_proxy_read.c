@@ -82,7 +82,7 @@ static void* ap_reader(void* params) {
     proxy_commands = wt_get_gueue(WT_to_Main);
 
     while(!stop) {
-        int server_socket = lib_tcp_get_server_socket(wc_getWUDPort());
+        int server_socket = lib_tcp_get_server_socket(wc_getWUDPort(), wc_getWUDListenIP());
         if(server_socket < 0) {
             pu_log(LL_ERROR, "%s: unable to bind to port %d. %d %s", PT_THREAD_NAME, wc_getWUDPort(), errno, strerror(errno));
             stop = 1;

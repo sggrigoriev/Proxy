@@ -65,6 +65,7 @@ Release 1.2.9
     WUD specific
         WUD_WORKING_DIRECTORY       - path to the default WUD directory
         WUD_COMM_PORT               - WUD TCP port number
+        WUD_LISTEN_IP               - 0.0.0.0 by default. "127.0.0.1" is recommended by security reasons
         CHILDREN_SHUTDOWN_TO_SEC    - pause before childs shutdown
             OTA settings:
         FW_DOWNLOAD_FOLDER          - path to the directory for firmware download
@@ -91,6 +92,7 @@ Release 1.2.9
         MAIN_CLOUD_URL_FILE_NAME    - full path and file name of "one string" file with mail URL
         AGENT_PORT                  - TCP port to communicate with Agent
         WUD_PORT                    - TCP port to communicate with WUD
+        PROXY_LISTEN_IP             - 0.0.0.0 by default. "127.0.0.1" is recommended by security reasons
         DEVICE_TYPE                 - 7000 for camera, 31 for M3 currently
         CLOUD_URL_REQ_TO_HRS        - period to ask cloud for main URL change for device
         FW_VER_SEND_TO_HRS          - period to send device's firmware version

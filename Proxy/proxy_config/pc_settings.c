@@ -61,6 +61,7 @@
 
 #define PROXY_QUEUES_REC_AMT    "QUEUES_REC_AMT"
 #define PROXY_AGENT_PORT        "AGENT_PORT"
+#define PROXY_LISTEN_IP         "PROXY_LISTEN_IP"
 
 #define PROXY_WUD_PORT          "WUD_PORT"
 #define PROXY_WATCHDOG_TO_SEC   "WATCHDOG_TO_SEC"
@@ -102,6 +103,7 @@ static unsigned int     queue_rec_amt = 0;
 static unsigned int     agent_port = 0;
 static unsigned int     WUD_port = 0;
 static unsigned int     proxy_wd_to = 0;
+static char             proxy_listen_ip[16] = {0};
 
 static unsigned int     set_ssl_for_url_request = 0;
 static int              curlopt_ssl_verify_peer = 0;
@@ -163,6 +165,11 @@ log_level_t pc_getLogVevel() {
 /* Return the port# for communications with the Agent */
 unsigned int pc_getAgentPort() {
     return agent_port;
+}
+
+/* Return the listen IP address */
+const char*     pc_getProxyListenIP() {
+    return proxy_listen_ip;
 }
 
 /* Return max amount of records kept in Presto queues */
@@ -305,6 +312,7 @@ int pc_load_config(const char* cfg_file_name) {
     if(!getUintValue(cfg, PROXY_QUEUES_REC_AMT, &queue_rec_amt))                                PCS_ERR;
     if(!getUintValue(cfg, PROXY_AGENT_PORT, &agent_port))                                       PCS_ERR;
     if(!getUintValue(cfg, PROXY_WUD_PORT, &WUD_port))                                           PCS_ERR;
+    if(!getStrValue(cfg, PROXY_LISTEN_IP, proxy_listen_ip, sizeof(proxy_listen_ip)))            PCS_ERR;
     if(!getStrValue(cfg, PROXY_PROCESS_NAME, proxy_name, sizeof(proxy_name)))                   PCS_ERR;
     if(!getUintValue(cfg, PROXY_WATCHDOG_TO_SEC, &proxy_wd_to))                                 PCS_ERR;
     if(!getUintValue(cfg, PROXY_SET_SSL_FOR_URL_REQUEST, &set_ssl_for_url_request))             PCS_ERR;
@@ -518,6 +526,7 @@ static void initiate_defaults() {
     long_get_to = DEFAULT_LONG_GET_TO_SEC;
     const char*tmp[] = DEFAULT_ALLOWED_DOMAINS;
     allowed_domains = pr_duplicate_ptr_list(allowed_domains, (char* const*)tmp);
+    strncpy(proxy_listen_ip, DEFAULT_PROXY_LISTEN_IP, sizeof(proxy_listen_ip));
 }
 
 /*

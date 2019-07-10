@@ -127,10 +127,11 @@ void lib_tcp_destroy_conns(lib_tcp_conn_t* all_conns);
 
 /**
  * Create server socket connected to the port
- * @param port  - the port connected to
+ * @param port      - the port connected to
+ * @param listen_ip - listen IP
  * @return  - binded socket or -1 if error
 */
-int lib_tcp_get_server_socket(int port);
+int lib_tcp_get_server_socket(int port, const char* listen_ip);
 
 /**
  * Listen for incoming connections

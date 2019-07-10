@@ -102,5 +102,6 @@
 #define DEFAULT_PROXY_DEVICE_ID_PREFIX          "aioxGW-"
 #define DEFAULT_REBOOT_IF_CLOUD_REJECTS         0
 #define DEFAULT_ALLOWED_DOMAINS                 {"", NULL};                 /* All domains are not restricted */
+#define DEFAULT_PROXY_LISTEN_IP                 "0.0.0.0"                   /* * by default */
 
 #endif /*PRESTO_PC_DEFAULTS_H */

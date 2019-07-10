@@ -49,6 +49,7 @@
 
 #define WUD_WORKING_DIRECTORY       "WUD_WORKING_DIRECTORY"
 #define WUD_COMM_PORT               "WUD_COMM_PORT"
+#define WUD_LISTEN_IP               "WUD_LISTEN_IP"
 
 #define WUD_CHILDREN_SHUTDOWN_TO_SEC    "CHILDREN_SHUTDOWN_TO_SEC"
 
@@ -91,6 +92,7 @@ static unsigned int     reboot_by_request = 0;
 
 static char working_dir[WC_MAX_PATH];
 static unsigned int wud_port;
+static char wud_listen_ip[16]={0};
 static unsigned int children_to_sec;
 
 static char fw_download_folder[WC_MAX_PATH];
@@ -201,6 +203,10 @@ const char* wc_getWorkingDir() {
 
 unsigned int wc_getWUDPort() {
     WC_RET(WUD_DEFAULT_COMM_PORT, wud_port);
+}
+
+const char* wc_getWUDListenIP() {
+    return wud_listen_ip;
 }
 
 unsigned int wc_getChildrenShutdownTO() {
@@ -315,6 +321,7 @@ int wc_load_config(const char* cfg_file_name) {
 
     if(!getStrValue(cfg, WUD_WORKING_DIRECTORY, working_dir, sizeof(working_dir)))                                  WC_ERR();
     if(!getUintValue(cfg, WUD_COMM_PORT, &wud_port))                                                                WC_ERR();
+    if(!getStrValue(cfg, WUD_LISTEN_IP, wud_listen_ip, sizeof(wud_listen_ip)))                                      WC_ERR();
     if(!getUintValue(cfg, WUD_CHILDREN_SHUTDOWN_TO_SEC, &children_to_sec))                                          WC_ERR();
     if(!getStrValue(cfg, WUD_FW_DOWNLOAD_FOLDER, fw_download_folder, sizeof(fw_download_folder)))                   WC_ERR();
     if(!getStrValue(cfg, WUD_FW_UPGRADE_FOLDER, fw_upgrade_folder, sizeof(fw_upgrade_folder)))                      WC_ERR();
@@ -439,6 +446,8 @@ static void initiate_defaults() {
     cloud_post_attempts = LIB_HTTP_MAX_POST_RETRIES;
     cloud_file_get_conn_timeout = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
     cloud_keep_alive_interval = LIB_HTTP_DEFAULT_TRANSFER_TIMEOUT_SEC;
+
+    strncpy(wud_listen_ip, WUD_DEFAULT_LISTEN_IP, sizeof(wud_listen_ip));
 }
 
 static void getLLTValue(cJSON* cfg, const char* field_name, log_level_t* llt_setting) {

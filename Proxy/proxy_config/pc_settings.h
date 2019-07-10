@@ -50,7 +50,8 @@ unsigned int    pc_getLongGetKeepaliveTO(); /* Returns keepalive intervals durin
 unsigned int    pc_getLongGetTO();          /* Return the timeout in seconds for "long get" made by Presto to listen the Cloud messsage */
 
 /*  For Agent emulator (comm_client)*/
-unsigned int    pc_getAgentPort();         /* Return the port# for communications with the Agent */
+unsigned int    pc_getAgentPort();          /* Return the port# for communications with the Agent */
+const char*     pc_getProxyListenIP();      /* Return the listen IP address */
 
 const char* pc_getProxyDeviceIDPrefix();
 /* Activation-related stuff */

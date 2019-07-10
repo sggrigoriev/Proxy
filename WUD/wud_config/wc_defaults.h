@@ -53,6 +53,7 @@
 
 #define WUD_DEFAULT_WORKING_DIRECTORY       "./"                        /* WUD working directory. Configurable */
 #define WUD_DEFAULT_COMM_PORT               8887                        /* WUD communication port. Configurable */
+#define WUD_DEFAULT_LISTEN_IP               "0.0.0.0"
 #define WUD_DEFAULT_CHILDREN_SHUTDOWN_TO_SEC    120                     /* Timeout in seconds to wait until the force shutdown of child processes- Proxy & Agent. Configurable */
 
 #define WUD_DEFAULT_FW_DOWNLOAD_FOLDER      "./download"                /* Directory to download firmware file. Configurable */

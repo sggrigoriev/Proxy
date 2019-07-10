@@ -1,3 +1,10 @@
+VERSION 1.2.12 10-JUL-2019
+=================================================================================================
+1. New setting added into proxyJSON.conf: "PROXY_LISTEN_IP".
+Default value is "0.0.0.0". "127.0.0.1" is recommended to be set by security reasons
+2. New setting added into wud.conf: "WUD_LISTEN_IP".
+Default value is "0.0.0.0". "127.0.0.1" is recommended to be set by security reasons
+
 VERSION 1.2.11 06-JUL-2019
 =================================================================================================
 1. EM-424 - cut all unprintables at the end of "one string file" while reading

@@ -136,6 +136,7 @@ static void print_Proxy_start_params() {
     pu_log(LL_INFO, "\t\tLog level: %s - %d", getLogLevel(pc_getLogVevel()), pc_getLogVevel());
     pu_log(LL_INFO, "\tProxy-Agent communication port: %d", pc_getAgentPort());
     pu_log(LL_INFO, "\tProxy-WUD communication port: %d", pc_getWUDPort());
+    pu_log(LL_INFO, "\tProxy listen IP: %s", pc_getProxyListenIP());
     pu_log(LL_INFO, "\tProxy name: %s", pc_getProxyName());
     pu_log(LL_INFO, "\tProxy watchdog sending interval in seconds: %d", pc_getProxyWDTO());
 

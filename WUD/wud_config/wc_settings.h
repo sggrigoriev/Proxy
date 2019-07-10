@@ -35,6 +35,7 @@ unsigned int wc_getRebootByRequest();
 
 const char* wc_getWorkingDir();             /* Return WUD working directory */
 unsigned int wc_getWUDPort();               /* Return WUD communication port (read from Proxy & Agent) */
+const char* wc_getWUDListenIP();            /* Return WUD IP address to listen */
 
 unsigned int wc_getChildrenShutdownTO();    /* Return the timeout in seconds before the force chidren's sutdown */
 
