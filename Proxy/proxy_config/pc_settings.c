@@ -296,14 +296,19 @@ int pc_load_config(const char* cfg_file_name) {
         fprintf(stderr, "Auth Token will be set by the cloud\n");
     }
 
-
     if(!getUintValue(cfg, PROXY_DEVICE_TYPE, &device_type))                                     PCS_ERR;
 
     if(!getStrValue(cfg, PROXY_MAIN_CLOUD_URL_FILE_NAME, main_cloud_url_file_name, sizeof(main_cloud_url_file_name))) PCS_ERR;
     if(!read_one_string_file(main_cloud_url_file_name, main_cloud_url, sizeof(main_cloud_url), PROXY_MAIN_CLOUD_URL_FILE_NAME)) {
         PCS_ERR;
-        strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url)-1);  /* Set default value */
-        if(!save_one_string_file(main_cloud_url_file_name, main_cloud_url, PROXY_MAIN_CLOUD_URL_FILE_NAME)) return 0;  /* All diagnostics inside */
+        if(device_type != PROXY_C1_DEVICE_TYPE) { /* Not a camera -> we should save default URL */
+            strncpy(main_cloud_url, DEFAULT_MAIN_CLOUD_URL, sizeof(main_cloud_url) - 1);  /* Set default value */
+            if (!save_one_string_file(main_cloud_url_file_name, main_cloud_url, PROXY_MAIN_CLOUD_URL_FILE_NAME))
+                return 0;  /* All diagnostics inside */
+        }
+        else { /* Cam case -> empty string shouild be passed. URL will be set by QR code */
+            main_cloud_url[0] = '\0';
+        }
     }
 
     if(!getUintValue(cfg, PROXY_CLOUD_URL_REQ_TO_HRS, &cloud_url_req_to_hrs))                   PCS_ERR;
@@ -501,6 +506,9 @@ static void initiate_defaults() {
     log_rec_amt = DEFAULT_LOG_RECORDS_AMT;
     log_level = DEFAULT_LOG_LEVEL;
 
+    strncpy(proxy_name, DEFAULT_PROXY_PROCESS_NAME, sizeof(proxy_name)-1);
+    proxy_wd_to = DEFAULT_PROXY_WATCHDOG_TO_SEC;
+
     auth_token[0] = '\0';
     strncpy(auth_token_file_name, DEFAULT_AUTH_TOKEN_FILE_NAME, sizeof(auth_token_file_name)-1);
     device_id[0] = '\0';
@@ -511,11 +519,16 @@ static void initiate_defaults() {
     cloud_url_req_to_hrs = DEFAULT_CLOUD_URL_REQ_TO_HRS;
 
     queue_rec_amt = DEFAULT_QUEUE_RECORDS_AMT;
+
     agent_port = DEFAULT_AGENT_PORT;
+    WUD_port = DEFAULT_WUD_PORT;
+
     strncpy(fw_version, DEFAULT_FW_VERSION_NUM, DEFAULT_FW_VERSION_SIZE-1);
+    fw_ver_sending_to_hrs = DEFAULT_FW_VER_SENDING_TO_HRS;
 
     curlopt_ssl_verify_peer = DEFAULT_PROXY_CURLOPT_SSL_VERIFYPEER;
     curlopt_ca_info[0] = '\0';
+    set_ssl_for_url_request = DEFAULT_SET_SSL_FOR_URL_REQUEST;
 
     strncpy(device_id_prefix, DEFAULT_PROXY_DEVICE_ID_PREFIX, sizeof(device_id_prefix));
     reboot_if_cloud_rejects = DEFAULT_REBOOT_IF_CLOUD_REJECTS;

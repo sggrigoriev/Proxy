@@ -1,3 +1,8 @@
+VERSION 1.2.13 04-AUG-2019
+=================================================================================================
+1. CIC-148 - Now settings for Proxy for IPCamera and Proxy for Gateway(s) are separated by device_type_id
+Default main URL saved into file for GW's Proxy and does not for IPCam (Taken from QR by activate.sh)
+
 VERSION 1.2.12 10-JUL-2019
 =================================================================================================
 1. New setting added into proxyJSON.conf: "PROXY_LISTEN_IP".
@@ -9,6 +14,7 @@ VERSION 1.2.11 06-JUL-2019
 =================================================================================================
 1. EM-424 - cut all unprintables at the end of "one string file" while reading
 2. EM-427 - add 3 attempts and 1 second pause between for change cloud command
+
 
 VERSION 1.2.10 27-JUN-2019
 =================================================================================================
